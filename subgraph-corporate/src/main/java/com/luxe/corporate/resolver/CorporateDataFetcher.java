@@ -3,6 +3,7 @@ package com.luxe.corporate.resolver;
 import com.luxe.corporate.schema.types.GuestProfile;
 
 import com.luxe.common.auth.AuthContext;
+import com.luxe.common.auth.AuthContextResolver;
 import com.luxe.common.auth.AuthRole;
 import com.luxe.common.error.AlreadyEnrolledError;
 import com.luxe.common.error.NotFoundError;
@@ -12,7 +13,6 @@ import com.luxe.corporate.datasource.CorporateDataSource;
 import com.luxe.corporate.schema.types.*;
 import com.netflix.graphql.dgs.*;
 import graphql.schema.DataFetchingEnvironment;
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 import java.util.Map;
@@ -21,18 +21,15 @@ import java.util.Map;
 public class CorporateDataFetcher {
 
     private final CorporateDataSource dataSource;
+    private final AuthContextResolver authResolver;
 
-    public CorporateDataFetcher(CorporateDataSource dataSource) {
+    public CorporateDataFetcher(CorporateDataSource dataSource, AuthContextResolver authResolver) {
         this.dataSource = dataSource;
+        this.authResolver = authResolver;
     }
 
     private AuthContext getAuth(DataFetchingEnvironment dfe) {
-        try {
-            HttpServletRequest req = dfe.getGraphQlContext().get(HttpServletRequest.class);
-            if (req == null) return AuthContext.anonymous();
-            AuthContext ctx = (AuthContext) req.getAttribute("authContext");
-            return ctx != null ? ctx : AuthContext.anonymous();
-        } catch (Exception e) { return AuthContext.anonymous(); }
+        return authResolver.resolve(dfe);
     }
 
     // ── Queries ───────────────────────────────────────────────────────────────

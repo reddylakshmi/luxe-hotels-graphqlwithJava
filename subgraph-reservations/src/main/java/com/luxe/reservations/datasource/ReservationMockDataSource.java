@@ -20,6 +20,20 @@ public class ReservationMockDataSource implements ReservationDataSource {
         initData();
     }
 
+    /** DGS coerces Date scalars to LocalDate; tolerate ISO strings too. */
+    private static LocalDate toDate(Object v) {
+        if (v == null) return null;
+        if (v instanceof LocalDate ld) return ld;
+        return LocalDate.parse(v.toString());
+    }
+
+    /** DGS coerces DateTime scalars to OffsetDateTime; tolerate ISO strings too. */
+    private static OffsetDateTime toDateTime(Object v) {
+        if (v == null) return null;
+        if (v instanceof OffsetDateTime odt) return odt;
+        return OffsetDateTime.parse(v.toString());
+    }
+
     private void initData() {
         LocalDate today = LocalDate.now();
 
@@ -223,8 +237,8 @@ public class ReservationMockDataSource implements ReservationDataSource {
     public Reservation create(Map<String, Object> input, String guestId) {
         String hotelId    = (String) input.get("hotelId");
         String roomTypeId = (String) input.get("roomTypeId");
-        LocalDate checkIn  = LocalDate.parse((String) input.get("checkIn"));
-        LocalDate checkOut = LocalDate.parse((String) input.get("checkOut"));
+        LocalDate checkIn  = toDate(input.get("checkIn"));
+        LocalDate checkOut = toDate(input.get("checkOut"));
         int adults   = ((Number) input.getOrDefault("adults", 1)).intValue();
         int children = ((Number) input.getOrDefault("children", 0)).intValue();
         int nights   = (int) checkIn.until(checkOut).getDays();
@@ -261,8 +275,8 @@ public class ReservationMockDataSource implements ReservationDataSource {
     public Reservation modify(String id, Map<String, Object> input) {
         Reservation r = reservations.get(id);
         if (r == null) return null;
-        if (input.containsKey("checkIn")) r.setCheckIn(LocalDate.parse((String) input.get("checkIn")));
-        if (input.containsKey("checkOut")) r.setCheckOut(LocalDate.parse((String) input.get("checkOut")));
+        if (input.containsKey("checkIn")) r.setCheckIn(toDate(input.get("checkIn")));
+        if (input.containsKey("checkOut")) r.setCheckOut(toDate(input.get("checkOut")));
         if (r.getCheckIn() != null && r.getCheckOut() != null)
             r.setNights((int) r.getCheckIn().until(r.getCheckOut()).getDays());
         if (input.containsKey("adults")) r.setAdults(((Number) input.get("adults")).intValue());
@@ -378,7 +392,7 @@ public class ReservationMockDataSource implements ReservationDataSource {
                 (String) input.get("reservationId"),
                 (String) input.get("restaurantId"),
                 "Restaurant",
-                LocalDate.parse((String) input.get("date")),
+                toDate(input.get("date")),
                 (String) input.get("time"),
                 ((Number) input.getOrDefault("partySize", 2)).intValue(),
                 "CONFIRMED", (String) input.get("specialRequests"), conf, OffsetDateTime.now());
@@ -413,7 +427,7 @@ public class ReservationMockDataSource implements ReservationDataSource {
                 (String) input.get("treatmentId"),
                 "Spa Treatment",
                 (String) input.get("therapistPreference"),
-                LocalDate.parse((String) input.get("date")),
+                toDate(input.get("date")),
                 (String) input.get("time"), 60,
                 Money.of(200, currency), "CONFIRMED", conf, OffsetDateTime.now());
         spaAppointments.put(id, s);
@@ -447,7 +461,7 @@ public class ReservationMockDataSource implements ReservationDataSource {
                 (String) input.get("type"),
                 (String) input.get("pickupLocation"),
                 (String) input.get("dropoffLocation"),
-                OffsetDateTime.parse((String) input.get("scheduledAt")),
+                toDateTime(input.get("scheduledAt")),
                 (String) input.get("vehicleType"),
                 Money.of(100, currency), "CONFIRMED",
                 (String) input.get("notes"), conf, OffsetDateTime.now());

@@ -3,6 +3,7 @@ package com.luxe.loyalty.resolver;
 import com.luxe.loyalty.schema.types.GuestProfile;
 
 import com.luxe.common.auth.AuthContext;
+import com.luxe.common.auth.AuthContextResolver;
 import com.luxe.common.auth.AuthRole;
 import com.luxe.common.error.AlreadyEnrolledError;
 import com.luxe.common.error.InsufficientPointsError;
@@ -15,7 +16,6 @@ import com.luxe.loyalty.datasource.LoyaltyDataSource;
 import com.luxe.loyalty.schema.types.*;
 import com.netflix.graphql.dgs.*;
 import graphql.schema.DataFetchingEnvironment;
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -27,18 +27,15 @@ import java.util.UUID;
 public class LoyaltyDataFetcher {
 
     private final LoyaltyDataSource dataSource;
+    private final AuthContextResolver authResolver;
 
-    public LoyaltyDataFetcher(LoyaltyDataSource dataSource) {
+    public LoyaltyDataFetcher(LoyaltyDataSource dataSource, AuthContextResolver authResolver) {
         this.dataSource = dataSource;
+        this.authResolver = authResolver;
     }
 
     private AuthContext getAuth(DataFetchingEnvironment dfe) {
-        try {
-            HttpServletRequest req = dfe.getGraphQlContext().get(HttpServletRequest.class);
-            if (req == null) return AuthContext.anonymous();
-            AuthContext ctx = (AuthContext) req.getAttribute("authContext");
-            return ctx != null ? ctx : AuthContext.anonymous();
-        } catch (Exception e) { return AuthContext.anonymous(); }
+        return authResolver.resolve(dfe);
     }
 
     // ── Queries ───────────────────────────────────────────────────────────────
@@ -145,13 +142,8 @@ public class LoyaltyDataFetcher {
         var tx = dataSource.transferToAirline(account.getId(), partnerId, partnerAcct, points);
         if (tx == null) return new ValidationError("TRANSFER_FAILED", "Transfer could not be processed", List.of());
         int milesAwarded = (int) Math.round(points * partner.pointsRatio());
-        return Map.of(
-                "transactionId", tx.id(),
-                "pointsDeducted", points,
-                "partnerMilesAwarded", milesAwarded,
-                "partner", partner,
-                "estimatedDeliveryDays", 3,
-                "message", "Transfer initiated. Miles will be credited to " + partnerAcct
+        return new AirlineTransferSuccess(tx.id(), points, milesAwarded, partner, 3,
+                "Transfer initiated. Miles will be credited to " + partnerAcct
                         + " within 3 business days.");
     }
 
@@ -199,11 +191,9 @@ public class LoyaltyDataFetcher {
             return new ValidationError("INVALID_CERTIFICATE",
                     "Certificate not found, already redeemed, or expired", List.of());
         }
-        return Map.of(
-                "certificate", cert,
-                "reservationId", reservationId,
-                "appliedAt", OffsetDateTime.now(),
-                "message", "Certificate applied to reservation " + reservationId);
+        return new CertificateRedemption(cert, reservationId,
+                OffsetDateTime.now(),
+                "Certificate applied to reservation " + reservationId);
     }
 
     @DgsMutation
@@ -243,12 +233,9 @@ public class LoyaltyDataFetcher {
             return new InsufficientPointsError(sender.getPointsAvailable(), points);
         var tx = dataSource.giftPoints(sender.getLoyaltyNumber(), recipient, points,
                 (String) input.get("message"));
-        return Map.of(
-                "transactionId", tx.id(),
-                "recipientLoyaltyNumber", recipient,
-                "pointsGifted", points,
-                "newBalance", sender.getPointsAvailable(),
-                "message", "Gifted " + points + " points to " + recipient);
+        return new GiftPointsSuccess(tx.id(), recipient, points,
+                sender.getPointsAvailable(),
+                "Gifted " + points + " points to " + recipient);
     }
 
     @DgsMutation

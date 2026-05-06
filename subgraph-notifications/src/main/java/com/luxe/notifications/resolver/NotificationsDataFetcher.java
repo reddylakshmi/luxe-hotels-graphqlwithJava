@@ -3,6 +3,7 @@ package com.luxe.notifications.resolver;
 import com.luxe.notifications.schema.types.GuestProfile;
 
 import com.luxe.common.auth.AuthContext;
+import com.luxe.common.auth.AuthContextResolver;
 import com.luxe.common.error.NotFoundError;
 import com.luxe.common.error.ValidationError;
 import com.luxe.common.error.FieldError;
@@ -11,7 +12,6 @@ import com.luxe.notifications.datasource.NotificationsDataSource;
 import com.luxe.notifications.schema.types.*;
 import com.netflix.graphql.dgs.*;
 import graphql.schema.DataFetchingEnvironment;
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.HashMap;
 import java.util.List;
@@ -21,18 +21,15 @@ import java.util.Map;
 public class NotificationsDataFetcher {
 
     private final NotificationsDataSource dataSource;
+    private final AuthContextResolver authResolver;
 
-    public NotificationsDataFetcher(NotificationsDataSource dataSource) {
+    public NotificationsDataFetcher(NotificationsDataSource dataSource, AuthContextResolver authResolver) {
         this.dataSource = dataSource;
+        this.authResolver = authResolver;
     }
 
     private AuthContext getAuth(DataFetchingEnvironment dfe) {
-        try {
-            HttpServletRequest req = dfe.getGraphQlContext().get(HttpServletRequest.class);
-            if (req == null) return AuthContext.anonymous();
-            AuthContext ctx = (AuthContext) req.getAttribute("authContext");
-            return ctx != null ? ctx : AuthContext.anonymous();
-        } catch (Exception e) { return AuthContext.anonymous(); }
+        return authResolver.resolve(dfe);
     }
 
     // ── Queries ───────────────────────────────────────────────────────────────

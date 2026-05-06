@@ -3,6 +3,7 @@ package com.luxe.meetings.resolver;
 import com.luxe.meetings.schema.types.Hotel;
 
 import com.luxe.common.auth.AuthContext;
+import com.luxe.common.auth.AuthContextResolver;
 import com.luxe.common.error.NotFoundError;
 import com.luxe.common.error.ValidationError;
 import com.luxe.common.error.FieldError;
@@ -11,7 +12,6 @@ import com.luxe.meetings.datasource.MeetingsDataSource;
 import com.luxe.meetings.schema.types.*;
 import com.netflix.graphql.dgs.*;
 import graphql.schema.DataFetchingEnvironment;
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.HashMap;
 import java.util.List;
@@ -21,18 +21,15 @@ import java.util.Map;
 public class MeetingsDataFetcher {
 
     private final MeetingsDataSource dataSource;
+    private final AuthContextResolver authResolver;
 
-    public MeetingsDataFetcher(MeetingsDataSource dataSource) {
+    public MeetingsDataFetcher(MeetingsDataSource dataSource, AuthContextResolver authResolver) {
         this.dataSource = dataSource;
+        this.authResolver = authResolver;
     }
 
     private AuthContext getAuth(DataFetchingEnvironment dfe) {
-        try {
-            HttpServletRequest req = dfe.getGraphQlContext().get(HttpServletRequest.class);
-            if (req == null) return AuthContext.anonymous();
-            AuthContext ctx = (AuthContext) req.getAttribute("authContext");
-            return ctx != null ? ctx : AuthContext.anonymous();
-        } catch (Exception e) { return AuthContext.anonymous(); }
+        return authResolver.resolve(dfe);
     }
 
     // ── Queries ───────────────────────────────────────────────────────────────

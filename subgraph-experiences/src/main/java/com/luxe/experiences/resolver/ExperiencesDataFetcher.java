@@ -3,6 +3,7 @@ package com.luxe.experiences.resolver;
 import com.luxe.experiences.schema.types.Hotel;
 
 import com.luxe.common.auth.AuthContext;
+import com.luxe.common.auth.AuthContextResolver;
 import com.luxe.common.error.NotFoundError;
 import com.luxe.common.error.SlotUnavailableError;
 import com.luxe.common.error.ValidationError;
@@ -12,7 +13,6 @@ import com.luxe.experiences.datasource.ExperiencesDataSource;
 import com.luxe.experiences.schema.types.*;
 import com.netflix.graphql.dgs.*;
 import graphql.schema.DataFetchingEnvironment;
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -24,18 +24,15 @@ import java.util.Map;
 public class ExperiencesDataFetcher {
 
     private final ExperiencesDataSource dataSource;
+    private final AuthContextResolver authResolver;
 
-    public ExperiencesDataFetcher(ExperiencesDataSource dataSource) {
+    public ExperiencesDataFetcher(ExperiencesDataSource dataSource, AuthContextResolver authResolver) {
         this.dataSource = dataSource;
+        this.authResolver = authResolver;
     }
 
     private AuthContext getAuth(DataFetchingEnvironment dfe) {
-        try {
-            HttpServletRequest req = dfe.getGraphQlContext().get(HttpServletRequest.class);
-            if (req == null) return AuthContext.anonymous();
-            AuthContext ctx = (AuthContext) req.getAttribute("authContext");
-            return ctx != null ? ctx : AuthContext.anonymous();
-        } catch (Exception e) { return AuthContext.anonymous(); }
+        return authResolver.resolve(dfe);
     }
 
     // ── Queries ───────────────────────────────────────────────────────────────
@@ -43,9 +40,8 @@ public class ExperiencesDataFetcher {
     @DgsQuery
     public List<Experience> experiences(@InputArgument String hotelId,
                                           @InputArgument String category,
-                                          @InputArgument String date) {
-        LocalDate d = date != null ? LocalDate.parse(date) : null;
-        return dataSource.findExperiences(hotelId, category, d);
+                                          @InputArgument LocalDate date) {
+        return dataSource.findExperiences(hotelId, category, date);
     }
 
     @DgsQuery
@@ -55,9 +51,9 @@ public class ExperiencesDataFetcher {
 
     @DgsQuery
     public ExperienceAvailability experienceAvailability(@InputArgument String experienceId,
-                                                           @InputArgument String date,
+                                                           @InputArgument LocalDate date,
                                                            @InputArgument int partySize) {
-        return dataSource.availability(experienceId, LocalDate.parse(date), partySize);
+        return dataSource.availability(experienceId, date, partySize);
     }
 
     @DgsQuery
@@ -67,16 +63,16 @@ public class ExperiencesDataFetcher {
 
     @DgsQuery
     public RestaurantAvailability restaurantAvailability(@InputArgument String hotelId,
-                                                           @InputArgument String date,
+                                                           @InputArgument LocalDate date,
                                                            @InputArgument int partySize) {
-        return dataSource.restaurantAvailability(hotelId, LocalDate.parse(date), partySize);
+        return dataSource.restaurantAvailability(hotelId, date, partySize);
     }
 
     @DgsQuery
     public GolfTeeTimeAvailability golfTeeTimeAvailability(@InputArgument String hotelId,
-                                                             @InputArgument String date,
+                                                             @InputArgument LocalDate date,
                                                              @InputArgument int players) {
-        return dataSource.golfAvailability(hotelId, LocalDate.parse(date), players);
+        return dataSource.golfAvailability(hotelId, date, players);
     }
 
     @DgsQuery
@@ -171,12 +167,11 @@ public class ExperiencesDataFetcher {
         if (dataSource.findBookingById(bookingId).isEmpty())
             return new NotFoundError("ExperienceBooking", bookingId);
         ExperienceBooking b = dataSource.cancel(bookingId, reason);
-        Map<String, Object> result = new HashMap<>();
-        result.put("bookingId", b.getId());
-        result.put("refundAmount", null);
-        result.put("cancelledAt", b.getCancelledAt() != null ? b.getCancelledAt() : OffsetDateTime.now());
-        result.put("message", "Booking " + b.getConfirmationCode() + " cancelled");
-        return result;
+        return new CancelExperienceSuccess(
+                b.getId(),
+                null,
+                b.getCancelledAt() != null ? b.getCancelledAt() : OffsetDateTime.now(),
+                "Booking " + b.getConfirmationCode() + " cancelled");
     }
 
     // ── Federation field resolvers ────────────────────────────────────────────

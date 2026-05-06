@@ -315,8 +315,8 @@ public class MeetingsMockDataSource implements MeetingsDataSource {
                 (String) input.get("contactPhone"),
                 (String) input.get("eventName"),
                 (String) input.get("eventType"),
-                LocalDate.parse((String) input.get("startDate")),
-                LocalDate.parse((String) input.get("endDate")),
+                toDate(input.get("startDate")),
+                toDate(input.get("endDate")),
                 ((Number) input.get("attendees")).intValue(),
                 input.get("guestRoomsPerNight") != null
                         ? ((Number) input.get("guestRoomsPerNight")).intValue() : null,
@@ -335,9 +335,9 @@ public class MeetingsMockDataSource implements MeetingsDataSource {
         RFP rfp = rfps.get(rfpId);
         if (rfp == null) return null;
         LocalDate startDate = input.get("startDate") != null
-                ? LocalDate.parse((String) input.get("startDate")) : null;
+                ? toDate(input.get("startDate")) : null;
         LocalDate endDate = input.get("endDate") != null
-                ? LocalDate.parse((String) input.get("endDate")) : null;
+                ? toDate(input.get("endDate")) : null;
         Integer attendees = input.get("attendees") != null
                 ? ((Number) input.get("attendees")).intValue() : null;
         Integer rooms = input.get("guestRoomsPerNight") != null
@@ -378,13 +378,17 @@ public class MeetingsMockDataSource implements MeetingsDataSource {
                 (String) input.get("rfpId"),
                 (String) input.get("hotelId"),
                 code,
-                LocalDate.parse((String) input.get("startDate")),
-                LocalDate.parse((String) input.get("endDate")),
+                toDate(input.get("startDate")),
+                toDate(input.get("endDate")),
                 ((Number) input.get("rooms")).intValue(),
                 0, rate,
-                LocalDate.parse((String) input.get("cutoffDate")),
+                toDate(input.get("cutoffDate")),
                 "TENTATIVE");
         groupBlocks.put(id, block);
         return block;
+    }
+
+    private static LocalDate toDate(Object raw) {
+        return raw instanceof LocalDate ld ? ld : LocalDate.parse(raw.toString());
     }
 }

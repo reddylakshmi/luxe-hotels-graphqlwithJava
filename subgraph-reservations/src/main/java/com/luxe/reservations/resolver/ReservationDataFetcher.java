@@ -3,6 +3,7 @@ package com.luxe.reservations.resolver;
 import com.luxe.reservations.schema.types.GuestProfile;
 
 import com.luxe.common.auth.AuthContext;
+import com.luxe.common.auth.AuthContextResolver;
 import com.luxe.common.auth.AuthRole;
 import com.luxe.common.error.NotFoundError;
 import com.luxe.common.pagination.Connection;
@@ -10,7 +11,6 @@ import com.luxe.reservations.datasource.ReservationDataSource;
 import com.luxe.reservations.schema.types.*;
 import com.netflix.graphql.dgs.*;
 import graphql.schema.DataFetchingEnvironment;
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Base64;
 import java.util.List;
@@ -20,18 +20,15 @@ import java.util.Map;
 public class ReservationDataFetcher {
 
     private final ReservationDataSource dataSource;
+    private final AuthContextResolver authResolver;
 
-    public ReservationDataFetcher(ReservationDataSource dataSource) {
+    public ReservationDataFetcher(ReservationDataSource dataSource, AuthContextResolver authResolver) {
         this.dataSource = dataSource;
+        this.authResolver = authResolver;
     }
 
     private AuthContext getAuth(DataFetchingEnvironment dfe) {
-        try {
-            HttpServletRequest req = dfe.getGraphQlContext().get(HttpServletRequest.class);
-            if (req == null) return AuthContext.anonymous();
-            AuthContext ctx = (AuthContext) req.getAttribute("authContext");
-            return ctx != null ? ctx : AuthContext.anonymous();
-        } catch (Exception e) { return AuthContext.anonymous(); }
+        return authResolver.resolve(dfe);
     }
 
     // ── Queries ───────────────────────────────────────────────────────────────
@@ -124,15 +121,16 @@ public class ReservationDataFetcher {
                                      DataFetchingEnvironment dfe) {
         AuthContext auth = getAuth(dfe);
         auth.requireAuth();
-        String checkInStr  = (String) input.get("checkIn");
-        String checkOutStr = (String) input.get("checkOut");
-        if (checkInStr == null || checkOutStr == null) {
+        // DGS deserializes Date scalars to LocalDate; tolerate strings for direct callers.
+        Object rawIn  = input.get("checkIn");
+        Object rawOut = input.get("checkOut");
+        if (rawIn == null || rawOut == null) {
             return new com.luxe.common.error.ValidationError("MISSING_DATES",
                     "checkIn and checkOut are required",
                     List.of(new com.luxe.common.error.FieldError("checkIn", "Required")));
         }
-        java.time.LocalDate ci = java.time.LocalDate.parse(checkInStr);
-        java.time.LocalDate co = java.time.LocalDate.parse(checkOutStr);
+        java.time.LocalDate ci = rawIn  instanceof java.time.LocalDate ld ? ld : java.time.LocalDate.parse(rawIn.toString());
+        java.time.LocalDate co = rawOut instanceof java.time.LocalDate ld ? ld : java.time.LocalDate.parse(rawOut.toString());
         if (!ci.isBefore(co)) {
             return new com.luxe.common.error.ValidationError("INVALID_DATES",
                     "checkOut must be after checkIn",
@@ -187,8 +185,8 @@ public class ReservationDataFetcher {
         Reservation r = dataSource.findById(reservationId).orElse(null);
         if (r == null) return new NotFoundError("Reservation", reservationId);
         Reservation updated = dataSource.mobileCheckIn(reservationId, input);
-        return Map.of("reservation", updated, "digitalKey", updated.getDigitalKey(),
-                "message", "Mobile check-in successful. Your digital key is ready.");
+        return new MobileCheckInSuccess(updated, updated.getDigitalKey(),
+                "Mobile check-in successful. Your digital key is ready.");
     }
 
     @DgsMutation
@@ -198,9 +196,9 @@ public class ReservationDataFetcher {
         Reservation r = dataSource.findById(reservationId).orElse(null);
         if (r == null) return new NotFoundError("Reservation", reservationId);
         Reservation updated = dataSource.expressCheckout(reservationId);
-        return Map.of("reservationId", reservationId, "folio", updated.getFolio(),
-                "emailedTo", "guest@email.com",
-                "message", "Express checkout complete. Your folio has been emailed.");
+        return new ExpressCheckoutSuccess(reservationId, updated.getFolio(),
+                "guest@email.com",
+                "Express checkout complete. Your folio has been emailed.");
     }
 
     @DgsMutation

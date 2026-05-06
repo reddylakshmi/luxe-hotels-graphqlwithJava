@@ -187,8 +187,8 @@ public class CorporateMockDataSource implements CorporateDataSource {
                 (String) input.getOrDefault("tier", "STANDARD"),
                 (String) input.get("industry"),
                 "PENDING_REVIEW", pc, bc, List.of(),
-                LocalDate.parse((String) input.get("contractStartDate")),
-                LocalDate.parse((String) input.get("contractEndDate")),
+                toDate(input.get("contractStartDate")),
+                toDate(input.get("contractEndDate")),
                 Money.of(0, "USD"), OffsetDateTime.now());
         a.setTravelPolicy(buildPolicy("policy-" + id, id,
                 List.of(), Money.of(500, "USD"), Money.of(750, "USD"),
@@ -308,5 +308,9 @@ public class CorporateMockDataSource implements CorporateDataSource {
                         new TravelReport.MonthlySpend("2026-04", 24, Money.of(102000, "USD"))),
                 124850.0,
                 OffsetDateTime.now());
+    }
+
+    private static LocalDate toDate(Object raw) {
+        return raw instanceof LocalDate ld ? ld : LocalDate.parse(raw.toString());
     }
 }

@@ -1,13 +1,12 @@
 package com.luxe.property.resolver;
 
 import com.luxe.common.auth.AuthContext;
+import com.luxe.common.auth.AuthContextResolver;
 import com.luxe.common.error.NotFoundError;
 import com.luxe.property.datasource.PropertyDataSource;
 import com.luxe.property.schema.types.*;
 import com.netflix.graphql.dgs.*;
 import graphql.schema.DataFetchingEnvironment;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -16,15 +15,15 @@ import java.util.stream.Collectors;
 public class PropertyDataFetcher {
 
     private final PropertyDataSource dataSource;
+    private final AuthContextResolver authResolver;
 
-    public PropertyDataFetcher(PropertyDataSource dataSource) {
+    public PropertyDataFetcher(PropertyDataSource dataSource, AuthContextResolver authResolver) {
         this.dataSource = dataSource;
+        this.authResolver = authResolver;
     }
 
-    private AuthContext auth() {
-        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        if (attrs == null) return null;
-        return (AuthContext) attrs.getRequest().getAttribute("authContext");
+    private AuthContext auth(DataFetchingEnvironment dfe) {
+        return authResolver.resolve(dfe);
     }
 
     // ── Queries ───────────────────────────────────────────────────────────────
@@ -91,8 +90,9 @@ public class PropertyDataFetcher {
     // ── Mutations ─────────────────────────────────────────────────────────────
 
     @DgsMutation
-    public Object submitReview(@InputArgument Map<String, Object> input) {
-        AuthContext authContext = auth();
+    public Object submitReview(@InputArgument Map<String, Object> input,
+                                DataFetchingEnvironment dfe) {
+        AuthContext authContext = auth(dfe);
         if (authContext != null) authContext.requireAuth();
 
         String hotelId = (String) input.get("hotelId");

@@ -1,9 +1,16 @@
 package com.luxe.property.resolver;
 
+import com.luxe.common.auth.AuthContext;
+import com.luxe.common.auth.AuthContextResolver;
+import com.luxe.common.auth.AuthRole;
 import com.netflix.graphql.dgs.DgsQueryExecutor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 
 import java.util.List;
 import java.util.Map;
@@ -12,11 +19,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Resolver-level test: spins up the full Spring context for the property subgraph
- * and executes real GraphQL operations through DGS. This exercises schema parsing,
- * custom scalar coercion, resolver dispatch, and federation entity resolution all in one.
+ * and executes real GraphQL operations through DGS. Auth is overridden via a
+ * {@link TestConfiguration} so the auth-gated mutations (submitReview) execute
+ * their bodies, not just the auth gate.
  */
 @SpringBootTest
+@Import(PropertyDataFetcherTest.AuthOverrideConfig.class)
 class PropertyDataFetcherTest {
+
+    @TestConfiguration
+    static class AuthOverrideConfig {
+        @Bean @Primary
+        AuthContextResolver mockAuth() {
+            return dfe -> AuthContext.of("guest-001", "LUX0001234567", AuthRole.GUEST);
+        }
+    }
 
     @Autowired
     DgsQueryExecutor dgs;
