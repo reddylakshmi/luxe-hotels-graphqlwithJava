@@ -270,9 +270,11 @@ JWT-based, HMAC-signed. The flow:
 2. Include `Authorization: Bearer <token>` on subsequent requests.
 3. Spring Security is intentionally permissive at the filter layer (`common/auth/SecurityConfig`)
    so Apollo Router's introspection (`_service`, `_entities`) reaches the subgraph unauthenticated.
-4. `SubgraphAuthInterceptor` parses the bearer token and populates `AuthContext` on the request.
-5. Resolvers call `auth.requireAuth()` or `auth.requireRole(AuthRole.PROPERTY_STAFF)` to gate
-   sensitive operations.
+4. `SubgraphAuthInterceptor` parses the bearer token and stores it on the HTTP request.
+5. Resolvers obtain auth via the injected `AuthContextResolver` (production impl
+   `DefaultAuthContextResolver` reads from the request; tests substitute a `@Primary`
+   bean returning a fixed `AuthContext`). They then call `auth.requireAuth()` or
+   `auth.requireRole(AuthRole.PROPERTY_STAFF)` to gate sensitive operations.
 
 Roles: `GUEST < PROPERTY_STAFF < REVENUE_MGR < ADMIN`.
 
@@ -295,17 +297,35 @@ that produce monetary values can return it.
 
 ## Testing & coverage
 
-The project ships with ~200 unit + DGS integration tests across 25 test classes,
-covering common scalars/auth/pagination, every subgraph's mock data source, and
-real GraphQL execution through `DgsQueryExecutor` (including federation `_entities`
-resolution and auth gating).
+The project ships with **569 unit + DGS integration tests** across 33 test classes,
+covering common scalars/auth/pagination, every subgraph's mock data source, real
+GraphQL execution through `DgsQueryExecutor` (including federation `_entities`
+resolution), and authenticated mutation paths via a per-test `AuthContextResolver`
+override (see `common/auth/AuthContextResolver.java`).
 
 ```bash
-mvn test                              # full suite (~21s test execution, ~40s with JaCoCo)
+mvn test                              # full suite (~30s test execution, ~47s with JaCoCo + package)
 mvn -pl common test                   # foundation only
 mvn -pl subgraph-property test        # one subgraph
 mvn -pl common,subgraph-loyalty -am test   # subgraph + its deps
 ```
+
+Latest reactor totals: **83.7% instructions, 63.5% branches** (24,383 / 29,129
+instructions, 778 / 1,225 branches). Per-module breakdown:
+
+| Module        | Instructions | Branches |
+|---------------|--------------|----------|
+| common        | 70.7%        | 76.8%    |
+| property      | 75.5%        | 48.1%    |
+| guest         | 80.1%        | 51.1%    |
+| pricing       | 78.7%        | 60.6%    |
+| reservations  | 83.3%        | 54.1%    |
+| loyalty       | 88.1%        | 63.8%    |
+| content       | 77.5%        | 50.0%    |
+| experiences   | 93.1%        | 71.1%    |
+| meetings      | 90.1%        | 65.7%    |
+| notifications | 90.1%        | 87.0%    |
+| corporate     | 93.9%        | 87.8%    |
 
 JaCoCo is wired in the parent POM (`jacoco-maven-plugin` 0.8.12) and runs
 automatically during `mvn test`. Per-module HTML reports land at:
