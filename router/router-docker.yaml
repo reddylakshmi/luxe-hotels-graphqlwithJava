@@ -1,0 +1,68 @@
+supergraph:
+  listen: 0.0.0.0:4000
+  introspection: true
+
+sandbox:
+  enabled: true
+
+homepage:
+  enabled: false
+
+health_check:
+  listen: 0.0.0.0:8088
+  enabled: true
+  path: /health
+
+cors:
+  origins:
+    - http://localhost:3000
+    - https://luxehotels.com
+  methods:
+    - GET
+    - POST
+    - OPTIONS
+  headers:
+    - Content-Type
+    - Authorization
+    - x-request-id
+
+headers:
+  all:
+    request:
+      - propagate:
+          named: authorization
+      - propagate:
+          named: x-request-id
+      - propagate:
+          named: x-correlation-id
+
+traffic_shaping:
+  all:
+    timeout: 30s
+    compression:
+      request:
+        enabled: true
+      response:
+        enabled: true
+
+telemetry:
+  tracing:
+    propagation:
+      trace_context: true
+      baggage: true
+  metrics:
+    common:
+      service_name: luxe-graphql-router
+      service_namespace: luxe-hotels
+
+override_subgraph_url:
+  property:      http://subgraph-property:4001/graphql
+  guest:         http://subgraph-guest:4002/graphql
+  pricing:       http://subgraph-pricing:4003/graphql
+  reservations:  http://subgraph-reservations:4004/graphql
+  loyalty:       http://subgraph-loyalty:4005/graphql
+  content:       http://subgraph-content:4006/graphql
+  experiences:   http://subgraph-experiences:4007/graphql
+  meetings:      http://subgraph-meetings:4008/graphql
+  notifications: http://subgraph-notifications:4009/graphql
+  corporate:     http://subgraph-corporate:4010/graphql

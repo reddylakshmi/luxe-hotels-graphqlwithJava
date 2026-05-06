@@ -1,0 +1,13 @@
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-corporate/src/main/java/com/luxe/corporate/CorporateApplication.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-corporate/src/main/java/com/luxe/corporate/config/CorporateGraphQLConfig.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-corporate/src/main/java/com/luxe/corporate/datasource/CorporateDataSource.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-corporate/src/main/java/com/luxe/corporate/datasource/CorporateMockDataSource.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-corporate/src/main/java/com/luxe/corporate/resolver/CorporateDataFetcher.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-corporate/src/main/java/com/luxe/corporate/schema/types/CorporateAccount.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-corporate/src/main/java/com/luxe/corporate/schema/types/CorporateContact.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-corporate/src/main/java/com/luxe/corporate/schema/types/CorporateTraveler.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-corporate/src/main/java/com/luxe/corporate/schema/types/GuestProfile.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-corporate/src/main/java/com/luxe/corporate/schema/types/NegotiatedRate.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-corporate/src/main/java/com/luxe/corporate/schema/types/TravelApproval.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-corporate/src/main/java/com/luxe/corporate/schema/types/TravelPolicy.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-corporate/src/main/java/com/luxe/corporate/schema/types/TravelReport.java

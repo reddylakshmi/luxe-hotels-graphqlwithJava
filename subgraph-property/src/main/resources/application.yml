@@ -1,0 +1,39 @@
+server:
+  port: ${PORT:4001}
+  threads:
+    virtual:
+      enabled: true
+
+spring:
+  application:
+    name: luxe-property-service
+  graphql:
+    graphiql:
+      enabled: true
+    path: /graphql
+    schema:
+      inspection:
+        enabled: false
+
+luxe:
+  jwt:
+    secret: ${JWT_SECRET:luxe-hotels-super-secret-key-minimum-256-bits-long}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+
+logging:
+  level:
+    com.luxe: DEBUG

@@ -1,0 +1,202 @@
+extend schema
+  @link(url: "https://specs.apollo.dev/federation/v2.3",
+        import: ["@key", "@shareable", "@external", "@requires", "@provides"])
+
+interface Node { id: ID! }
+
+scalar DateTime
+scalar Date
+scalar URL
+scalar UUID
+
+# ── Queries ───────────────────────────────────────────────────────────────────
+
+type Query {
+  experiences(hotelId: ID!, category: ExperienceCategory, date: Date): [Experience!]!
+  experience(id: ID!): Experience
+  experienceAvailability(experienceId: ID!, date: Date!, partySize: Int!): ExperienceAvailability!
+  spaTreatmentMenu(hotelId: ID!): [SpaTreatment!]!
+  restaurantAvailability(hotelId: ID!, date: Date!, partySize: Int!): RestaurantAvailability!
+  golfTeeTimeAvailability(hotelId: ID!, date: Date!, players: Int!): GolfTeeTimeAvailability!
+  myExperienceBookings(first: Int, after: String, upcoming: Boolean): ExperienceBookingConnection!
+}
+
+# ── Mutations ─────────────────────────────────────────────────────────────────
+
+type Mutation {
+  bookExperience(input: BookExperienceInput!, idempotencyKey: UUID!): BookExperienceResult!
+  bookDining(input: BookDiningInput!, idempotencyKey: UUID!): BookDiningResult!
+  bookGolfTeeTime(input: BookGolfInput!, idempotencyKey: UUID!): BookGolfResult!
+  cancelExperienceBooking(bookingId: ID!, reason: String): CancelExperienceResult!
+}
+
+# ── Core types ────────────────────────────────────────────────────────────────
+
+type Experience implements Node @key(fields: "id") {
+  id: ID!
+  hotelId: ID!
+  hotel: Hotel!
+  name: String!
+  category: ExperienceCategory!
+  description: String!
+  longDescription: String!
+  durationMinutes: Int
+  pricePerPerson: Money!
+  currency: String!
+  maxParticipants: Int!
+  minParticipants: Int!
+  requiresBooking: Boolean!
+  highlights: [String!]!
+  included: [String!]!
+  bringYourOwn: [String!]!
+  images: [URL!]!
+  featured: Boolean!
+  available: Boolean!
+  difficulty: ExperienceDifficulty
+  ageMinimum: Int
+}
+
+type ExperienceAvailability {
+  experienceId: ID!
+  date: Date!
+  partySize: Int!
+  slots: [TimeSlot!]!
+  fullyBooked: Boolean!
+  nextAvailableDate: Date
+}
+
+type TimeSlot {
+  slotToken: String!
+  startTime: String!
+  endTime: String!
+  available: Boolean!
+  remainingCapacity: Int!
+  pricePerPerson: Money!
+  guideName: String
+}
+
+type SpaTreatment implements Node {
+  id: ID!
+  hotelId: ID!
+  name: String!
+  category: SpaCategory!
+  description: String!
+  durationMinutes: Int!
+  pricePerPerson: Money!
+  modalities: [String!]!
+  contraindications: [String!]!
+  ageMinimum: Int
+}
+
+type RestaurantAvailability {
+  hotelId: ID!
+  date: Date!
+  partySize: Int!
+  restaurants: [RestaurantSlots!]!
+}
+
+type RestaurantSlots {
+  restaurantId: ID!
+  restaurantName: String!
+  cuisine: String!
+  michelinStars: Int
+  slots: [TimeSlot!]!
+}
+
+type GolfTeeTimeAvailability {
+  hotelId: ID!
+  courseId: ID!
+  courseName: String!
+  date: Date!
+  players: Int!
+  slots: [TimeSlot!]!
+}
+
+type ExperienceBooking implements Node @key(fields: "id") {
+  id: ID!
+  experienceId: ID!
+  guestId: ID!
+  hotelId: ID!
+  status: BookingStatus!
+  date: Date!
+  startTime: String!
+  endTime: String
+  participants: Int!
+  totalPrice: Money!
+  specialRequests: String
+  confirmationCode: String!
+  bookedAt: DateTime!
+  cancelledAt: DateTime
+  cancellationReason: String
+}
+
+type Money @shareable { amount: String! currency: String! }
+
+# ── Federation ────────────────────────────────────────────────────────────────
+
+type Hotel @key(fields: "id") {
+  id: ID!
+  experiences(category: ExperienceCategory): [Experience!]!
+  spaTreatments: [SpaTreatment!]!
+}
+
+# ── Connections / unions ──────────────────────────────────────────────────────
+
+type ExperienceBookingConnection {
+  edges: [ExperienceBookingEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+type ExperienceBookingEdge { node: ExperienceBooking! cursor: String! }
+type PageInfo @shareable { hasNextPage: Boolean! hasPreviousPage: Boolean! startCursor: String endCursor: String }
+
+union BookExperienceResult = ExperienceBooking | SlotUnavailableError | ValidationError | NotFoundError
+union BookDiningResult     = ExperienceBooking | SlotUnavailableError | ValidationError | NotFoundError
+union BookGolfResult       = ExperienceBooking | SlotUnavailableError | ValidationError | NotFoundError
+union CancelExperienceResult = CancelExperienceSuccess | NotFoundError | ValidationError
+
+type CancelExperienceSuccess { bookingId: ID! refundAmount: Money cancelledAt: DateTime! message: String! }
+
+# ── Errors ────────────────────────────────────────────────────────────────────
+
+type NotFoundError @shareable { code: String! message: String! resourceType: String! }
+type ValidationError @shareable { code: String! message: String! fieldErrors: [FieldError!]! }
+type SlotUnavailableError { code: String! message: String! slotToken: String! suggestedAlternativeTokens: [String!]! }
+type FieldError @shareable { field: String! message: String! }
+
+# ── Inputs / enums ────────────────────────────────────────────────────────────
+
+input BookExperienceInput {
+  experienceId: ID!
+  slotToken: String!
+  participants: Int!
+  specialRequests: String
+}
+
+input BookDiningInput {
+  restaurantId: ID!
+  slotToken: String!
+  partySize: Int!
+  specialRequests: String
+}
+
+input BookGolfInput {
+  courseId: ID!
+  slotToken: String!
+  players: Int!
+  cartRequested: Boolean
+}
+
+enum ExperienceCategory {
+  SPA_WELLNESS CULINARY ADVENTURE CULTURAL WATER_SPORTS
+  GOLF FITNESS KIDS_CLUB NIGHTLIFE TOURS PRIVATE_DINING YACHT
+}
+
+enum ExperienceDifficulty { EASY MODERATE STRENUOUS EXPERT }
+
+enum SpaCategory {
+  MASSAGE FACIAL BODY_TREATMENT HYDROTHERAPY THERMAL
+  SIGNATURE COUPLES MENS_GROOMING WELLNESS_RITUAL
+}
+
+enum BookingStatus { CONFIRMED PENDING CANCELLED COMPLETED NO_SHOW }

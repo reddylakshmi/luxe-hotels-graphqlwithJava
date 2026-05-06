@@ -1,0 +1,4291 @@
+schema
+  @link(url: "https://specs.apollo.dev/link/v1.0")
+  @link(url: "https://specs.apollo.dev/join/v0.3", for: EXECUTION)
+{
+  query: Query
+  mutation: Mutation
+}
+
+directive @join__enumValue(graph: join__Graph!) repeatable on ENUM_VALUE
+
+directive @join__field(graph: join__Graph, requires: join__FieldSet, provides: join__FieldSet, type: String, external: Boolean, override: String, usedOverridden: Boolean) repeatable on FIELD_DEFINITION | INPUT_FIELD_DEFINITION
+
+directive @join__graph(name: String!, url: String!) on ENUM_VALUE
+
+directive @join__implements(graph: join__Graph!, interface: String!) repeatable on OBJECT | INTERFACE
+
+directive @join__type(graph: join__Graph!, key: join__FieldSet, extension: Boolean! = false, resolvable: Boolean! = true, isInterfaceObject: Boolean! = false) repeatable on OBJECT | INTERFACE | UNION | ENUM | INPUT_OBJECT | SCALAR
+
+directive @join__unionMember(graph: join__Graph!, member: String!) repeatable on UNION
+
+directive @link(url: String, as: String, for: link__Purpose, import: [link__Import]) repeatable on SCHEMA
+
+type AccessibilityNeeds
+  @join__type(graph: GUEST)
+{
+  wheelchairAccessible: Boolean
+  rollInShower: Boolean
+  hearingAccessible: Boolean
+}
+
+input AddOnInput
+  @join__type(graph: RESERVATIONS)
+{
+  type: String!
+  quantity: Int!
+  date: Date
+}
+
+input AddPaymentMethodInput
+  @join__type(graph: GUEST)
+{
+  type: PaymentMethodType!
+  pspToken: String!
+  brand: String!
+  lastFour: String!
+  expiryMonth: Int!
+  expiryYear: Int!
+  holderName: String!
+  isDefault: Boolean
+}
+
+union AddPaymentMethodResult
+  @join__type(graph: GUEST)
+  @join__unionMember(graph: GUEST, member: "PaymentMethod")
+  @join__unionMember(graph: GUEST, member: "ValidationError")
+  @join__unionMember(graph: GUEST, member: "AuthorizationError")
+ = PaymentMethod | ValidationError | AuthorizationError
+
+type Address
+  @join__type(graph: PROPERTY)
+{
+  line1: String
+  line2: String
+  city: String!
+  state: String
+  postalCode: String
+  countryCode: CountryCode!
+  countryName: String!
+}
+
+input AddressInput
+  @join__type(graph: RESERVATIONS)
+{
+  line1: String!
+  line2: String
+  city: String!
+  stateCode: String
+  postalCode: String!
+  countryCode: String!
+}
+
+enum AddressType
+  @join__type(graph: GUEST)
+{
+  HOME @join__enumValue(graph: GUEST)
+  WORK @join__enumValue(graph: GUEST)
+  BILLING @join__enumValue(graph: GUEST)
+  OTHER @join__enumValue(graph: GUEST)
+}
+
+input AddTravelerInput
+  @join__type(graph: CORPORATE)
+{
+  accountId: ID!
+  guestId: ID!
+  employeeId: String
+  department: String
+  costCenter: String
+  managerEmail: String
+  travelClass: TravelClass
+}
+
+union AddTravelerResult
+  @join__type(graph: CORPORATE)
+  @join__unionMember(graph: CORPORATE, member: "CorporateTraveler")
+  @join__unionMember(graph: CORPORATE, member: "ValidationError")
+  @join__unionMember(graph: CORPORATE, member: "NotFoundError")
+ = CorporateTraveler | ValidationError | NotFoundError
+
+input AirlineTransferInput
+  @join__type(graph: LOYALTY)
+{
+  partnerId: ID!
+  partnerAccountNumber: String!
+  points: Int!
+}
+
+union AirlineTransferResult
+  @join__type(graph: LOYALTY)
+  @join__unionMember(graph: LOYALTY, member: "AirlineTransferSuccess")
+  @join__unionMember(graph: LOYALTY, member: "InsufficientPointsError")
+  @join__unionMember(graph: LOYALTY, member: "ValidationError")
+  @join__unionMember(graph: LOYALTY, member: "NotFoundError")
+ = AirlineTransferSuccess | InsufficientPointsError | ValidationError | NotFoundError
+
+type AirlineTransferSuccess
+  @join__type(graph: LOYALTY)
+{
+  transactionId: ID!
+  pointsDeducted: Int!
+  partnerMilesAwarded: Int!
+  partner: LoyaltyPartner!
+  estimatedDeliveryDays: Int!
+  message: String!
+}
+
+type AirportInfo
+  @join__type(graph: PROPERTY)
+{
+  iataCode: String!
+  name: String!
+  distanceKm: Float!
+  transferTime: Int
+}
+
+type AlreadyEnrolledError
+  @join__type(graph: LOYALTY)
+{
+  code: String!
+  message: String!
+  existingLoyaltyNumber: String!
+}
+
+type Amenity
+  @join__type(graph: PROPERTY)
+{
+  id: ID!
+  code: String!
+  name: String!
+  category: AmenityCategory!
+  description: String
+  iconUrl: URL
+  isPremium: Boolean!
+  fee: Money
+  availableHours: String
+}
+
+enum AmenityCategory
+  @join__type(graph: PROPERTY)
+{
+  POOL @join__enumValue(graph: PROPERTY)
+  SPA @join__enumValue(graph: PROPERTY)
+  FITNESS @join__enumValue(graph: PROPERTY)
+  DINING @join__enumValue(graph: PROPERTY)
+  BUSINESS @join__enumValue(graph: PROPERTY)
+  PARKING @join__enumValue(graph: PROPERTY)
+  TRANSPORT @join__enumValue(graph: PROPERTY)
+  CONNECTIVITY @join__enumValue(graph: PROPERTY)
+  RECREATION @join__enumValue(graph: PROPERTY)
+  WELLNESS @join__enumValue(graph: PROPERTY)
+}
+
+union ApplyGiftCardResult
+  @join__type(graph: RESERVATIONS)
+  @join__unionMember(graph: RESERVATIONS, member: "ReservationRateBreakdown")
+  @join__unionMember(graph: RESERVATIONS, member: "ValidationError")
+  @join__unionMember(graph: RESERVATIONS, member: "NotFoundError")
+ = ReservationRateBreakdown | ValidationError | NotFoundError
+
+enum AppointmentStatus
+  @join__type(graph: RESERVATIONS)
+{
+  CONFIRMED @join__enumValue(graph: RESERVATIONS)
+  IN_PROGRESS @join__enumValue(graph: RESERVATIONS)
+  COMPLETED @join__enumValue(graph: RESERVATIONS)
+  CANCELLED @join__enumValue(graph: RESERVATIONS)
+  NO_SHOW @join__enumValue(graph: RESERVATIONS)
+}
+
+enum ApprovalDecision
+  @join__type(graph: CORPORATE)
+{
+  APPROVE @join__enumValue(graph: CORPORATE)
+  DENY @join__enumValue(graph: CORPORATE)
+}
+
+type ApprovalLevel
+  @join__type(graph: CORPORATE)
+{
+  level: Int!
+  threshold: Money!
+  approverRole: String!
+  approverEmail: String
+}
+
+input ApprovalLevelInput
+  @join__type(graph: CORPORATE)
+{
+  level: Int!
+  thresholdUsd: Float!
+  approverRole: String!
+  approverEmail: String
+}
+
+enum ApprovalStatus
+  @join__type(graph: CORPORATE)
+{
+  PENDING @join__enumValue(graph: CORPORATE)
+  APPROVED @join__enumValue(graph: CORPORATE)
+  DENIED @join__enumValue(graph: CORPORATE)
+  EXPIRED @join__enumValue(graph: CORPORATE)
+  CANCELLED @join__enumValue(graph: CORPORATE)
+}
+
+type Article implements Node
+  @join__implements(graph: CONTENT, interface: "Node")
+  @join__type(graph: CONTENT, key: "id")
+{
+  id: ID!
+  slug: String!
+  category: ArticleCategory!
+  status: ContentStatus!
+  title: LocalizedContent!
+  subtitle: LocalizedContent
+  body: LocalizedContent!
+  excerpt: LocalizedContent!
+  heroImage: MediaAsset!
+  gallery: [MediaAsset!]!
+  author: ContentAuthor!
+  tags: [String!]!
+  relatedHotels: [Hotel!]!
+  readTimeMinutes: Int!
+  publishedAt: DateTime!
+  updatedAt: DateTime!
+}
+
+enum ArticleCategory
+  @join__type(graph: CONTENT)
+{
+  DESTINATION @join__enumValue(graph: CONTENT)
+  FOOD_AND_WINE @join__enumValue(graph: CONTENT)
+  WELLNESS @join__enumValue(graph: CONTENT)
+  DESIGN @join__enumValue(graph: CONTENT)
+  PEOPLE @join__enumValue(graph: CONTENT)
+  SUSTAINABILITY @join__enumValue(graph: CONTENT)
+  CULTURE @join__enumValue(graph: CONTENT)
+  FAMILY @join__enumValue(graph: CONTENT)
+  ROMANCE @join__enumValue(graph: CONTENT)
+  LUXURY_TRENDS @join__enumValue(graph: CONTENT)
+}
+
+type ArticleConnection
+  @join__type(graph: CONTENT)
+{
+  edges: [ArticleEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ArticleEdge
+  @join__type(graph: CONTENT)
+{
+  node: Article!
+  cursor: String!
+}
+
+input ArticleFilter
+  @join__type(graph: CONTENT)
+{
+  category: ArticleCategory
+  tag: String
+  hotelId: ID
+}
+
+type Attraction
+  @join__type(graph: PROPERTY)
+{
+  id: ID!
+  name: String!
+  category: String!
+  distanceKm: Float!
+  rating: Float
+}
+
+type AuthenticationError
+  @join__type(graph: GUEST)
+  @join__type(graph: PROPERTY)
+{
+  code: String!
+  message: String!
+}
+
+type AuthorizationError
+  @join__type(graph: GUEST)
+  @join__type(graph: PROPERTY)
+  @join__type(graph: RESERVATIONS)
+{
+  code: String!
+  message: String!
+  requiredRole: String
+}
+
+type AuthPayload
+  @join__type(graph: GUEST)
+{
+  accessToken: String!
+  refreshToken: String!
+  expiresIn: Int!
+  tokenType: String!
+  guest: GuestProfile!
+  isNewAccount: Boolean
+}
+
+type AvailabilityResult
+  @join__type(graph: PRICING)
+{
+  hotel: Hotel!
+  checkIn: Date!
+  checkOut: Date!
+  nights: Int!
+  guestCount: GuestCount!
+  currency: String!
+  roomAvailabilities: [RoomAvailability!]!
+  lowestRate: Money
+  rateSummaryByDate: [DateRateSummary!]!
+  searchToken: String!
+  expiresAt: DateTime!
+}
+
+enum AVCategory
+  @join__type(graph: MEETINGS)
+{
+  PROJECTION @join__enumValue(graph: MEETINGS)
+  AUDIO @join__enumValue(graph: MEETINGS)
+  LIGHTING @join__enumValue(graph: MEETINGS)
+  STAGING @join__enumValue(graph: MEETINGS)
+  VIDEO_CONFERENCING @join__enumValue(graph: MEETINGS)
+  TRANSLATION @join__enumValue(graph: MEETINGS)
+}
+
+type AVEquipment
+  @join__type(graph: MEETINGS)
+{
+  category: AVCategory!
+  name: String!
+  model: String
+  quantity: Int!
+  includedInRate: Boolean!
+  rentalCost: Money
+}
+
+type Award
+  @join__type(graph: PROPERTY)
+{
+  name: String!
+  issuedBy: String!
+  year: Int!
+}
+
+type BedConfiguration
+  @join__type(graph: PROPERTY)
+{
+  type: BedType!
+  count: Int!
+}
+
+type BedPreferences
+  @join__type(graph: GUEST)
+{
+  type: BedType
+  preferredConfiguration: String
+}
+
+input BedPreferencesInput
+  @join__type(graph: GUEST)
+{
+  type: BedType
+  preferredConfiguration: String
+}
+
+enum BedType
+  @join__type(graph: GUEST)
+  @join__type(graph: PROPERTY)
+{
+  KING @join__enumValue(graph: GUEST) @join__enumValue(graph: PROPERTY)
+  QUEEN @join__enumValue(graph: GUEST) @join__enumValue(graph: PROPERTY)
+  DOUBLE_DOUBLE @join__enumValue(graph: GUEST) @join__enumValue(graph: PROPERTY)
+  TWIN @join__enumValue(graph: GUEST) @join__enumValue(graph: PROPERTY)
+  SINGLE @join__enumValue(graph: GUEST) @join__enumValue(graph: PROPERTY)
+  SOFA_BED @join__enumValue(graph: GUEST) @join__enumValue(graph: PROPERTY)
+  BUNK @join__enumValue(graph: GUEST) @join__enumValue(graph: PROPERTY)
+}
+
+enum BenefitCategory
+  @join__type(graph: LOYALTY)
+{
+  ROOM @join__enumValue(graph: LOYALTY)
+  CHECKIN @join__enumValue(graph: LOYALTY)
+  CHECKOUT @join__enumValue(graph: LOYALTY)
+  POINTS @join__enumValue(graph: LOYALTY)
+  DINING @join__enumValue(graph: LOYALTY)
+  AMENITY @join__enumValue(graph: LOYALTY)
+  CONCIERGE @join__enumValue(graph: LOYALTY)
+  LOUNGE @join__enumValue(graph: LOYALTY)
+  TRANSPORT @join__enumValue(graph: LOYALTY)
+  INTERNET @join__enumValue(graph: LOYALTY)
+  LAUNDRY @join__enumValue(graph: LOYALTY)
+  CERTIFICATE @join__enumValue(graph: LOYALTY)
+}
+
+enum BillingCategory
+  @join__type(graph: RESERVATIONS)
+{
+  ROOM @join__enumValue(graph: RESERVATIONS)
+  DINING @join__enumValue(graph: RESERVATIONS)
+  SPA @join__enumValue(graph: RESERVATIONS)
+  TRANSPORT @join__enumValue(graph: RESERVATIONS)
+  ADD_ON @join__enumValue(graph: RESERVATIONS)
+  TAX @join__enumValue(graph: RESERVATIONS)
+  FEE @join__enumValue(graph: RESERVATIONS)
+  DISCOUNT @join__enumValue(graph: RESERVATIONS)
+}
+
+type BillingLineItem
+  @join__type(graph: RESERVATIONS)
+{
+  id: ID!
+  date: Date!
+  description: String!
+  amount: Money!
+  category: BillingCategory!
+  quantity: Int!
+}
+
+input BookDiningInput
+  @join__type(graph: EXPERIENCES)
+{
+  restaurantId: ID!
+  slotToken: String!
+  partySize: Int!
+  specialRequests: String
+}
+
+union BookDiningResult
+  @join__type(graph: EXPERIENCES)
+  @join__unionMember(graph: EXPERIENCES, member: "ExperienceBooking")
+  @join__unionMember(graph: EXPERIENCES, member: "SlotUnavailableError")
+  @join__unionMember(graph: EXPERIENCES, member: "ValidationError")
+  @join__unionMember(graph: EXPERIENCES, member: "NotFoundError")
+ = ExperienceBooking | SlotUnavailableError | ValidationError | NotFoundError
+
+input BookExperienceInput
+  @join__type(graph: EXPERIENCES)
+{
+  experienceId: ID!
+  slotToken: String!
+  participants: Int!
+  specialRequests: String
+}
+
+union BookExperienceResult
+  @join__type(graph: EXPERIENCES)
+  @join__unionMember(graph: EXPERIENCES, member: "ExperienceBooking")
+  @join__unionMember(graph: EXPERIENCES, member: "SlotUnavailableError")
+  @join__unionMember(graph: EXPERIENCES, member: "ValidationError")
+  @join__unionMember(graph: EXPERIENCES, member: "NotFoundError")
+ = ExperienceBooking | SlotUnavailableError | ValidationError | NotFoundError
+
+input BookGolfInput
+  @join__type(graph: EXPERIENCES)
+{
+  courseId: ID!
+  slotToken: String!
+  players: Int!
+  cartRequested: Boolean
+}
+
+union BookGolfResult
+  @join__type(graph: EXPERIENCES)
+  @join__unionMember(graph: EXPERIENCES, member: "ExperienceBooking")
+  @join__unionMember(graph: EXPERIENCES, member: "SlotUnavailableError")
+  @join__unionMember(graph: EXPERIENCES, member: "ValidationError")
+  @join__unionMember(graph: EXPERIENCES, member: "NotFoundError")
+ = ExperienceBooking | SlotUnavailableError | ValidationError | NotFoundError
+
+input BookGroupRoomInput
+  @join__type(graph: MEETINGS)
+{
+  rfpId: ID
+  hotelId: ID!
+  startDate: Date!
+  endDate: Date!
+  rooms: Int!
+  rate: Float!
+  currency: String!
+  cutoffDate: Date!
+}
+
+union BookGroupRoomResult
+  @join__type(graph: MEETINGS)
+  @join__unionMember(graph: MEETINGS, member: "GroupBlock")
+  @join__unionMember(graph: MEETINGS, member: "ValidationError")
+  @join__unionMember(graph: MEETINGS, member: "NotFoundError")
+ = GroupBlock | ValidationError | NotFoundError
+
+enum BookingStatus
+  @join__type(graph: EXPERIENCES)
+{
+  CONFIRMED @join__enumValue(graph: EXPERIENCES)
+  PENDING @join__enumValue(graph: EXPERIENCES)
+  CANCELLED @join__enumValue(graph: EXPERIENCES)
+  COMPLETED @join__enumValue(graph: EXPERIENCES)
+  NO_SHOW @join__enumValue(graph: EXPERIENCES)
+}
+
+input BookSpaInput
+  @join__type(graph: RESERVATIONS)
+{
+  reservationId: ID!
+  treatmentId: ID!
+  date: Date!
+  time: String!
+  therapistPreference: String
+  specialRequests: String
+}
+
+union BookSpaResult
+  @join__type(graph: RESERVATIONS)
+  @join__unionMember(graph: RESERVATIONS, member: "SpaAppointment")
+  @join__unionMember(graph: RESERVATIONS, member: "ValidationError")
+  @join__unionMember(graph: RESERVATIONS, member: "NotFoundError")
+ = SpaAppointment | ValidationError | NotFoundError
+
+input BookTransportInput
+  @join__type(graph: RESERVATIONS)
+{
+  reservationId: ID!
+  type: TransportationType!
+  pickupLocation: String!
+  dropoffLocation: String!
+  scheduledAt: DateTime!
+  vehicleType: String
+  passengerCount: Int!
+  notes: String
+}
+
+union BookTransportResult
+  @join__type(graph: RESERVATIONS)
+  @join__unionMember(graph: RESERVATIONS, member: "TransportationBooking")
+  @join__unionMember(graph: RESERVATIONS, member: "ValidationError")
+  @join__unionMember(graph: RESERVATIONS, member: "NotFoundError")
+ = TransportationBooking | ValidationError | NotFoundError
+
+type Brand implements Node
+  @join__implements(graph: PROPERTY, interface: "Node")
+  @join__type(graph: PROPERTY, key: "id")
+{
+  id: ID!
+  code: String!
+  name: String!
+  slug: String!
+  tier: BrandTier!
+  tagline: String
+  description: String
+  logoUrl: URL
+  heroImageUrl: URL
+  accentColor: String
+  loyaltyPointsMultiplier: Float!
+  numberOfProperties: Int!
+  featuredHotels(first: Int = 6): [Hotel!]!
+  hotels(first: Int, after: String): HotelConnection!
+  sustainabilityCommitment: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type BrandConnection
+  @join__type(graph: PROPERTY)
+{
+  edges: [BrandEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type BrandEdge
+  @join__type(graph: PROPERTY)
+{
+  node: Brand!
+  cursor: String!
+}
+
+type BrandPillar
+  @join__type(graph: CONTENT)
+{
+  code: String!
+  title: LocalizedContent!
+  description: LocalizedContent!
+  icon: String
+}
+
+type BrandSpend
+  @join__type(graph: CORPORATE)
+{
+  brand: String!
+  trips: Int!
+  totalSpend: Money!
+}
+
+type BrandStory
+  @join__type(graph: CONTENT)
+{
+  id: ID!
+  title: LocalizedContent!
+  tagline: LocalizedContent!
+  body: LocalizedContent!
+  pillars: [BrandPillar!]!
+  heroImage: MediaAsset!
+  videoUrl: URL
+  updatedAt: DateTime!
+}
+
+enum BrandTier
+  @join__type(graph: PROPERTY)
+{
+  SELECT @join__enumValue(graph: PROPERTY)
+  PREMIUM @join__enumValue(graph: PROPERTY)
+  LUXURY @join__enumValue(graph: PROPERTY)
+}
+
+input BuyPointsInput
+  @join__type(graph: LOYALTY)
+{
+  points: Int!
+  paymentMethodId: ID!
+}
+
+union BuyPointsResult
+  @join__type(graph: LOYALTY)
+  @join__unionMember(graph: LOYALTY, member: "PointsTransaction")
+  @join__unionMember(graph: LOYALTY, member: "PaymentDeclinedError")
+  @join__unionMember(graph: LOYALTY, member: "ValidationError")
+ = PointsTransaction | PaymentDeclinedError | ValidationError
+
+union CancelExperienceResult
+  @join__type(graph: EXPERIENCES)
+  @join__unionMember(graph: EXPERIENCES, member: "CancelExperienceSuccess")
+  @join__unionMember(graph: EXPERIENCES, member: "NotFoundError")
+  @join__unionMember(graph: EXPERIENCES, member: "ValidationError")
+ = CancelExperienceSuccess | NotFoundError | ValidationError
+
+type CancelExperienceSuccess
+  @join__type(graph: EXPERIENCES)
+{
+  bookingId: ID!
+  refundAmount: Money
+  cancelledAt: DateTime!
+  message: String!
+}
+
+type CancellationPolicy
+  @join__type(graph: PRICING)
+  @join__type(graph: RESERVATIONS)
+{
+  type: CancellationPolicyType!
+  description: String!
+  deadlineHours: Int
+  penaltyAmount: Money
+  penaltyPercent: Float
+}
+
+enum CancellationPolicyType
+  @join__type(graph: PRICING)
+  @join__type(graph: RESERVATIONS)
+{
+  FREE_CANCELLATION @join__enumValue(graph: PRICING) @join__enumValue(graph: RESERVATIONS)
+  NON_REFUNDABLE @join__enumValue(graph: PRICING) @join__enumValue(graph: RESERVATIONS)
+  PARTIAL_REFUND @join__enumValue(graph: PRICING) @join__enumValue(graph: RESERVATIONS)
+  FLEXIBLE @join__enumValue(graph: PRICING) @join__enumValue(graph: RESERVATIONS)
+}
+
+type CancellationRecord
+  @join__type(graph: RESERVATIONS)
+{
+  cancelledAt: DateTime!
+  reason: String
+  cancelledBy: String!
+  refundAmount: Money
+  refundStatus: String
+  cancellationNumber: String!
+}
+
+input CancelReservationInput
+  @join__type(graph: RESERVATIONS)
+{
+  reason: String
+  acceptPenalty: Boolean
+  refundToOriginalPayment: Boolean
+}
+
+union CancelReservationResult
+  @join__type(graph: RESERVATIONS)
+  @join__unionMember(graph: RESERVATIONS, member: "Reservation")
+  @join__unionMember(graph: RESERVATIONS, member: "ValidationError")
+  @join__unionMember(graph: RESERVATIONS, member: "AuthorizationError")
+  @join__unionMember(graph: RESERVATIONS, member: "NotFoundError")
+ = Reservation | ValidationError | AuthorizationError | NotFoundError
+
+union CancelRFPResult
+  @join__type(graph: MEETINGS)
+  @join__unionMember(graph: MEETINGS, member: "RFP")
+  @join__unionMember(graph: MEETINGS, member: "ValidationError")
+  @join__unionMember(graph: MEETINGS, member: "NotFoundError")
+ = RFP | ValidationError | NotFoundError
+
+type CapacityStyle
+  @join__type(graph: MEETINGS)
+{
+  setup: SetupStyle!
+  capacity: Int!
+}
+
+type CategoryPreference
+  @join__type(graph: NOTIFICATIONS)
+{
+  category: NotificationCategory!
+  enabledChannels: [NotificationChannel!]!
+}
+
+input CategoryPreferenceInput
+  @join__type(graph: NOTIFICATIONS)
+{
+  category: NotificationCategory!
+  enabledChannels: [NotificationChannel!]!
+}
+
+type CategoryRatings
+  @join__type(graph: PROPERTY)
+{
+  cleanliness: Float
+  service: Float
+  location: Float
+  value: Float
+  comfort: Float
+  facilities: Float
+}
+
+input CategoryRatingsInput
+  @join__type(graph: PROPERTY)
+{
+  cleanliness: Float
+  service: Float
+  location: Float
+  value: Float
+  comfort: Float
+}
+
+type CateringCourse
+  @join__type(graph: MEETINGS)
+{
+  name: String!
+  description: String!
+}
+
+type CateringMenu implements Node
+  @join__implements(graph: MEETINGS, interface: "Node")
+  @join__type(graph: MEETINGS)
+{
+  id: ID!
+  hotelId: ID!
+  name: String!
+  description: String!
+  pricePerPerson: Money!
+  minimumGuests: Int!
+  courses: [CateringCourse!]!
+  beverageOptions: [String!]!
+}
+
+type Certificate implements Node
+  @join__implements(graph: LOYALTY, interface: "Node")
+  @join__type(graph: LOYALTY)
+{
+  id: ID!
+  type: CertificateType!
+  name: String!
+  description: String!
+  status: CertificateStatus!
+  issuedAt: DateTime!
+  expiresAt: DateTime!
+  redeemedAt: DateTime
+  reservationId: ID
+  blackoutDates: [Date!]!
+  restrictions: [String!]!
+}
+
+type CertificateRedemption
+  @join__type(graph: LOYALTY)
+{
+  certificate: Certificate!
+  reservationId: ID!
+  appliedAt: DateTime!
+  message: String!
+}
+
+enum CertificateStatus
+  @join__type(graph: LOYALTY)
+{
+  ACTIVE @join__enumValue(graph: LOYALTY)
+  REDEEMED @join__enumValue(graph: LOYALTY)
+  EXPIRED @join__enumValue(graph: LOYALTY)
+  PENDING @join__enumValue(graph: LOYALTY)
+  REVOKED @join__enumValue(graph: LOYALTY)
+}
+
+enum CertificateType
+  @join__type(graph: LOYALTY)
+{
+  FREE_NIGHT @join__enumValue(graph: LOYALTY)
+  SUITE_NIGHT @join__enumValue(graph: LOYALTY)
+  BREAKFAST @join__enumValue(graph: LOYALTY)
+  DINING_CREDIT @join__enumValue(graph: LOYALTY)
+  SPA_CREDIT @join__enumValue(graph: LOYALTY)
+  EARLY_CHECKIN @join__enumValue(graph: LOYALTY)
+  LATE_CHECKOUT @join__enumValue(graph: LOYALTY)
+  ROOM_UPGRADE @join__enumValue(graph: LOYALTY)
+  COMPANION_PASS @join__enumValue(graph: LOYALTY)
+}
+
+type Challenge implements Node
+  @join__implements(graph: LOYALTY, interface: "Node")
+  @join__type(graph: LOYALTY)
+{
+  id: ID!
+  name: String!
+  description: String!
+  status: ChallengeStatus!
+  startDate: Date!
+  endDate: Date!
+  reward: ChallengeReward!
+  progress: ChallengeProgress
+  registered: Boolean!
+}
+
+type ChallengeProgress
+  @join__type(graph: LOYALTY)
+{
+  current: Int!
+  goal: Int!
+  pct: Float!
+}
+
+type ChallengeReward
+  @join__type(graph: LOYALTY)
+{
+  bonusPoints: Int
+  bonusNights: Int
+  certificateType: CertificateType
+  description: String!
+}
+
+enum ChallengeStatus
+  @join__type(graph: LOYALTY)
+{
+  ACTIVE @join__enumValue(graph: LOYALTY)
+  COMPLETED @join__enumValue(graph: LOYALTY)
+  EXPIRED @join__enumValue(graph: LOYALTY)
+  UPCOMING @join__enumValue(graph: LOYALTY)
+}
+
+type ChannelSetting
+  @join__type(graph: NOTIFICATIONS)
+{
+  channel: NotificationChannel!
+  enabled: Boolean!
+  quietHours: QuietHours
+  preferredAddress: String
+}
+
+input ChannelSettingInput
+  @join__type(graph: NOTIFICATIONS)
+{
+  channel: NotificationChannel!
+  enabled: Boolean!
+  quietHoursStart: String
+  quietHoursEnd: String
+  quietHoursTimezone: String
+  preferredAddress: String
+}
+
+type CheckInEligibility
+  @join__type(graph: RESERVATIONS)
+{
+  eligible: Boolean!
+  reservationId: ID!
+  checkInDate: Date!
+  reasons: [String!]!
+  onlineCheckInAvailable: Boolean!
+  mobileKeyAvailable: Boolean!
+}
+
+type CheckInPolicy
+  @join__type(graph: PROPERTY)
+{
+  standardTime: String!
+  earlyCheckIn: EarlyLatePolicy
+}
+
+type CheckOutPolicy
+  @join__type(graph: PROPERTY)
+{
+  standardTime: String!
+  lateCheckOut: EarlyLatePolicy
+}
+
+type CommunicationPreferences
+  @join__type(graph: GUEST)
+{
+  preferredLanguage: LanguageCode!
+  preferredChannel: String!
+  marketingOptIn: Boolean!
+  doNotDisturb: Boolean!
+}
+
+input CommunicationPreferencesInput
+  @join__type(graph: GUEST)
+{
+  preferredChannel: String
+  marketingOptIn: Boolean
+  doNotDisturb: Boolean
+}
+
+input ConfirmReservationInput
+  @join__type(graph: RESERVATIONS)
+{
+  paymentMethodId: ID!
+  guestProfileId: ID!
+  billingAddress: AddressInput
+}
+
+union ConfirmReservationResult
+  @join__type(graph: RESERVATIONS)
+  @join__unionMember(graph: RESERVATIONS, member: "Reservation")
+  @join__unionMember(graph: RESERVATIONS, member: "PaymentDeclinedError")
+  @join__unionMember(graph: RESERVATIONS, member: "RateExpiredError")
+  @join__unionMember(graph: RESERVATIONS, member: "ValidationError")
+  @join__unionMember(graph: RESERVATIONS, member: "ExternalServiceError")
+ = Reservation | PaymentDeclinedError | RateExpiredError | ValidationError | ExternalServiceError
+
+type ContentAuthor
+  @join__type(graph: CONTENT)
+{
+  id: ID!
+  name: String!
+  title: String
+  bio: LocalizedContent
+  photoUrl: URL
+}
+
+type ContentCollection implements Node
+  @join__implements(graph: CONTENT, interface: "Node")
+  @join__type(graph: CONTENT)
+{
+  id: ID!
+  slug: String!
+  title: LocalizedContent!
+  description: LocalizedContent!
+  heroImage: MediaAsset
+  articles: [Article!]!
+  inspirations: [TravelInspiration!]!
+  spotlights: [DealSpotlight!]!
+  updatedAt: DateTime!
+}
+
+enum ContentStatus
+  @join__type(graph: CONTENT)
+{
+  DRAFT @join__enumValue(graph: CONTENT)
+  SCHEDULED @join__enumValue(graph: CONTENT)
+  PUBLISHED @join__enumValue(graph: CONTENT)
+  ARCHIVED @join__enumValue(graph: CONTENT)
+}
+
+type Coordinates
+  @join__type(graph: PROPERTY)
+{
+  latitude: Latitude!
+  longitude: Longitude!
+}
+
+type CorporateAccount implements Node
+  @join__implements(graph: CORPORATE, interface: "Node")
+  @join__type(graph: CORPORATE, key: "id")
+{
+  id: ID!
+  companyName: String!
+  contractNumber: String!
+  tier: CorporateTier!
+  industry: String!
+  status: CorporateStatus!
+  primaryContact: CorporateContact!
+  billingContact: CorporateContact
+  travelManagers: [CorporateContact!]!
+  travelers: [CorporateTraveler!]!
+  travelPolicy: TravelPolicy!
+  negotiatedRates: [NegotiatedRate!]!
+  totalTravelers: Int!
+  contractStartDate: Date!
+  contractEndDate: Date!
+  ytdSpend: Money!
+  createdAt: DateTime!
+}
+
+type CorporateContact
+  @join__type(graph: CORPORATE)
+{
+  name: String!
+  email: String!
+  phone: String
+  title: String
+}
+
+input CorporateContactInput
+  @join__type(graph: CORPORATE)
+{
+  name: String!
+  email: String!
+  phone: String
+  title: String
+}
+
+enum CorporateStatus
+  @join__type(graph: CORPORATE)
+{
+  ACTIVE @join__enumValue(graph: CORPORATE)
+  PENDING_REVIEW @join__enumValue(graph: CORPORATE)
+  SUSPENDED @join__enumValue(graph: CORPORATE)
+  TERMINATED @join__enumValue(graph: CORPORATE)
+}
+
+enum CorporateTier
+  @join__type(graph: CORPORATE)
+{
+  STANDARD @join__enumValue(graph: CORPORATE)
+  PREFERRED @join__enumValue(graph: CORPORATE)
+  PREMIER @join__enumValue(graph: CORPORATE)
+  ELITE @join__enumValue(graph: CORPORATE)
+}
+
+type CorporateTraveler implements Node
+  @join__implements(graph: CORPORATE, interface: "Node")
+  @join__type(graph: CORPORATE)
+{
+  id: ID!
+  accountId: ID!
+  guestId: ID!
+  guest: GuestProfile
+  employeeId: String
+  department: String
+  costCenter: String
+  managerEmail: String
+  travelClass: TravelClass!
+  active: Boolean!
+}
+
+scalar CountryCode
+  @join__type(graph: GUEST)
+  @join__type(graph: PROPERTY)
+
+input CreateDiningInput
+  @join__type(graph: RESERVATIONS)
+{
+  reservationId: ID!
+  restaurantId: ID!
+  date: Date!
+  time: String!
+  partySize: Int!
+  specialRequests: String
+}
+
+union CreateDiningResult
+  @join__type(graph: RESERVATIONS)
+  @join__unionMember(graph: RESERVATIONS, member: "DiningReservation")
+  @join__unionMember(graph: RESERVATIONS, member: "ValidationError")
+  @join__unionMember(graph: RESERVATIONS, member: "NotFoundError")
+ = DiningReservation | ValidationError | NotFoundError
+
+input CreateReservationInput
+  @join__type(graph: RESERVATIONS)
+{
+  hotelId: ID!
+  roomTypeId: ID!
+  rateToken: String!
+  checkIn: Date!
+  checkOut: Date!
+  adults: Int!
+  children: Int
+  specialRequests: [SpecialRequestInput!]
+  addOns: [AddOnInput!]
+  loyaltyNumber: String
+  promoCode: String
+}
+
+union CreateReservationResult
+  @join__type(graph: RESERVATIONS)
+  @join__unionMember(graph: RESERVATIONS, member: "Reservation")
+  @join__unionMember(graph: RESERVATIONS, member: "RoomUnavailableError")
+  @join__unionMember(graph: RESERVATIONS, member: "ValidationError")
+  @join__unionMember(graph: RESERVATIONS, member: "AuthorizationError")
+  @join__unionMember(graph: RESERVATIONS, member: "ExternalServiceError")
+ = Reservation | RoomUnavailableError | ValidationError | AuthorizationError | ExternalServiceError
+
+scalar CurrencyCode
+  @join__type(graph: CORPORATE)
+  @join__type(graph: GUEST)
+  @join__type(graph: LOYALTY)
+  @join__type(graph: PRICING)
+  @join__type(graph: PROPERTY)
+  @join__type(graph: RESERVATIONS)
+
+scalar Date
+  @join__type(graph: CONTENT)
+  @join__type(graph: CORPORATE)
+  @join__type(graph: EXPERIENCES)
+  @join__type(graph: GUEST)
+  @join__type(graph: LOYALTY)
+  @join__type(graph: MEETINGS)
+  @join__type(graph: NOTIFICATIONS)
+  @join__type(graph: PRICING)
+  @join__type(graph: PROPERTY)
+  @join__type(graph: RESERVATIONS)
+
+type DateRateSummary
+  @join__type(graph: PRICING)
+{
+  date: Date!
+  lowestRate: Money!
+  currency: String!
+  available: Boolean!
+}
+
+scalar DateTime
+  @join__type(graph: CONTENT)
+  @join__type(graph: CORPORATE)
+  @join__type(graph: EXPERIENCES)
+  @join__type(graph: GUEST)
+  @join__type(graph: LOYALTY)
+  @join__type(graph: MEETINGS)
+  @join__type(graph: NOTIFICATIONS)
+  @join__type(graph: PRICING)
+  @join__type(graph: PROPERTY)
+  @join__type(graph: RESERVATIONS)
+
+type DealSpotlight implements Node
+  @join__implements(graph: CONTENT, interface: "Node")
+  @join__type(graph: CONTENT)
+{
+  id: ID!
+  slug: String!
+  status: ContentStatus!
+  title: LocalizedContent!
+  description: LocalizedContent!
+  heroImage: MediaAsset!
+  promoCode: String
+  discountPercent: Float
+  validFrom: Date!
+  validTo: Date!
+  applicableHotels: [Hotel!]!
+  termsAndConditions: LocalizedContent!
+  ctaLabel: LocalizedContent!
+  ctaUrl: URL!
+}
+
+type DestinationSpend
+  @join__type(graph: CORPORATE)
+{
+  city: String!
+  countryCode: String!
+  trips: Int!
+  totalSpend: Money!
+}
+
+enum DevicePlatform
+  @join__type(graph: NOTIFICATIONS)
+{
+  IOS @join__enumValue(graph: NOTIFICATIONS)
+  ANDROID @join__enumValue(graph: NOTIFICATIONS)
+  WEB @join__enumValue(graph: NOTIFICATIONS)
+}
+
+type DietaryPreferences
+  @join__type(graph: GUEST)
+{
+  restrictions: [String!]!
+  allergies: [String!]!
+  kosher: Boolean
+  halal: Boolean
+  vegan: Boolean
+}
+
+input DietaryPreferencesInput
+  @join__type(graph: GUEST)
+{
+  restrictions: [String!]
+  allergies: [String!]
+  kosher: Boolean
+  halal: Boolean
+  vegan: Boolean
+}
+
+type DigitalKey
+  @join__type(graph: RESERVATIONS)
+{
+  reservationId: ID!
+  keyCode: String!
+  status: DigitalKeyStatus!
+  activatedAt: DateTime
+  expiresAt: DateTime!
+  rooms: [String!]!
+}
+
+enum DigitalKeyStatus
+  @join__type(graph: RESERVATIONS)
+{
+  INACTIVE @join__enumValue(graph: RESERVATIONS)
+  ACTIVE @join__enumValue(graph: RESERVATIONS)
+  EXPIRED @join__enumValue(graph: RESERVATIONS)
+  REVOKED @join__enumValue(graph: RESERVATIONS)
+}
+
+type DiningReservation
+  @join__type(graph: RESERVATIONS)
+{
+  id: ID!
+  reservationId: ID!
+  restaurantId: ID!
+  restaurantName: String!
+  date: Date!
+  time: String!
+  partySize: Int!
+  status: DiningStatus!
+  specialRequests: String
+  confirmationNumber: String!
+  createdAt: DateTime!
+}
+
+enum DiningStatus
+  @join__type(graph: RESERVATIONS)
+{
+  CONFIRMED @join__enumValue(graph: RESERVATIONS)
+  SEATED @join__enumValue(graph: RESERVATIONS)
+  COMPLETED @join__enumValue(graph: RESERVATIONS)
+  CANCELLED @join__enumValue(graph: RESERVATIONS)
+  NO_SHOW @join__enumValue(graph: RESERVATIONS)
+}
+
+enum DiscountType
+  @join__type(graph: PRICING)
+{
+  PERCENTAGE @join__enumValue(graph: PRICING)
+  FIXED_AMOUNT @join__enumValue(graph: PRICING)
+  FREE_NIGHTS @join__enumValue(graph: PRICING)
+}
+
+enum DistanceUnit
+  @join__type(graph: PROPERTY)
+{
+  KM @join__enumValue(graph: PROPERTY)
+  MILES @join__enumValue(graph: PROPERTY)
+}
+
+type DistanceValue
+  @join__type(graph: PROPERTY)
+{
+  value: Float!
+  unit: DistanceUnit!
+}
+
+type DuplicateContractError
+  @join__type(graph: CORPORATE)
+{
+  code: String!
+  message: String!
+  existingContractNumber: String!
+}
+
+type EarlyLatePolicy
+  @join__type(graph: PROPERTY)
+{
+  available: Boolean!
+  fee: Money
+  subjectToAvailability: Boolean!
+}
+
+scalar EmailAddress
+  @join__type(graph: GUEST)
+  @join__type(graph: PROPERTY)
+
+input EnrollCorporateInput
+  @join__type(graph: CORPORATE)
+{
+  companyName: String!
+  industry: String!
+  primaryContact: CorporateContactInput!
+  billingContact: CorporateContactInput
+  contractStartDate: Date!
+  contractEndDate: Date!
+  tier: CorporateTier
+}
+
+union EnrollCorporateResult
+  @join__type(graph: CORPORATE)
+  @join__unionMember(graph: CORPORATE, member: "CorporateAccount")
+  @join__unionMember(graph: CORPORATE, member: "ValidationError")
+  @join__unionMember(graph: CORPORATE, member: "DuplicateContractError")
+ = CorporateAccount | ValidationError | DuplicateContractError
+
+type EventSpace implements Node
+  @join__implements(graph: MEETINGS, interface: "Node")
+  @join__type(graph: MEETINGS, key: "id")
+{
+  id: ID!
+  hotelId: ID!
+  hotel: Hotel!
+  name: String!
+  description: String!
+  category: EventSpaceCategory!
+  capacityStyles: [CapacityStyle!]!
+  areaSqFt: Float!
+  areaSqMeters: Float!
+  ceilingHeightFt: Float!
+  naturalLight: Boolean!
+  blackoutCapable: Boolean!
+  rooms: Int!
+  divisible: Boolean!
+  technicalSpecs: TechnicalSpecs!
+  avEquipment: [AVEquipment!]!
+  cateringRequired: Boolean!
+  rateCard: EventSpaceRateCard!
+  images: [URL!]!
+  floorPlanUrl: URL
+}
+
+enum EventSpaceCategory
+  @join__type(graph: MEETINGS)
+{
+  BALLROOM @join__enumValue(graph: MEETINGS)
+  JUNIOR_BALLROOM @join__enumValue(graph: MEETINGS)
+  BOARDROOM @join__enumValue(graph: MEETINGS)
+  MEETING_ROOM @join__enumValue(graph: MEETINGS)
+  TERRACE @join__enumValue(graph: MEETINGS)
+  GARDEN @join__enumValue(graph: MEETINGS)
+  SUITE @join__enumValue(graph: MEETINGS)
+  STUDIO @join__enumValue(graph: MEETINGS)
+}
+
+input EventSpaceFilter
+  @join__type(graph: MEETINGS)
+{
+  minCapacity: Int
+  setup: SetupStyle
+  naturalLight: Boolean
+  category: EventSpaceCategory
+}
+
+type EventSpaceRateCard
+  @join__type(graph: MEETINGS)
+{
+  fullDay: Money!
+  halfDay: Money!
+  hourly: Money
+  setupFee: Money
+  cleaningFee: Money
+  minimumFAndBSpend: Money
+  currency: String!
+}
+
+type EventSpaceSearchHit
+  @join__type(graph: MEETINGS)
+{
+  hotel: Hotel!
+  space: EventSpace!
+  matchScore: Float!
+  notes: String
+}
+
+input EventSpaceSearchInput
+  @join__type(graph: MEETINGS)
+{
+  startDate: Date!
+  endDate: Date!
+  attendees: Int!
+  setup: SetupStyle
+  cities: [String!]
+  hotelIds: [ID!]
+  guestRoomsPerNight: Int
+}
+
+type EventSpaceSearchResult
+  @join__type(graph: MEETINGS)
+{
+  results: [EventSpaceSearchHit!]!
+  totalCount: Int!
+}
+
+enum EventType
+  @join__type(graph: MEETINGS)
+{
+  CORPORATE_MEETING @join__enumValue(graph: MEETINGS)
+  CONFERENCE @join__enumValue(graph: MEETINGS)
+  INCENTIVE @join__enumValue(graph: MEETINGS)
+  WEDDING @join__enumValue(graph: MEETINGS)
+  SOCIAL_GALA @join__enumValue(graph: MEETINGS)
+  TRAINING @join__enumValue(graph: MEETINGS)
+  PRODUCT_LAUNCH @join__enumValue(graph: MEETINGS)
+  BOARD_RETREAT @join__enumValue(graph: MEETINGS)
+}
+
+enum ExceptionSeverity
+  @join__type(graph: CORPORATE)
+{
+  INFO @join__enumValue(graph: CORPORATE)
+  WARNING @join__enumValue(graph: CORPORATE)
+  BLOCKING @join__enumValue(graph: CORPORATE)
+}
+
+type Experience implements Node
+  @join__implements(graph: EXPERIENCES, interface: "Node")
+  @join__type(graph: EXPERIENCES, key: "id")
+{
+  id: ID!
+  hotelId: ID!
+  hotel: Hotel!
+  name: String!
+  category: ExperienceCategory!
+  description: String!
+  longDescription: String!
+  durationMinutes: Int
+  pricePerPerson: Money!
+  currency: String!
+  maxParticipants: Int!
+  minParticipants: Int!
+  requiresBooking: Boolean!
+  highlights: [String!]!
+  included: [String!]!
+  bringYourOwn: [String!]!
+  images: [URL!]!
+  featured: Boolean!
+  available: Boolean!
+  difficulty: ExperienceDifficulty
+  ageMinimum: Int
+}
+
+type ExperienceAvailability
+  @join__type(graph: EXPERIENCES)
+{
+  experienceId: ID!
+  date: Date!
+  partySize: Int!
+  slots: [TimeSlot!]!
+  fullyBooked: Boolean!
+  nextAvailableDate: Date
+}
+
+type ExperienceBooking implements Node
+  @join__implements(graph: EXPERIENCES, interface: "Node")
+  @join__type(graph: EXPERIENCES, key: "id")
+{
+  id: ID!
+  experienceId: ID!
+  guestId: ID!
+  hotelId: ID!
+  status: BookingStatus!
+  date: Date!
+  startTime: String!
+  endTime: String
+  participants: Int!
+  totalPrice: Money!
+  specialRequests: String
+  confirmationCode: String!
+  bookedAt: DateTime!
+  cancelledAt: DateTime
+  cancellationReason: String
+}
+
+type ExperienceBookingConnection
+  @join__type(graph: EXPERIENCES)
+{
+  edges: [ExperienceBookingEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ExperienceBookingEdge
+  @join__type(graph: EXPERIENCES)
+{
+  node: ExperienceBooking!
+  cursor: String!
+}
+
+enum ExperienceCategory
+  @join__type(graph: EXPERIENCES)
+{
+  SPA_WELLNESS @join__enumValue(graph: EXPERIENCES)
+  CULINARY @join__enumValue(graph: EXPERIENCES)
+  ADVENTURE @join__enumValue(graph: EXPERIENCES)
+  CULTURAL @join__enumValue(graph: EXPERIENCES)
+  WATER_SPORTS @join__enumValue(graph: EXPERIENCES)
+  GOLF @join__enumValue(graph: EXPERIENCES)
+  FITNESS @join__enumValue(graph: EXPERIENCES)
+  KIDS_CLUB @join__enumValue(graph: EXPERIENCES)
+  NIGHTLIFE @join__enumValue(graph: EXPERIENCES)
+  TOURS @join__enumValue(graph: EXPERIENCES)
+  PRIVATE_DINING @join__enumValue(graph: EXPERIENCES)
+  YACHT @join__enumValue(graph: EXPERIENCES)
+}
+
+enum ExperienceDifficulty
+  @join__type(graph: EXPERIENCES)
+{
+  EASY @join__enumValue(graph: EXPERIENCES)
+  MODERATE @join__enumValue(graph: EXPERIENCES)
+  STRENUOUS @join__enumValue(graph: EXPERIENCES)
+  EXPERT @join__enumValue(graph: EXPERIENCES)
+}
+
+union ExpressCheckoutResult
+  @join__type(graph: RESERVATIONS)
+  @join__unionMember(graph: RESERVATIONS, member: "ExpressCheckoutSuccess")
+  @join__unionMember(graph: RESERVATIONS, member: "ValidationError")
+  @join__unionMember(graph: RESERVATIONS, member: "NotFoundError")
+ = ExpressCheckoutSuccess | ValidationError | NotFoundError
+
+type ExpressCheckoutSuccess
+  @join__type(graph: RESERVATIONS)
+{
+  reservationId: ID!
+  folio: Folio!
+  emailedTo: String!
+  message: String!
+}
+
+union ExtendExpiryResult
+  @join__type(graph: LOYALTY)
+  @join__unionMember(graph: LOYALTY, member: "LoyaltyAccount")
+  @join__unionMember(graph: LOYALTY, member: "ValidationError")
+ = LoyaltyAccount | ValidationError
+
+type ExternalServiceError
+  @join__type(graph: PRICING)
+  @join__type(graph: PROPERTY)
+  @join__type(graph: RESERVATIONS)
+{
+  code: String!
+  message: String!
+  service: String!
+  retryAfter: Int
+}
+
+type FieldError
+  @join__type(graph: CORPORATE)
+  @join__type(graph: EXPERIENCES)
+  @join__type(graph: GUEST)
+  @join__type(graph: LOYALTY)
+  @join__type(graph: MEETINGS)
+  @join__type(graph: NOTIFICATIONS)
+  @join__type(graph: PRICING)
+  @join__type(graph: PROPERTY)
+  @join__type(graph: RESERVATIONS)
+{
+  field: String!
+  message: String!
+}
+
+enum FloorPreference
+  @join__type(graph: GUEST)
+{
+  LOW @join__enumValue(graph: GUEST)
+  MIDDLE @join__enumValue(graph: GUEST)
+  HIGH @join__enumValue(graph: GUEST)
+  NO_PREFERENCE @join__enumValue(graph: GUEST)
+}
+
+type Folio
+  @join__type(graph: RESERVATIONS)
+{
+  id: ID!
+  reservationId: ID!
+  lineItems: [FolioLineItem!]!
+  subtotal: Money!
+  taxes: Money!
+  total: Money!
+  currency: String!
+  status: FolioStatus!
+}
+
+type FolioLineItem
+  @join__type(graph: RESERVATIONS)
+{
+  id: ID!
+  date: Date!
+  description: String!
+  amount: Money!
+  category: String!
+  quantity: Int!
+}
+
+enum FolioStatus
+  @join__type(graph: RESERVATIONS)
+{
+  OPEN @join__enumValue(graph: RESERVATIONS)
+  SETTLED @join__enumValue(graph: RESERVATIONS)
+  DISPUTED @join__enumValue(graph: RESERVATIONS)
+}
+
+type FrequentFlyerNumber
+  @join__type(graph: GUEST)
+{
+  airline: String!
+  number: String!
+}
+
+type GiftCardBalance
+  @join__type(graph: PRICING)
+{
+  code: String!
+  balance: Money!
+  currency: String!
+  expiresAt: DateTime
+  active: Boolean!
+}
+
+input GiftPointsInput
+  @join__type(graph: LOYALTY)
+{
+  recipientLoyaltyNumber: String!
+  points: Int!
+  message: String
+}
+
+union GiftPointsResult
+  @join__type(graph: LOYALTY)
+  @join__unionMember(graph: LOYALTY, member: "GiftPointsSuccess")
+  @join__unionMember(graph: LOYALTY, member: "InsufficientPointsError")
+  @join__unionMember(graph: LOYALTY, member: "ValidationError")
+  @join__unionMember(graph: LOYALTY, member: "NotFoundError")
+ = GiftPointsSuccess | InsufficientPointsError | ValidationError | NotFoundError
+
+type GiftPointsSuccess
+  @join__type(graph: LOYALTY)
+{
+  transactionId: ID!
+  recipientLoyaltyNumber: String!
+  pointsGifted: Int!
+  newBalance: Int!
+  message: String!
+}
+
+type GolfCourse implements Node
+  @join__implements(graph: PROPERTY, interface: "Node")
+  @join__type(graph: PROPERTY, key: "id")
+{
+  id: ID!
+  hotelId: ID!
+  name: String!
+  holes: Int!
+  par: Int
+  designer: String
+  description: PropertyLocalizedContent
+  media(first: Int): PropertyMediaConnection!
+}
+
+type GolfTeeTimeAvailability
+  @join__type(graph: EXPERIENCES)
+{
+  hotelId: ID!
+  courseId: ID!
+  courseName: String!
+  date: Date!
+  players: Int!
+  slots: [TimeSlot!]!
+}
+
+type GroupBlock implements Node
+  @join__implements(graph: MEETINGS, interface: "Node")
+  @join__type(graph: MEETINGS, key: "id")
+{
+  id: ID!
+  rfpId: ID
+  hotelId: ID!
+  hotel: Hotel!
+  blockCode: String!
+  startDate: Date!
+  endDate: Date!
+  totalRooms: Int!
+  pickedUpRooms: Int!
+  remainingRooms: Int!
+  rate: Money!
+  cutoffDate: Date!
+  status: GroupBlockStatus!
+}
+
+enum GroupBlockStatus
+  @join__type(graph: MEETINGS)
+{
+  TENTATIVE @join__enumValue(graph: MEETINGS)
+  DEFINITE @join__enumValue(graph: MEETINGS)
+  PICKED_UP @join__enumValue(graph: MEETINGS)
+  CLOSED @join__enumValue(graph: MEETINGS)
+  CANCELLED @join__enumValue(graph: MEETINGS)
+}
+
+type GuestAddress
+  @join__type(graph: GUEST)
+{
+  id: ID!
+  type: AddressType!
+  line1: String!
+  line2: String
+  city: String!
+  stateCode: String
+  postalCode: String
+  countryCode: CountryCode!
+  isPrimary: Boolean!
+}
+
+type GuestCorporateProfile
+  @join__type(graph: GUEST)
+{
+  companyName: String
+  corporateAccountId: ID
+  employeeId: String
+  costCenter: String
+}
+
+type GuestCount
+  @join__type(graph: PRICING)
+  @join__type(graph: RESERVATIONS)
+{
+  adults: Int!
+  children: Int!
+}
+
+type GuestExternalIds
+  @join__type(graph: GUEST)
+{
+  loyaltyNumber: String
+  pmsGuestId: String
+  ssoSubject: String
+  crmContactId: String
+}
+
+type GuestName
+  @join__type(graph: GUEST)
+{
+  title: String
+  firstName: String!
+  middleName: String
+  lastName: String!
+  preferredName: String
+  suffix: String
+}
+
+type GuestPreferences
+  @join__type(graph: GUEST)
+{
+  room: RoomPreferences!
+  bed: BedPreferences!
+  pillow: PillowPreferences!
+  dietary: DietaryPreferences!
+  accessibility: AccessibilityNeeds!
+  transport: TransportPreferences!
+  communication: CommunicationPreferences!
+}
+
+type GuestProfile implements Node
+  @join__implements(graph: GUEST, interface: "Node")
+  @join__type(graph: CORPORATE, key: "id")
+  @join__type(graph: GUEST, key: "id")
+  @join__type(graph: LOYALTY, key: "id")
+  @join__type(graph: NOTIFICATIONS, key: "id")
+  @join__type(graph: RESERVATIONS, key: "id")
+{
+  id: ID!
+  corporateAccount: CorporateAccount @join__field(graph: CORPORATE)
+  externalIds: GuestExternalIds! @join__field(graph: GUEST)
+  name: GuestName! @join__field(graph: GUEST)
+  email: EmailAddress! @join__field(graph: GUEST)
+  phone: PhoneNumber @join__field(graph: GUEST)
+  dateOfBirth: Date @join__field(graph: GUEST)
+  nationality: CountryCode @join__field(graph: GUEST)
+  avatarUrl: URL @join__field(graph: GUEST)
+  languagePreference: LanguageCode! @join__field(graph: GUEST)
+  currencyPreference: CurrencyCode! @join__field(graph: GUEST)
+  preferences: GuestPreferences! @join__field(graph: GUEST)
+  addresses: [GuestAddress!]! @join__field(graph: GUEST)
+  paymentMethods(first: Int = 5, after: String): PaymentMethodConnection! @join__field(graph: GUEST)
+  travelCompanions: [TravelCompanion!]! @join__field(graph: GUEST)
+  savedHotels(first: Int, after: String): SavedHotelConnection! @join__field(graph: GUEST)
+  corporateProfile: GuestCorporateProfile @join__field(graph: GUEST)
+  memberSince: DateTime! @join__field(graph: GUEST)
+  updatedAt: DateTime! @join__field(graph: GUEST)
+  loyaltyAccount: LoyaltyAccount @join__field(graph: LOYALTY)
+  notifications(first: Int): [Notification!]! @join__field(graph: NOTIFICATIONS)
+  unreadNotificationsCount: Int! @join__field(graph: NOTIFICATIONS)
+  reservations(filter: ReservationFilter): [Reservation!]! @join__field(graph: RESERVATIONS)
+  upcomingReservation: Reservation @join__field(graph: RESERVATIONS)
+}
+
+type GuestProfileConnection
+  @join__type(graph: GUEST)
+{
+  edges: [GuestProfileEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type GuestProfileEdge
+  @join__type(graph: GUEST)
+{
+  node: GuestProfile!
+  cursor: String!
+}
+
+type GuestRating
+  @join__type(graph: PROPERTY)
+{
+  overall: Float!
+  count: Int!
+  breakdown: RatingBreakdown
+  travelerTypes: [TravelerTypeRating!]!
+}
+
+type Hotel implements Node
+  @join__implements(graph: PROPERTY, interface: "Node")
+  @join__type(graph: CONTENT, key: "id")
+  @join__type(graph: CORPORATE, key: "id")
+  @join__type(graph: EXPERIENCES, key: "id")
+  @join__type(graph: MEETINGS, key: "id")
+  @join__type(graph: PRICING, key: "id")
+  @join__type(graph: PROPERTY, key: "id")
+  @join__type(graph: RESERVATIONS, key: "id")
+{
+  id: ID!
+  experiences(category: ExperienceCategory): [Experience!]! @join__field(graph: EXPERIENCES)
+  spaTreatments: [SpaTreatment!]! @join__field(graph: EXPERIENCES)
+  eventSpaces(filter: EventSpaceFilter): [EventSpace!]! @join__field(graph: MEETINGS)
+  rates(checkIn: Date!, checkOut: Date!, adults: Int = 1, children: Int = 0, currency: String = "USD"): [Rate!]! @join__field(graph: PRICING)
+  availability(checkIn: Date!, checkOut: Date!, adults: Int = 1, children: Int = 0, currency: String = "USD"): AvailabilityResult! @join__field(graph: PRICING)
+  brandId: ID! @join__field(graph: PROPERTY)
+  brand: Brand! @join__field(graph: PROPERTY)
+  chainCode: String! @join__field(graph: PROPERTY)
+  propertyCode: String! @join__field(graph: PROPERTY)
+  name: String! @join__field(graph: PROPERTY)
+  slug: String! @join__field(graph: PROPERTY)
+  status: HotelStatus! @join__field(graph: PROPERTY)
+  openedYear: Int @join__field(graph: PROPERTY)
+  renovatedYear: Int @join__field(graph: PROPERTY)
+  numberOfFloors: Int @join__field(graph: PROPERTY)
+  totalRooms: Int! @join__field(graph: PROPERTY)
+  starRating: Int! @join__field(graph: PROPERTY)
+  guestRating: GuestRating @join__field(graph: PROPERTY)
+  location: HotelLocation! @join__field(graph: PROPERTY)
+  contact: HotelContact! @join__field(graph: PROPERTY)
+  description: PropertyLocalizedContent @join__field(graph: PROPERTY)
+  policies: HotelPolicies @join__field(graph: PROPERTY)
+  amenities(categories: [AmenityCategory]): [Amenity!]! @join__field(graph: PROPERTY)
+  roomTypes: [RoomType!]! @join__field(graph: PROPERTY)
+  restaurants: [Restaurant!]! @join__field(graph: PROPERTY)
+  spa: Spa @join__field(graph: PROPERTY)
+  golfCourse: GolfCourse @join__field(graph: PROPERTY)
+  media(first: Int, categories: [MediaCategory]): PropertyMediaConnection! @join__field(graph: PROPERTY)
+  reviews(first: Int, after: String, sortBy: ReviewSortField): ReviewConnection! @join__field(graph: PROPERTY)
+  nearbyAttractions(radiusKm: Float): [Attraction!]! @join__field(graph: PROPERTY)
+  parkingInfo: ParkingInfo @join__field(graph: PROPERTY)
+  sustainabilityInfo: SustainabilityInfo @join__field(graph: PROPERTY)
+  awards: [Award!]! @join__field(graph: PROPERTY)
+  hasRestaurants: Boolean! @join__field(graph: PROPERTY)
+  hasSpa: Boolean! @join__field(graph: PROPERTY)
+  hasGolf: Boolean! @join__field(graph: PROPERTY)
+  hasPool: Boolean! @join__field(graph: PROPERTY)
+  isFeatured: Boolean! @join__field(graph: PROPERTY)
+  updatedAt: DateTime! @join__field(graph: PROPERTY)
+}
+
+type HotelCancellationPolicy
+  @join__type(graph: PROPERTY)
+{
+  freeCancellationHours: Int
+  defaultPolicy: String!
+}
+
+type HotelConnection
+  @join__type(graph: PROPERTY)
+{
+  edges: [HotelEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type HotelContact
+  @join__type(graph: PROPERTY)
+{
+  phone: PhoneNumber
+  email: EmailAddress
+  website: URL
+  reservations: PhoneNumber
+  whatsapp: PhoneNumber
+}
+
+type HotelEdge
+  @join__type(graph: PROPERTY)
+{
+  node: Hotel!
+  cursor: String!
+}
+
+input HotelFilter
+  @join__type(graph: PROPERTY)
+{
+  query: String
+  countryCodes: [CountryCode!]
+  brandIds: [ID!]
+  brandTiers: [BrandTier!]
+  minStarRating: Int
+  minGuestRating: Float
+  hasPool: Boolean
+  hasSpa: Boolean
+  hasGolf: Boolean
+  amenityIds: [ID!]
+  checkIn: Date
+  checkOut: Date
+  adults: Int
+  children: Int
+}
+
+type HotelLocation
+  @join__type(graph: PROPERTY)
+{
+  address: Address!
+  coordinates: Coordinates!
+  timezone: String!
+  airport: AirportInfo
+  distanceFromSearch: DistanceValue
+}
+
+type HotelPolicies
+  @join__type(graph: PROPERTY)
+{
+  checkIn: CheckInPolicy
+  checkOut: CheckOutPolicy
+  cancellation: HotelCancellationPolicy
+  petPolicy: PetPolicy
+  smokingPolicy: String
+  childPolicy: String
+}
+
+enum HotelSortField
+  @join__type(graph: PROPERTY)
+{
+  NAME @join__enumValue(graph: PROPERTY)
+  GUEST_RATING @join__enumValue(graph: PROPERTY)
+  STAR_RATING @join__enumValue(graph: PROPERTY)
+  PRICE_LOW_TO_HIGH @join__enumValue(graph: PROPERTY)
+  DISTANCE @join__enumValue(graph: PROPERTY)
+}
+
+enum HotelStatus
+  @join__type(graph: PROPERTY)
+{
+  ACTIVE @join__enumValue(graph: PROPERTY)
+  TEMPORARILY_CLOSED @join__enumValue(graph: PROPERTY)
+  UNDER_RENOVATION @join__enumValue(graph: PROPERTY)
+  COMING_SOON @join__enumValue(graph: PROPERTY)
+}
+
+type InsufficientPointsError
+  @join__type(graph: LOYALTY)
+{
+  code: String!
+  currentBalance: Int!
+  requiredPoints: Int!
+  shortfall: Int!
+}
+
+scalar join__FieldSet
+
+enum join__Graph {
+  CONTENT @join__graph(name: "content", url: "http://localhost:4006/graphql")
+  CORPORATE @join__graph(name: "corporate", url: "http://localhost:4010/graphql")
+  EXPERIENCES @join__graph(name: "experiences", url: "http://localhost:4007/graphql")
+  GUEST @join__graph(name: "guest", url: "http://localhost:4002/graphql")
+  LOYALTY @join__graph(name: "loyalty", url: "http://localhost:4005/graphql")
+  MEETINGS @join__graph(name: "meetings", url: "http://localhost:4008/graphql")
+  NOTIFICATIONS @join__graph(name: "notifications", url: "http://localhost:4009/graphql")
+  PRICING @join__graph(name: "pricing", url: "http://localhost:4003/graphql")
+  PROPERTY @join__graph(name: "property", url: "http://localhost:4001/graphql")
+  RESERVATIONS @join__graph(name: "reservations", url: "http://localhost:4004/graphql")
+}
+
+scalar LanguageCode
+  @join__type(graph: GUEST)
+  @join__type(graph: PROPERTY)
+
+scalar Latitude
+  @join__type(graph: PROPERTY)
+
+scalar link__Import
+
+enum link__Purpose {
+  """
+  `SECURITY` features provide metadata necessary to securely resolve fields.
+  """
+  SECURITY
+
+  """
+  `EXECUTION` features provide metadata necessary for operation execution.
+  """
+  EXECUTION
+}
+
+type LinkedPartnerAccount
+  @join__type(graph: LOYALTY)
+{
+  id: ID!
+  partner: LoyaltyPartner!
+  partnerAccountNumber: String!
+  linkedAt: DateTime!
+  lastSyncedAt: DateTime
+  status: PartnerLinkStatus!
+}
+
+input LinkPartnerInput
+  @join__type(graph: LOYALTY)
+{
+  partnerId: ID!
+  partnerAccountNumber: String!
+  partnerAccountLastName: String
+}
+
+union LinkPartnerResult
+  @join__type(graph: LOYALTY)
+  @join__unionMember(graph: LOYALTY, member: "LinkedPartnerAccount")
+  @join__unionMember(graph: LOYALTY, member: "ValidationError")
+  @join__unionMember(graph: LOYALTY, member: "NotFoundError")
+ = LinkedPartnerAccount | ValidationError | NotFoundError
+
+type LocaleText
+  @join__type(graph: CONTENT)
+{
+  locale: String!
+  text: String!
+}
+
+type LocalizedContent
+  @join__type(graph: CONTENT)
+{
+  locale: String!
+  text: String!
+  fallbackUsed: Boolean!
+  translations: [LocaleText!]!
+}
+
+scalar Longitude
+  @join__type(graph: PROPERTY)
+
+type LoyaltyAccount implements Node
+  @join__implements(graph: LOYALTY, interface: "Node")
+  @join__type(graph: LOYALTY, key: "id")
+{
+  id: ID!
+  loyaltyNumber: String!
+  guest: GuestProfile!
+  status: LoyaltyAccountStatus!
+  tier: LoyaltyTier!
+  pointsBalance: PointsBalance!
+  tierProgress: TierProgress!
+  lifetimePoints: Int!
+  lifetimeNights: Int!
+  memberSince: Date!
+  referralCode: String!
+  benefits: [LoyaltyBenefit!]!
+  certificates(first: Int, status: CertificateStatus): [Certificate!]!
+  transactions(first: Int, after: String, filter: TransactionFilter, sortBy: TransactionSortField): PointsTransactionConnection!
+  linkedPartners: [LinkedPartnerAccount!]!
+  availableChallenges: [Challenge!]!
+  updatedAt: DateTime!
+}
+
+enum LoyaltyAccountStatus
+  @join__type(graph: LOYALTY)
+{
+  ACTIVE @join__enumValue(graph: LOYALTY)
+  SUSPENDED @join__enumValue(graph: LOYALTY)
+  MERGED @join__enumValue(graph: LOYALTY)
+  CLOSED @join__enumValue(graph: LOYALTY)
+}
+
+type LoyaltyBenefit
+  @join__type(graph: LOYALTY)
+{
+  code: String!
+  name: String!
+  description: String!
+  category: BenefitCategory!
+  tier: LoyaltyTier!
+}
+
+input LoyaltyEnrollmentInput
+  @join__type(graph: LOYALTY)
+{
+  guestId: ID!
+  referralCode: String
+  marketingOptIn: Boolean
+}
+
+union LoyaltyEnrollmentResult
+  @join__type(graph: LOYALTY)
+  @join__unionMember(graph: LOYALTY, member: "LoyaltyAccount")
+  @join__unionMember(graph: LOYALTY, member: "ValidationError")
+  @join__unionMember(graph: LOYALTY, member: "AlreadyEnrolledError")
+ = LoyaltyAccount | ValidationError | AlreadyEnrolledError
+
+type LoyaltyPartner implements Node
+  @join__implements(graph: LOYALTY, interface: "Node")
+  @join__type(graph: LOYALTY)
+{
+  id: ID!
+  name: String!
+  category: PartnerCategory!
+  description: String!
+  logoUrl: URL
+  pointsRatio: Float!
+  minTransfer: Int!
+  maxTransfer: Int
+  transferIncrement: Int!
+  active: Boolean!
+}
+
+type LoyaltyPartnerConnection
+  @join__type(graph: LOYALTY)
+{
+  edges: [LoyaltyPartnerEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type LoyaltyPartnerEdge
+  @join__type(graph: LOYALTY)
+{
+  node: LoyaltyPartner!
+  cursor: String!
+}
+
+enum LoyaltyTier
+  @join__type(graph: LOYALTY)
+{
+  MEMBER @join__enumValue(graph: LOYALTY)
+  SILVER @join__enumValue(graph: LOYALTY)
+  GOLD @join__enumValue(graph: LOYALTY)
+  PLATINUM @join__enumValue(graph: LOYALTY)
+  TITANIUM @join__enumValue(graph: LOYALTY)
+  AMBASSADOR @join__enumValue(graph: LOYALTY)
+}
+
+union MarkReviewHelpfulResult
+  @join__type(graph: PROPERTY)
+  @join__unionMember(graph: PROPERTY, member: "Review")
+  @join__unionMember(graph: PROPERTY, member: "NotFoundError")
+  @join__unionMember(graph: PROPERTY, member: "AuthorizationError")
+ = Review | NotFoundError | AuthorizationError
+
+type MediaAsset implements Node
+  @join__implements(graph: CONTENT, interface: "Node")
+  @join__type(graph: CONTENT)
+{
+  id: ID!
+  url: URL!
+  thumbnailUrl: URL
+  altText: LocalizedContent
+  caption: LocalizedContent
+  type: MediaType!
+  width: Int
+  height: Int
+  durationSeconds: Int
+}
+
+enum MediaCategory
+  @join__type(graph: PROPERTY)
+{
+  EXTERIOR @join__enumValue(graph: PROPERTY)
+  INTERIOR @join__enumValue(graph: PROPERTY)
+  ROOM @join__enumValue(graph: PROPERTY)
+  POOL @join__enumValue(graph: PROPERTY)
+  SPA @join__enumValue(graph: PROPERTY)
+  RESTAURANT @join__enumValue(graph: PROPERTY)
+  LOBBY @join__enumValue(graph: PROPERTY)
+}
+
+enum MediaType
+  @join__type(graph: CONTENT)
+{
+  PHOTO @join__enumValue(graph: CONTENT)
+  VIDEO @join__enumValue(graph: CONTENT)
+  VIRTUAL_TOUR @join__enumValue(graph: CONTENT)
+  FLOOR_PLAN @join__enumValue(graph: CONTENT)
+}
+
+type Message implements Node
+  @join__implements(graph: NOTIFICATIONS, interface: "Node")
+  @join__type(graph: NOTIFICATIONS)
+{
+  id: ID!
+  threadId: ID!
+  sender: MessageSender!
+  body: String!
+  attachmentUrls: [URL!]!
+  sentAt: DateTime!
+  readAt: DateTime
+}
+
+enum MessageSender
+  @join__type(graph: NOTIFICATIONS)
+{
+  GUEST @join__enumValue(graph: NOTIFICATIONS)
+  AGENT @join__enumValue(graph: NOTIFICATIONS)
+  SYSTEM @join__enumValue(graph: NOTIFICATIONS)
+}
+
+type MessageThread implements Node
+  @join__implements(graph: NOTIFICATIONS, interface: "Node")
+  @join__type(graph: NOTIFICATIONS, key: "id")
+{
+  id: ID!
+  guestId: ID!
+  subject: String!
+  status: ThreadStatus!
+  hotelId: ID
+  reservationId: ID
+  messages(first: Int): [Message!]!
+  lastMessageAt: DateTime!
+  unreadCount: Int!
+  assignedAgent: String
+}
+
+type MetadataEntry
+  @join__type(graph: NOTIFICATIONS)
+{
+  key: String!
+  value: String!
+}
+
+input MobileCheckInInput
+  @join__type(graph: RESERVATIONS)
+{
+  documentType: String
+  documentNumber: String
+  estimatedArrivalTime: String
+  roomPreferences: [String!]
+}
+
+union MobileCheckInResult
+  @join__type(graph: RESERVATIONS)
+  @join__unionMember(graph: RESERVATIONS, member: "MobileCheckInSuccess")
+  @join__unionMember(graph: RESERVATIONS, member: "ValidationError")
+  @join__unionMember(graph: RESERVATIONS, member: "NotFoundError")
+ = MobileCheckInSuccess | ValidationError | NotFoundError
+
+type MobileCheckInSuccess
+  @join__type(graph: RESERVATIONS)
+{
+  reservation: Reservation!
+  digitalKey: DigitalKey!
+  message: String!
+}
+
+input ModifyReservationInput
+  @join__type(graph: RESERVATIONS)
+{
+  checkIn: Date
+  checkOut: Date
+  adults: Int
+  children: Int
+  roomTypeId: ID
+  specialRequests: [SpecialRequestInput!]
+}
+
+union ModifyReservationResult
+  @join__type(graph: RESERVATIONS)
+  @join__unionMember(graph: RESERVATIONS, member: "Reservation")
+  @join__unionMember(graph: RESERVATIONS, member: "ValidationError")
+  @join__unionMember(graph: RESERVATIONS, member: "NotFoundError")
+ = Reservation | ValidationError | NotFoundError
+
+type Money
+  @join__type(graph: CONTENT)
+  @join__type(graph: CORPORATE)
+  @join__type(graph: EXPERIENCES)
+  @join__type(graph: LOYALTY)
+  @join__type(graph: MEETINGS)
+  @join__type(graph: PRICING)
+  @join__type(graph: PROPERTY)
+  @join__type(graph: RESERVATIONS)
+{
+  amount: String!
+  currency: String!
+}
+
+type MonthlySpend
+  @join__type(graph: CORPORATE)
+{
+  month: String!
+  trips: Int!
+  totalSpend: Money!
+}
+
+type Mutation
+  @join__type(graph: CORPORATE)
+  @join__type(graph: EXPERIENCES)
+  @join__type(graph: GUEST)
+  @join__type(graph: LOYALTY)
+  @join__type(graph: MEETINGS)
+  @join__type(graph: NOTIFICATIONS)
+  @join__type(graph: PROPERTY)
+  @join__type(graph: RESERVATIONS)
+{
+  enrollCorporate(input: EnrollCorporateInput!): EnrollCorporateResult! @join__field(graph: CORPORATE)
+  updateTravelPolicy(accountId: ID!, input: TravelPolicyInput!): UpdateTravelPolicyResult! @join__field(graph: CORPORATE)
+  addCorporateTraveler(input: AddTravelerInput!): AddTravelerResult! @join__field(graph: CORPORATE)
+  removeCorporateTraveler(travelerId: ID!): Boolean! @join__field(graph: CORPORATE)
+  reviewTravelApproval(approvalId: ID!, decision: ApprovalDecision!, notes: String): ReviewApprovalResult! @join__field(graph: CORPORATE)
+  bookExperience(input: BookExperienceInput!, idempotencyKey: UUID!): BookExperienceResult! @join__field(graph: EXPERIENCES)
+  bookDining(input: BookDiningInput!, idempotencyKey: UUID!): BookDiningResult! @join__field(graph: EXPERIENCES)
+  bookGolfTeeTime(input: BookGolfInput!, idempotencyKey: UUID!): BookGolfResult! @join__field(graph: EXPERIENCES)
+  cancelExperienceBooking(bookingId: ID!, reason: String): CancelExperienceResult! @join__field(graph: EXPERIENCES)
+  signIn(input: SignInInput!): SignInResult! @join__field(graph: GUEST)
+  signUp(input: SignUpInput!): SignUpResult! @join__field(graph: GUEST)
+  signOut: Boolean! @join__field(graph: GUEST)
+  updateGuestProfile(input: UpdateGuestProfileInput!): UpdateProfileResult! @join__field(graph: GUEST)
+  updatePreferences(input: UpdatePreferencesInput!): GuestPreferences! @join__field(graph: GUEST)
+  addPaymentMethod(input: AddPaymentMethodInput!): AddPaymentMethodResult! @join__field(graph: GUEST)
+  removePaymentMethod(id: ID!): Boolean! @join__field(graph: GUEST)
+  setDefaultPaymentMethod(id: ID!): PaymentMethod @join__field(graph: GUEST)
+  saveHotel(hotelId: ID!): SavedHotel! @join__field(graph: GUEST)
+  unsaveHotel(hotelId: ID!): Boolean! @join__field(graph: GUEST)
+  addTravelCompanion(input: TravelCompanionInput!): TravelCompanion! @join__field(graph: GUEST)
+  removeTravelCompanion(id: ID!): Boolean! @join__field(graph: GUEST)
+  enrollInLoyalty(input: LoyaltyEnrollmentInput!): LoyaltyEnrollmentResult! @join__field(graph: LOYALTY)
+  transferPoints(input: TransferPointsInput!, idempotencyKey: UUID!): TransferPointsResult! @join__field(graph: LOYALTY)
+  transferToAirline(input: AirlineTransferInput!, idempotencyKey: UUID!): AirlineTransferResult! @join__field(graph: LOYALTY)
+  linkPartnerAccount(input: LinkPartnerInput!): LinkPartnerResult! @join__field(graph: LOYALTY)
+  registerForChallenge(challengeId: ID!): RegisterChallengeResult! @join__field(graph: LOYALTY)
+  redeemCertificate(certificateId: ID!, reservationId: ID!, idempotencyKey: UUID!): RedeemCertificateResult! @join__field(graph: LOYALTY)
+  buyPoints(input: BuyPointsInput!, idempotencyKey: UUID!): BuyPointsResult! @join__field(graph: LOYALTY)
+  giftPoints(input: GiftPointsInput!, idempotencyKey: UUID!): GiftPointsResult! @join__field(graph: LOYALTY)
+  extendPointsExpiry: ExtendExpiryResult! @join__field(graph: LOYALTY)
+  submitRFP(input: SubmitRFPInput!, idempotencyKey: UUID!): SubmitRFPResult! @join__field(graph: MEETINGS)
+  updateRFP(rfpId: ID!, input: UpdateRFPInput!): UpdateRFPResult! @join__field(graph: MEETINGS)
+  cancelRFP(rfpId: ID!, reason: String): CancelRFPResult! @join__field(graph: MEETINGS)
+  bookGroupRoom(input: BookGroupRoomInput!, idempotencyKey: UUID!): BookGroupRoomResult! @join__field(graph: MEETINGS)
+  registerPushDevice(input: RegisterPushDeviceInput!): PushDevice! @join__field(graph: NOTIFICATIONS)
+  removePushDevice(deviceId: ID!): Boolean! @join__field(graph: NOTIFICATIONS)
+  updateNotificationPreferences(input: NotificationPreferencesInput!): NotificationPreferences! @join__field(graph: NOTIFICATIONS)
+  markNotificationRead(id: ID!): Notification! @join__field(graph: NOTIFICATIONS)
+  markAllRead: Int! @join__field(graph: NOTIFICATIONS)
+  sendMessage(input: SendMessageInput!): SendMessageResult! @join__field(graph: NOTIFICATIONS)
+  markThreadResolved(threadId: ID!): MessageThread! @join__field(graph: NOTIFICATIONS)
+  submitReview(input: SubmitReviewInput!): SubmitReviewResult! @join__field(graph: PROPERTY)
+  markReviewHelpful(reviewId: ID!): MarkReviewHelpfulResult! @join__field(graph: PROPERTY)
+  createReservation(input: CreateReservationInput!, idempotencyKey: UUID!): CreateReservationResult! @join__field(graph: RESERVATIONS)
+  confirmReservation(reservationId: ID!, input: ConfirmReservationInput!, idempotencyKey: UUID!): ConfirmReservationResult! @join__field(graph: RESERVATIONS)
+  modifyReservation(reservationId: ID!, input: ModifyReservationInput!, idempotencyKey: UUID!): ModifyReservationResult! @join__field(graph: RESERVATIONS)
+  cancelReservation(reservationId: ID!, input: CancelReservationInput, idempotencyKey: UUID!): CancelReservationResult! @join__field(graph: RESERVATIONS)
+  mobileCheckIn(reservationId: ID!, input: MobileCheckInInput!, idempotencyKey: UUID!): MobileCheckInResult! @join__field(graph: RESERVATIONS)
+  expressCheckout(reservationId: ID!): ExpressCheckoutResult! @join__field(graph: RESERVATIONS)
+  requestRoomUpgrade(reservationId: ID!, input: RoomUpgradeInput): RoomUpgradeResult! @join__field(graph: RESERVATIONS)
+  applyGiftCard(reservationId: ID!, giftCardCode: String!): ApplyGiftCardResult! @join__field(graph: RESERVATIONS)
+  createDiningReservation(input: CreateDiningInput!, idempotencyKey: UUID!): CreateDiningResult! @join__field(graph: RESERVATIONS)
+  bookSpaAppointment(input: BookSpaInput!, idempotencyKey: UUID!): BookSpaResult! @join__field(graph: RESERVATIONS)
+  bookTransportation(input: BookTransportInput!, idempotencyKey: UUID!): BookTransportResult! @join__field(graph: RESERVATIONS)
+}
+
+type NegotiatedRate
+  @join__type(graph: CORPORATE)
+{
+  id: ID!
+  accountId: ID!
+  hotelId: ID!
+  hotel: Hotel!
+  rateName: String!
+  rateCode: String!
+  discountPercent: Float!
+  negotiatedRate: Money!
+  validFrom: Date!
+  validTo: Date!
+  blackoutDates: [Date!]!
+  active: Boolean!
+}
+
+type NightlyRate
+  @join__type(graph: PRICING)
+  @join__type(graph: RESERVATIONS)
+{
+  date: Date!
+  rate: Money!
+}
+
+interface Node
+  @join__type(graph: CONTENT)
+  @join__type(graph: CORPORATE)
+  @join__type(graph: EXPERIENCES)
+  @join__type(graph: GUEST)
+  @join__type(graph: LOYALTY)
+  @join__type(graph: MEETINGS)
+  @join__type(graph: NOTIFICATIONS)
+  @join__type(graph: PRICING)
+  @join__type(graph: PROPERTY)
+  @join__type(graph: RESERVATIONS)
+{
+  id: ID!
+}
+
+type NotFoundError
+  @join__type(graph: CORPORATE)
+  @join__type(graph: EXPERIENCES)
+  @join__type(graph: GUEST)
+  @join__type(graph: LOYALTY)
+  @join__type(graph: MEETINGS)
+  @join__type(graph: NOTIFICATIONS)
+  @join__type(graph: PRICING)
+  @join__type(graph: PROPERTY)
+  @join__type(graph: RESERVATIONS)
+{
+  code: String!
+  message: String!
+  resourceType: String @join__field(graph: CORPORATE, type: "String!") @join__field(graph: EXPERIENCES, type: "String!") @join__field(graph: GUEST, type: "String!") @join__field(graph: LOYALTY, type: "String!") @join__field(graph: MEETINGS, type: "String!") @join__field(graph: NOTIFICATIONS, type: "String!") @join__field(graph: PRICING, type: "String!") @join__field(graph: PROPERTY, type: "String") @join__field(graph: RESERVATIONS, type: "String!")
+}
+
+type Notification implements Node
+  @join__implements(graph: NOTIFICATIONS, interface: "Node")
+  @join__type(graph: NOTIFICATIONS, key: "id")
+{
+  id: ID!
+  guestId: ID!
+  type: NotificationType!
+  channel: NotificationChannel!
+  priority: NotificationPriority!
+  status: NotificationStatus!
+  title: String!
+  body: String!
+  category: NotificationCategory!
+  actionLabel: String
+  actionUrl: URL
+  imageUrl: URL
+  reservationId: ID
+  metadata: [MetadataEntry!]!
+  sentAt: DateTime!
+  readAt: DateTime
+  expiresAt: DateTime
+}
+
+enum NotificationCategory
+  @join__type(graph: NOTIFICATIONS)
+{
+  RESERVATIONS @join__enumValue(graph: NOTIFICATIONS)
+  LOYALTY @join__enumValue(graph: NOTIFICATIONS)
+  MARKETING @join__enumValue(graph: NOTIFICATIONS)
+  PRE_STAY @join__enumValue(graph: NOTIFICATIONS)
+  ON_PROPERTY @join__enumValue(graph: NOTIFICATIONS)
+  POST_STAY @join__enumValue(graph: NOTIFICATIONS)
+  ACCOUNT @join__enumValue(graph: NOTIFICATIONS)
+  BILLING @join__enumValue(graph: NOTIFICATIONS)
+  SECURITY @join__enumValue(graph: NOTIFICATIONS)
+  CONCIERGE @join__enumValue(graph: NOTIFICATIONS)
+}
+
+enum NotificationChannel
+  @join__type(graph: NOTIFICATIONS)
+{
+  EMAIL @join__enumValue(graph: NOTIFICATIONS)
+  SMS @join__enumValue(graph: NOTIFICATIONS)
+  PUSH @join__enumValue(graph: NOTIFICATIONS)
+  IN_APP @join__enumValue(graph: NOTIFICATIONS)
+  WHATSAPP @join__enumValue(graph: NOTIFICATIONS)
+}
+
+type NotificationConnection
+  @join__type(graph: NOTIFICATIONS)
+{
+  edges: [NotificationEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+  unreadCount: Int!
+}
+
+type NotificationEdge
+  @join__type(graph: NOTIFICATIONS)
+{
+  node: Notification!
+  cursor: String!
+}
+
+input NotificationFilter
+  @join__type(graph: NOTIFICATIONS)
+{
+  type: NotificationType
+  category: NotificationCategory
+  status: NotificationStatus
+  unreadOnly: Boolean
+}
+
+type NotificationPreferences
+  @join__type(graph: NOTIFICATIONS)
+{
+  id: ID!
+  guestId: ID!
+  channelSettings: [ChannelSetting!]!
+  categoryPreferences: [CategoryPreference!]!
+  language: String!
+  timezone: String!
+  updatedAt: DateTime!
+}
+
+input NotificationPreferencesInput
+  @join__type(graph: NOTIFICATIONS)
+{
+  language: String
+  timezone: String
+  channelSettings: [ChannelSettingInput!]
+  categoryPreferences: [CategoryPreferenceInput!]
+}
+
+enum NotificationPriority
+  @join__type(graph: NOTIFICATIONS)
+{
+  LOW @join__enumValue(graph: NOTIFICATIONS)
+  NORMAL @join__enumValue(graph: NOTIFICATIONS)
+  HIGH @join__enumValue(graph: NOTIFICATIONS)
+  URGENT @join__enumValue(graph: NOTIFICATIONS)
+}
+
+enum NotificationStatus
+  @join__type(graph: NOTIFICATIONS)
+{
+  PENDING @join__enumValue(graph: NOTIFICATIONS)
+  DELIVERED @join__enumValue(graph: NOTIFICATIONS)
+  READ @join__enumValue(graph: NOTIFICATIONS)
+  FAILED @join__enumValue(graph: NOTIFICATIONS)
+  EXPIRED @join__enumValue(graph: NOTIFICATIONS)
+}
+
+enum NotificationType
+  @join__type(graph: NOTIFICATIONS)
+{
+  RESERVATION_CONFIRMED @join__enumValue(graph: NOTIFICATIONS)
+  RESERVATION_MODIFIED @join__enumValue(graph: NOTIFICATIONS)
+  RESERVATION_CANCELLED @join__enumValue(graph: NOTIFICATIONS)
+  CHECK_IN_REMINDER @join__enumValue(graph: NOTIFICATIONS)
+  CHECK_IN_READY @join__enumValue(graph: NOTIFICATIONS)
+  CHECK_OUT_REMINDER @join__enumValue(graph: NOTIFICATIONS)
+  LOYALTY_POINTS_EARNED @join__enumValue(graph: NOTIFICATIONS)
+  LOYALTY_TIER_UPGRADE @join__enumValue(graph: NOTIFICATIONS)
+  LOYALTY_REWARD_AVAILABLE @join__enumValue(graph: NOTIFICATIONS)
+  PROMOTION_OFFER @join__enumValue(graph: NOTIFICATIONS)
+  EXPERIENCE_BOOKING_CONFIRMED @join__enumValue(graph: NOTIFICATIONS)
+  MEETING_BOOKING_CONFIRMED @join__enumValue(graph: NOTIFICATIONS)
+  PAYMENT_CONFIRMATION @join__enumValue(graph: NOTIFICATIONS)
+  WELCOME_MESSAGE @join__enumValue(graph: NOTIFICATIONS)
+  FEEDBACK_REQUEST @join__enumValue(graph: NOTIFICATIONS)
+  CONCIERGE_MESSAGE @join__enumValue(graph: NOTIFICATIONS)
+  ANCILLARY_REMINDER @join__enumValue(graph: NOTIFICATIONS)
+  MAINTENANCE_NOTICE @join__enumValue(graph: NOTIFICATIONS)
+}
+
+type OccupancyLimit
+  @join__type(graph: PROPERTY)
+{
+  adults: Int!
+  children: Int!
+  total: Int!
+}
+
+type Package implements Node
+  @join__implements(graph: PRICING, interface: "Node")
+  @join__type(graph: PRICING, key: "id")
+{
+  id: ID!
+  code: String!
+  name: String!
+  description: String
+  hotelId: ID!
+  includes: [String!]!
+  priceModifier: Float!
+  validFrom: Date!
+  validTo: Date!
+  active: Boolean!
+}
+
+type PageInfo
+  @join__type(graph: CONTENT)
+  @join__type(graph: EXPERIENCES)
+  @join__type(graph: GUEST)
+  @join__type(graph: LOYALTY)
+  @join__type(graph: MEETINGS)
+  @join__type(graph: NOTIFICATIONS)
+  @join__type(graph: PROPERTY)
+  @join__type(graph: RESERVATIONS)
+{
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+type ParkingInfo
+  @join__type(graph: PROPERTY)
+{
+  available: Boolean!
+  type: String
+  valetAvailable: Boolean!
+  valetFeePerDay: Money
+  selfParkFeePerDay: Money
+  evChargingAvailable: Boolean!
+}
+
+enum PartnerCategory
+  @join__type(graph: LOYALTY)
+{
+  AIRLINE @join__enumValue(graph: LOYALTY)
+  CAR_RENTAL @join__enumValue(graph: LOYALTY)
+  CRUISE @join__enumValue(graph: LOYALTY)
+  LIFESTYLE @join__enumValue(graph: LOYALTY)
+  DINING @join__enumValue(graph: LOYALTY)
+  RETAIL @join__enumValue(graph: LOYALTY)
+  FINANCIAL @join__enumValue(graph: LOYALTY)
+  ENTERTAINMENT @join__enumValue(graph: LOYALTY)
+}
+
+enum PartnerLinkStatus
+  @join__type(graph: LOYALTY)
+{
+  ACTIVE @join__enumValue(graph: LOYALTY)
+  PENDING_VERIFICATION @join__enumValue(graph: LOYALTY)
+  FAILED @join__enumValue(graph: LOYALTY)
+  REVOKED @join__enumValue(graph: LOYALTY)
+}
+
+type PaymentDeclinedError
+  @join__type(graph: LOYALTY)
+  @join__type(graph: RESERVATIONS)
+{
+  code: String!
+  message: String!
+  retryWithNewCard: Boolean!
+}
+
+type PaymentMethod implements Node
+  @join__implements(graph: GUEST, interface: "Node")
+  @join__type(graph: GUEST)
+{
+  id: ID!
+  type: PaymentMethodType!
+  brand: String!
+  lastFour: String!
+  expiryMonth: Int!
+  expiryYear: Int!
+  holderName: String!
+  pspToken: String!
+  billingAddress: GuestAddress
+  isDefault: Boolean!
+  isExpired: Boolean!
+  addedAt: DateTime!
+}
+
+type PaymentMethodConnection
+  @join__type(graph: GUEST)
+{
+  edges: [PaymentMethodEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type PaymentMethodEdge
+  @join__type(graph: GUEST)
+{
+  node: PaymentMethod!
+  cursor: String!
+}
+
+enum PaymentMethodType
+  @join__type(graph: GUEST)
+{
+  CREDIT_CARD @join__enumValue(graph: GUEST)
+  DEBIT_CARD @join__enumValue(graph: GUEST)
+  DIGITAL_WALLET @join__enumValue(graph: GUEST)
+  LOYALTY_POINTS @join__enumValue(graph: GUEST)
+  GIFT_CARD @join__enumValue(graph: GUEST)
+  BANK_TRANSFER @join__enumValue(graph: GUEST)
+}
+
+enum PaymentStatus
+  @join__type(graph: RESERVATIONS)
+{
+  PENDING @join__enumValue(graph: RESERVATIONS)
+  AUTHORIZED @join__enumValue(graph: RESERVATIONS)
+  CAPTURED @join__enumValue(graph: RESERVATIONS)
+  REFUNDED @join__enumValue(graph: RESERVATIONS)
+  FAILED @join__enumValue(graph: RESERVATIONS)
+}
+
+type PaymentSummary
+  @join__type(graph: RESERVATIONS)
+{
+  method: String!
+  lastFour: String
+  brand: String
+  authorizationCode: String
+  chargedAt: DateTime
+  amount: Money!
+  currency: String!
+  status: PaymentStatus!
+}
+
+type PetPolicy
+  @join__type(graph: PROPERTY)
+{
+  allowed: Boolean!
+  fee: Money
+  restrictions: String
+}
+
+scalar PhoneNumber
+  @join__type(graph: GUEST)
+  @join__type(graph: PROPERTY)
+
+type PillowPreferences
+  @join__type(graph: GUEST)
+{
+  firmness: String
+  filling: String
+}
+
+type PointsBalance
+  @join__type(graph: LOYALTY)
+{
+  available: Int!
+  pending: Int!
+  expiringSoon: Int!
+  total: Int!
+  cashEquivalent: Money!
+  updatedAt: DateTime!
+}
+
+type PointsRedemptionExample
+  @join__type(graph: LOYALTY)
+{
+  name: String!
+  points: Int!
+  approxValue: Money!
+}
+
+type PointsTransaction implements Node
+  @join__implements(graph: LOYALTY, interface: "Node")
+  @join__type(graph: LOYALTY)
+{
+  id: ID!
+  accountId: ID!
+  type: TransactionType!
+  points: Int!
+  balanceAfter: Int!
+  description: String!
+  reservationId: ID
+  partnerId: ID
+  transactionDate: DateTime!
+  expiresAt: DateTime
+}
+
+type PointsTransactionConnection
+  @join__type(graph: LOYALTY)
+{
+  edges: [PointsTransactionEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type PointsTransactionEdge
+  @join__type(graph: LOYALTY)
+{
+  node: PointsTransaction!
+  cursor: String!
+}
+
+type PointsValuation
+  @join__type(graph: LOYALTY)
+{
+  points: Int!
+  currency: CurrencyCode!
+  cashValue: Money!
+  ratePerThousand: Money!
+  bestUse: String!
+  comparisonRedemptions: [PointsRedemptionExample!]!
+}
+
+type PolicyException
+  @join__type(graph: CORPORATE)
+{
+  rule: String!
+  detail: String!
+  severity: ExceptionSeverity!
+}
+
+type Promotion implements Node
+  @join__implements(graph: PRICING, interface: "Node")
+  @join__type(graph: PRICING, key: "id")
+{
+  id: ID!
+  code: String!
+  name: String!
+  description: String!
+  discountType: DiscountType!
+  discountValue: Float!
+  minimumStay: Int
+  brandId: ID
+  hotelIds: [ID!]!
+  memberOnly: Boolean!
+  stackable: Boolean!
+  maxUsesPerGuest: Int
+  validFrom: Date!
+  validTo: Date!
+  active: Boolean!
+}
+
+type PropertyLocalizedContent
+  @join__type(graph: PROPERTY)
+{
+  text(locale: LanguageCode): String!
+  availableLocales: [LanguageCode!]!
+}
+
+type PropertyMediaAsset implements Node
+  @join__implements(graph: PROPERTY, interface: "Node")
+  @join__type(graph: PROPERTY)
+{
+  id: ID!
+  url: URL!
+  thumbnailUrl: URL
+  category: String
+  caption: String
+  altText: String
+  isPrimary: Boolean!
+  sortOrder: Int!
+}
+
+type PropertyMediaConnection
+  @join__type(graph: PROPERTY)
+{
+  edges: [PropertyMediaEdge!]!
+  pageInfo: PageInfo!
+}
+
+type PropertyMediaEdge
+  @join__type(graph: PROPERTY)
+{
+  node: PropertyMediaAsset!
+  cursor: String!
+}
+
+type PushDevice implements Node
+  @join__implements(graph: NOTIFICATIONS, interface: "Node")
+  @join__type(graph: NOTIFICATIONS)
+{
+  id: ID!
+  guestId: ID!
+  platform: DevicePlatform!
+  appVersion: String
+  deviceModel: String
+  pushToken: String!
+  registeredAt: DateTime!
+  lastSeenAt: DateTime!
+  active: Boolean!
+}
+
+type Query
+  @join__type(graph: CONTENT)
+  @join__type(graph: CORPORATE)
+  @join__type(graph: EXPERIENCES)
+  @join__type(graph: GUEST)
+  @join__type(graph: LOYALTY)
+  @join__type(graph: MEETINGS)
+  @join__type(graph: NOTIFICATIONS)
+  @join__type(graph: PRICING)
+  @join__type(graph: PROPERTY)
+  @join__type(graph: RESERVATIONS)
+{
+  articles(first: Int, after: String, filter: ArticleFilter, locale: String): ArticleConnection! @join__field(graph: CONTENT)
+  article(slug: String!, locale: String): Article @join__field(graph: CONTENT)
+  featuredArticles(first: Int, locale: String): [Article!]! @join__field(graph: CONTENT)
+  travelInspirations(destination: String, season: Season, first: Int, locale: String): [TravelInspiration!]! @join__field(graph: CONTENT)
+  brandStory(locale: String): BrandStory! @join__field(graph: CONTENT)
+  dealSpotlights(active: Boolean, locale: String): [DealSpotlight!]! @join__field(graph: CONTENT)
+  contentCollection(slug: String!, locale: String): ContentCollection @join__field(graph: CONTENT)
+  myCorporateAccount: CorporateAccount @join__field(graph: CORPORATE)
+  corporateAccount(id: ID!): CorporateAccount @join__field(graph: CORPORATE)
+  travelReport(accountId: ID!, period: ReportingPeriod!): TravelReport! @join__field(graph: CORPORATE)
+  pendingApprovals(accountId: ID): [TravelApproval!]! @join__field(graph: CORPORATE)
+  travelPolicy(accountId: ID!): TravelPolicy @join__field(graph: CORPORATE)
+  negotiatedRates(accountId: ID!, propertyId: ID): [NegotiatedRate!]! @join__field(graph: CORPORATE)
+  experiences(hotelId: ID!, category: ExperienceCategory, date: Date): [Experience!]! @join__field(graph: EXPERIENCES)
+  experience(id: ID!): Experience @join__field(graph: EXPERIENCES)
+  experienceAvailability(experienceId: ID!, date: Date!, partySize: Int!): ExperienceAvailability! @join__field(graph: EXPERIENCES)
+  spaTreatmentMenu(hotelId: ID!): [SpaTreatment!]! @join__field(graph: EXPERIENCES)
+  restaurantAvailability(hotelId: ID!, date: Date!, partySize: Int!): RestaurantAvailability! @join__field(graph: EXPERIENCES)
+  golfTeeTimeAvailability(hotelId: ID!, date: Date!, players: Int!): GolfTeeTimeAvailability! @join__field(graph: EXPERIENCES)
+  myExperienceBookings(first: Int, after: String, upcoming: Boolean): ExperienceBookingConnection! @join__field(graph: EXPERIENCES)
+  me: GuestProfile @join__field(graph: GUEST)
+  guest(id: ID!): GuestProfile @join__field(graph: GUEST)
+  guests(first: Int = 10, after: String): GuestProfileConnection! @join__field(graph: GUEST)
+  myLoyaltyAccount: LoyaltyAccount @join__field(graph: LOYALTY)
+  loyaltyAccount(loyaltyNumber: String!): LoyaltyAccount @join__field(graph: LOYALTY)
+  loyaltyPartners(first: Int, categories: [PartnerCategory!]): LoyaltyPartnerConnection! @join__field(graph: LOYALTY)
+  pointsValuation(points: Int!, currency: CurrencyCode!): PointsValuation! @join__field(graph: LOYALTY)
+  availableChallenges(first: Int): [Challenge!]! @join__field(graph: LOYALTY)
+  eventSpaces(hotelId: ID!, filter: EventSpaceFilter): [EventSpace!]! @join__field(graph: MEETINGS)
+  eventSpace(id: ID!): EventSpace @join__field(graph: MEETINGS)
+  searchEventSpaces(input: EventSpaceSearchInput!): EventSpaceSearchResult! @join__field(graph: MEETINGS)
+  cateringMenus(hotelId: ID!): [CateringMenu!]! @join__field(graph: MEETINGS)
+  rfp(id: ID!): RFP @join__field(graph: MEETINGS)
+  myRFPs(status: RFPStatus, first: Int, after: String): RFPConnection! @join__field(graph: MEETINGS)
+  groupBlock(id: ID!): GroupBlock @join__field(graph: MEETINGS)
+  myNotifications(first: Int, after: String, filter: NotificationFilter): NotificationConnection! @join__field(graph: NOTIFICATIONS)
+  notification(id: ID!): Notification @join__field(graph: NOTIFICATIONS)
+  unreadCount: Int! @join__field(graph: NOTIFICATIONS)
+  notificationPreferences: NotificationPreferences! @join__field(graph: NOTIFICATIONS)
+  myMessageThreads(first: Int, status: ThreadStatus): [MessageThread!]! @join__field(graph: NOTIFICATIONS)
+  messageThread(id: ID!): MessageThread @join__field(graph: NOTIFICATIONS)
+  myDevices: [PushDevice!]! @join__field(graph: NOTIFICATIONS)
+  searchRates(input: SearchRatesInput!): SearchRatesResult! @join__field(graph: PRICING)
+  validateRate(rateToken: String!): ValidateRateResult! @join__field(graph: PRICING)
+  ratePlan(id: ID!): RatePlan @join__field(graph: PRICING)
+  promotions(first: Int, after: String, brandIds: [ID!], memberOnly: Boolean): [Promotion!]! @join__field(graph: PRICING)
+  promotion(code: String!): Promotion @join__field(graph: PRICING)
+  package(id: ID!): Package @join__field(graph: PRICING)
+  rateCalendar(input: RateCalendarInput!): [DateRateSummary!]! @join__field(graph: PRICING)
+  giftCardBalance(code: String!): GiftCardBalance @join__field(graph: PRICING)
+  redemptionRates(input: RedemptionInput!): [RedemptionRate!]! @join__field(graph: PRICING)
+  hotel(id: ID!): Hotel @join__field(graph: PROPERTY)
+  hotelBySlug(slug: String!): Hotel @join__field(graph: PROPERTY)
+  hotels(first: Int = 10, after: String, filter: HotelFilter, sortBy: HotelSortField): HotelConnection! @join__field(graph: PROPERTY)
+  brand(id: ID!): Brand @join__field(graph: PROPERTY)
+  brandByCode(code: String!): Brand @join__field(graph: PROPERTY)
+  brands(first: Int = 20, after: String, tier: BrandTier): BrandConnection! @join__field(graph: PROPERTY)
+  roomType(id: ID!): RoomType @join__field(graph: PROPERTY)
+  featuredHotels(first: Int = 6, brandTier: BrandTier, countryCode: CountryCode): [Hotel!]! @join__field(graph: PROPERTY)
+  restaurant(id: ID!): Restaurant @join__field(graph: PROPERTY)
+  spa(id: ID!): Spa @join__field(graph: PROPERTY)
+  reservation(id: ID!): Reservation @join__field(graph: RESERVATIONS)
+  reservationByConfirmationNumber(confirmationNumber: String!, guestLastName: String): Reservation @join__field(graph: RESERVATIONS)
+  myReservations(first: Int, after: String, filter: ReservationFilter, sortBy: ReservationSortField): ReservationConnection! @join__field(graph: RESERVATIONS)
+  checkInEligibility(reservationId: ID!): CheckInEligibility! @join__field(graph: RESERVATIONS)
+  digitalKey(reservationId: ID!): DigitalKey @join__field(graph: RESERVATIONS)
+  myDiningReservations(upcoming: Boolean, first: Int, after: String): [DiningReservation!]! @join__field(graph: RESERVATIONS)
+  mySpaAppointments(upcoming: Boolean, first: Int, after: String): [SpaAppointment!]! @join__field(graph: RESERVATIONS)
+  myTransportationBookings(upcoming: Boolean, first: Int): [TransportationBooking!]! @join__field(graph: RESERVATIONS)
+}
+
+type QuietHours
+  @join__type(graph: NOTIFICATIONS)
+{
+  start: String!
+  end: String!
+  timezone: String!
+}
+
+type Rate implements Node
+  @join__implements(graph: PRICING, interface: "Node")
+  @join__type(graph: PRICING, key: "id")
+{
+  id: ID!
+  ratePlan: RatePlan!
+  nightlyRates: [NightlyRate!]!
+  totalRate: Money!
+  totalWithTaxes: Money!
+  averageNightlyRate: Money!
+  taxesAndFees: TaxBreakdown!
+  strikethrough: Money
+  savingsAmount: Money
+  savingsPct: Float
+  pointsEarned: Int!
+  availableRooms: Int!
+  rateToken: String!
+  expiresAt: DateTime!
+}
+
+input RateCalendarInput
+  @join__type(graph: PRICING)
+{
+  hotelId: ID!
+  startDate: Date!
+  endDate: Date!
+  adults: Int = 1
+  currency: String = "USD"
+}
+
+type RateCap
+  @join__type(graph: CORPORATE)
+{
+  city: String!
+  countryCode: String!
+  maxNightlyRate: Money!
+  appliesToTier: TravelClass
+}
+
+input RateCapInput
+  @join__type(graph: CORPORATE)
+{
+  city: String!
+  countryCode: String!
+  maxNightlyRateUsd: Float!
+  appliesToTier: TravelClass
+}
+
+type RateExpiredError
+  @join__type(graph: PRICING)
+  @join__type(graph: RESERVATIONS)
+{
+  code: String!
+  message: String!
+}
+
+type RatePlan implements Node
+  @join__implements(graph: PRICING, interface: "Node")
+  @join__type(graph: PRICING, key: "id")
+{
+  id: ID!
+  code: String!
+  name: String!
+  type: RatePlanType!
+  description: String
+  refundable: Boolean!
+  breakfastIncluded: Boolean!
+  wifiIncluded: Boolean!
+  parkingIncluded: Boolean!
+  loyaltyEligible: Boolean!
+  loyaltyMultiplier: Float
+  cancellationPolicy: CancellationPolicy
+  minNights: Int
+  maxNights: Int
+  advanceBookingDays: Int
+}
+
+enum RatePlanType
+  @join__type(graph: PRICING)
+{
+  BEST_AVAILABLE @join__enumValue(graph: PRICING)
+  ADVANCE_PURCHASE @join__enumValue(graph: PRICING)
+  MEMBER_RATE @join__enumValue(graph: PRICING)
+  CORPORATE @join__enumValue(graph: PRICING)
+  GOVERNMENT @join__enumValue(graph: PRICING)
+  PACKAGE @join__enumValue(graph: PRICING)
+  REDEMPTION @join__enumValue(graph: PRICING)
+  GROUP @join__enumValue(graph: PRICING)
+  PROMOTION @join__enumValue(graph: PRICING)
+  AAA_CAA @join__enumValue(graph: PRICING)
+  SENIOR @join__enumValue(graph: PRICING)
+}
+
+type RatingBreakdown
+  @join__type(graph: PROPERTY)
+{
+  excellent: Int!
+  veryGood: Int!
+  good: Int!
+  fair: Int!
+  poor: Int!
+}
+
+union RedeemCertificateResult
+  @join__type(graph: LOYALTY)
+  @join__unionMember(graph: LOYALTY, member: "CertificateRedemption")
+  @join__unionMember(graph: LOYALTY, member: "NotFoundError")
+  @join__unionMember(graph: LOYALTY, member: "ValidationError")
+ = CertificateRedemption | NotFoundError | ValidationError
+
+input RedemptionInput
+  @join__type(graph: PRICING)
+{
+  hotelId: ID!
+  checkIn: Date!
+  checkOut: Date!
+  roomTypeId: ID
+}
+
+type RedemptionRate
+  @join__type(graph: PRICING)
+{
+  roomTypeId: ID!
+  hotelId: ID!
+  pointsCost: Int!
+  pointsPerNight: Int!
+  availableNights: [Date!]!
+  cashCopay: Money
+}
+
+union RegisterChallengeResult
+  @join__type(graph: LOYALTY)
+  @join__unionMember(graph: LOYALTY, member: "Challenge")
+  @join__unionMember(graph: LOYALTY, member: "ValidationError")
+  @join__unionMember(graph: LOYALTY, member: "NotFoundError")
+ = Challenge | ValidationError | NotFoundError
+
+input RegisterPushDeviceInput
+  @join__type(graph: NOTIFICATIONS)
+{
+  platform: DevicePlatform!
+  pushToken: String!
+  appVersion: String
+  deviceModel: String
+}
+
+enum ReportingPeriod
+  @join__type(graph: CORPORATE)
+{
+  MTD @join__enumValue(graph: CORPORATE)
+  QTD @join__enumValue(graph: CORPORATE)
+  YTD @join__enumValue(graph: CORPORATE)
+  LAST_12_MONTHS @join__enumValue(graph: CORPORATE)
+}
+
+enum RequestStatus
+  @join__type(graph: RESERVATIONS)
+{
+  PENDING @join__enumValue(graph: RESERVATIONS)
+  ACKNOWLEDGED @join__enumValue(graph: RESERVATIONS)
+  FULFILLED @join__enumValue(graph: RESERVATIONS)
+  DECLINED @join__enumValue(graph: RESERVATIONS)
+}
+
+type Reservation implements Node
+  @join__implements(graph: RESERVATIONS, interface: "Node")
+  @join__type(graph: RESERVATIONS, key: "id")
+{
+  id: ID!
+  confirmationNumber: String!
+  status: ReservationStatus!
+  hotel: Hotel!
+  roomType: RoomType!
+  guest: GuestProfile
+  checkIn: Date!
+  checkOut: Date!
+  nights: Int!
+  adults: Int!
+  children: Int!
+  guestCount: GuestCount!
+  room: ReservationRoom
+  rateBreakdown: ReservationRateBreakdown!
+  addOns: [ReservationAddOn!]!
+  specialRequests: [SpecialRequest!]!
+  paymentSummary: PaymentSummary
+  folio: Folio
+  loyaltyContext: ReservationLoyaltyContext
+  digitalKey: DigitalKey
+  roomUpgradeRequest: RoomUpgradeRequest
+  cancellationPolicy: CancellationPolicy!
+  cancellation: CancellationRecord
+  isRefundable: Boolean!
+  cancellationDeadline: DateTime
+  canModify: Boolean!
+  canCheckInOnline: Boolean!
+  source: String!
+  confirmationSentAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type ReservationAddOn
+  @join__type(graph: RESERVATIONS)
+{
+  id: ID!
+  type: String!
+  name: String!
+  description: String
+  quantity: Int!
+  pricePerUnit: Money!
+  totalPrice: Money!
+  date: Date
+  status: String!
+}
+
+type ReservationConnection
+  @join__type(graph: RESERVATIONS)
+{
+  edges: [ReservationEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type ReservationEdge
+  @join__type(graph: RESERVATIONS)
+{
+  node: Reservation!
+  cursor: String!
+}
+
+input ReservationFilter
+  @join__type(graph: RESERVATIONS)
+{
+  status: ReservationStatus
+  hotelId: ID
+  checkInFrom: Date
+  checkInTo: Date
+}
+
+type ReservationLoyaltyContext
+  @join__type(graph: RESERVATIONS)
+{
+  memberNumber: String!
+  tier: String!
+  pointsToEarn: Int!
+  pointsEarned: Int
+  bonusMultiplier: Float
+  qualifyingNights: Int!
+}
+
+type ReservationRateBreakdown
+  @join__type(graph: RESERVATIONS)
+{
+  currency: String!
+  nightlyRates: [NightlyRate!]!
+  roomSubtotal: Money!
+  addOnSubtotal: Money
+  promotionSavings: Money
+  taxesAndFees: TaxBreakdown!
+  loyaltyDiscount: Money
+  giftCardDiscount: Money
+  totalDue: Money!
+  depositPaid: Money
+  balanceDue: Money!
+  lineItems: [BillingLineItem!]!
+}
+
+type ReservationRoom
+  @join__type(graph: RESERVATIONS)
+{
+  number: String!
+  floor: Int
+  building: String
+  category: String
+}
+
+enum ReservationSortField
+  @join__type(graph: RESERVATIONS)
+{
+  CHECK_IN_ASC @join__enumValue(graph: RESERVATIONS)
+  CHECK_IN_DESC @join__enumValue(graph: RESERVATIONS)
+  CREATED_AT_DESC @join__enumValue(graph: RESERVATIONS)
+}
+
+enum ReservationStatus
+  @join__type(graph: RESERVATIONS)
+{
+  PENDING_PAYMENT @join__enumValue(graph: RESERVATIONS)
+  CONFIRMED @join__enumValue(graph: RESERVATIONS)
+  MODIFIED @join__enumValue(graph: RESERVATIONS)
+  CHECKED_IN @join__enumValue(graph: RESERVATIONS)
+  CHECKED_OUT @join__enumValue(graph: RESERVATIONS)
+  NO_SHOW @join__enumValue(graph: RESERVATIONS)
+  CANCELLED @join__enumValue(graph: RESERVATIONS)
+  CANCELLED_WITH_FEE @join__enumValue(graph: RESERVATIONS)
+  REFUND_PENDING @join__enumValue(graph: RESERVATIONS)
+}
+
+type Restaurant implements Node
+  @join__implements(graph: PROPERTY, interface: "Node")
+  @join__type(graph: PROPERTY, key: "id")
+{
+  id: ID!
+  hotelId: ID!
+  name: String!
+  cuisine: [String!]!
+  description: PropertyLocalizedContent
+  dressCode: String
+  openingHours: String
+  priceRange: String
+  media(first: Int): PropertyMediaConnection!
+  michelin: Boolean!
+  reservationRequired: Boolean!
+}
+
+type RestaurantAvailability
+  @join__type(graph: EXPERIENCES)
+{
+  hotelId: ID!
+  date: Date!
+  partySize: Int!
+  restaurants: [RestaurantSlots!]!
+}
+
+type RestaurantSlots
+  @join__type(graph: EXPERIENCES)
+{
+  restaurantId: ID!
+  restaurantName: String!
+  cuisine: String!
+  michelinStars: Int
+  slots: [TimeSlot!]!
+}
+
+type Review implements Node
+  @join__implements(graph: PROPERTY, interface: "Node")
+  @join__type(graph: PROPERTY)
+{
+  id: ID!
+  hotelId: ID!
+  guestName: String!
+  stayDate: String!
+  overallRating: Float!
+  categoryRatings: CategoryRatings
+  title: String
+  body: String!
+  language: String!
+  verified: Boolean!
+  helpfulCount: Int!
+  response: ReviewResponse
+}
+
+union ReviewApprovalResult
+  @join__type(graph: CORPORATE)
+  @join__unionMember(graph: CORPORATE, member: "TravelApproval")
+  @join__unionMember(graph: CORPORATE, member: "ValidationError")
+  @join__unionMember(graph: CORPORATE, member: "NotFoundError")
+ = TravelApproval | ValidationError | NotFoundError
+
+type ReviewConnection
+  @join__type(graph: PROPERTY)
+{
+  edges: [ReviewEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+  averageRating: Float
+  ratingBreakdown: RatingBreakdown
+}
+
+type ReviewEdge
+  @join__type(graph: PROPERTY)
+{
+  node: Review!
+  cursor: String!
+}
+
+type ReviewResponse
+  @join__type(graph: PROPERTY)
+{
+  respondedAt: DateTime!
+  body: String!
+}
+
+enum ReviewSortField
+  @join__type(graph: PROPERTY)
+{
+  RECENT @join__enumValue(graph: PROPERTY)
+  HIGHEST_RATED @join__enumValue(graph: PROPERTY)
+  LOWEST_RATED @join__enumValue(graph: PROPERTY)
+  MOST_HELPFUL @join__enumValue(graph: PROPERTY)
+}
+
+type RFP implements Node
+  @join__implements(graph: MEETINGS, interface: "Node")
+  @join__type(graph: MEETINGS, key: "id")
+{
+  id: ID!
+  rfpNumber: String!
+  status: RFPStatus!
+  organizer: String!
+  organization: String!
+  contactEmail: String!
+  contactPhone: String!
+  eventName: String!
+  eventType: EventType!
+  startDate: Date!
+  endDate: Date!
+  attendees: Int!
+  guestRoomsPerNight: Int
+  preferredHotels: [Hotel!]!
+  spaceRequirements: [SpaceRequirement!]!
+  cateringRequirements: String
+  additionalRequirements: String
+  responses: [RFPResponse!]!
+  history: [RFPStatusEvent!]!
+  submittedAt: DateTime!
+  updatedAt: DateTime!
+  expiresAt: DateTime
+}
+
+type RFPConnection
+  @join__type(graph: MEETINGS)
+{
+  edges: [RFPEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type RFPEdge
+  @join__type(graph: MEETINGS)
+{
+  node: RFP!
+  cursor: String!
+}
+
+type RFPResponse
+  @join__type(graph: MEETINGS)
+{
+  id: ID!
+  hotelId: ID!
+  hotel: Hotel!
+  status: RFPResponseStatus!
+  proposedSpaces: [EventSpace!]!
+  proposedRoomBlock: Int
+  proposedRate: Money
+  proposedFAndBMinimum: Money
+  notes: String
+  respondedAt: DateTime!
+  validUntil: DateTime
+}
+
+enum RFPResponseStatus
+  @join__type(graph: MEETINGS)
+{
+  PENDING @join__enumValue(graph: MEETINGS)
+  DECLINED @join__enumValue(graph: MEETINGS)
+  PROPOSED @join__enumValue(graph: MEETINGS)
+  ACCEPTED @join__enumValue(graph: MEETINGS)
+}
+
+enum RFPStatus
+  @join__type(graph: MEETINGS)
+{
+  DRAFT @join__enumValue(graph: MEETINGS)
+  SUBMITTED @join__enumValue(graph: MEETINGS)
+  IN_REVIEW @join__enumValue(graph: MEETINGS)
+  PROPOSAL_SENT @join__enumValue(graph: MEETINGS)
+  NEGOTIATING @join__enumValue(graph: MEETINGS)
+  ACCEPTED @join__enumValue(graph: MEETINGS)
+  DECLINED @join__enumValue(graph: MEETINGS)
+  EXPIRED @join__enumValue(graph: MEETINGS)
+  CANCELLED @join__enumValue(graph: MEETINGS)
+}
+
+type RFPStatusEvent
+  @join__type(graph: MEETINGS)
+{
+  status: RFPStatus!
+  notes: String
+  changedAt: DateTime!
+  changedBy: String!
+}
+
+type RoomAvailability
+  @join__type(graph: PRICING)
+{
+  roomType: RoomType!
+  rates: [Rate!]!
+  lowestRate: Rate
+  availableCount: Int!
+  urgencySignal: UrgencySignal
+}
+
+enum RoomCategory
+  @join__type(graph: GUEST)
+  @join__type(graph: PROPERTY)
+{
+  STANDARD @join__enumValue(graph: GUEST) @join__enumValue(graph: PROPERTY)
+  SUPERIOR @join__enumValue(graph: GUEST) @join__enumValue(graph: PROPERTY)
+  DELUXE @join__enumValue(graph: GUEST) @join__enumValue(graph: PROPERTY)
+  PREMIER @join__enumValue(graph: GUEST) @join__enumValue(graph: PROPERTY)
+  JUNIOR_SUITE @join__enumValue(graph: GUEST) @join__enumValue(graph: PROPERTY)
+  SUITE @join__enumValue(graph: GUEST) @join__enumValue(graph: PROPERTY)
+  VILLA @join__enumValue(graph: GUEST) @join__enumValue(graph: PROPERTY)
+  PENTHOUSE @join__enumValue(graph: GUEST) @join__enumValue(graph: PROPERTY)
+}
+
+type RoomPreferences
+  @join__type(graph: GUEST)
+{
+  preferredTypes: [RoomCategory!]!
+  viewPreference: String
+  floorPreference: FloorPreference
+  quietRoom: Boolean
+  highFloor: Boolean
+  awayFromElevator: Boolean
+  adjacentRooms: Boolean
+}
+
+input RoomPreferencesInput
+  @join__type(graph: GUEST)
+{
+  preferredTypes: [RoomCategory!]
+  viewPreference: String
+  floorPreference: FloorPreference
+  quietRoom: Boolean
+  highFloor: Boolean
+}
+
+type RoomType implements Node
+  @join__implements(graph: PROPERTY, interface: "Node")
+  @join__type(graph: PRICING, key: "id")
+  @join__type(graph: PROPERTY, key: "id")
+  @join__type(graph: RESERVATIONS, key: "id")
+{
+  id: ID!
+  availability(checkIn: Date!, checkOut: Date!): RoomAvailability @join__field(graph: PRICING)
+  rates(checkIn: Date!, checkOut: Date!, adults: Int = 1): [Rate!]! @join__field(graph: PRICING)
+  hotelId: ID! @join__field(graph: PROPERTY)
+  code: String! @join__field(graph: PROPERTY)
+  name: String! @join__field(graph: PROPERTY)
+  category: RoomCategory! @join__field(graph: PROPERTY)
+  description: PropertyLocalizedContent @join__field(graph: PROPERTY)
+  sizeSqm: Float @join__field(graph: PROPERTY)
+  maxOccupancy: OccupancyLimit! @join__field(graph: PROPERTY)
+  bedConfiguration: [BedConfiguration!]! @join__field(graph: PROPERTY)
+  view: String @join__field(graph: PROPERTY)
+  floor: String @join__field(graph: PROPERTY)
+  amenities: [Amenity!]! @join__field(graph: PROPERTY)
+  media(first: Int): PropertyMediaConnection! @join__field(graph: PROPERTY)
+  accessibilityFeatures: [String!]! @join__field(graph: PROPERTY)
+  highlights: [String!]! @join__field(graph: PROPERTY)
+  isSmokingAllowed: Boolean! @join__field(graph: PROPERTY)
+  connectingRoomsAvailable: Boolean! @join__field(graph: PROPERTY)
+}
+
+type RoomUnavailableError
+  @join__type(graph: RESERVATIONS)
+{
+  code: String!
+  message: String!
+}
+
+input RoomUpgradeInput
+  @join__type(graph: RESERVATIONS)
+{
+  preferredRoomTypeId: ID
+  reason: String
+  complimentaryRequest: Boolean
+}
+
+type RoomUpgradeRequest
+  @join__type(graph: RESERVATIONS)
+{
+  id: ID!
+  requestedRoomTypeId: ID!
+  requestedRoomTypeName: String!
+  status: UpgradeStatus!
+  upgradePrice: Money
+  confirmedAt: DateTime
+  reason: String
+}
+
+union RoomUpgradeResult
+  @join__type(graph: RESERVATIONS)
+  @join__unionMember(graph: RESERVATIONS, member: "RoomUpgradeRequest")
+  @join__unionMember(graph: RESERVATIONS, member: "ValidationError")
+  @join__unionMember(graph: RESERVATIONS, member: "NotFoundError")
+ = RoomUpgradeRequest | ValidationError | NotFoundError
+
+type SavedHotel
+  @join__type(graph: GUEST)
+{
+  id: ID!
+  hotelId: ID!
+  savedAt: DateTime!
+}
+
+type SavedHotelConnection
+  @join__type(graph: GUEST)
+{
+  edges: [SavedHotelEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type SavedHotelEdge
+  @join__type(graph: GUEST)
+{
+  node: SavedHotel!
+  cursor: String!
+}
+
+input SearchRatesInput
+  @join__type(graph: PRICING)
+{
+  hotelId: ID!
+  checkIn: Date!
+  checkOut: Date!
+  adults: Int!
+  children: Int
+  currency: String
+  ratePlanCodes: [String!]
+  roomTypeIds: [ID!]
+  promoCode: String
+  corporateCode: String
+}
+
+union SearchRatesResult
+  @join__type(graph: PRICING)
+  @join__unionMember(graph: PRICING, member: "AvailabilityResult")
+  @join__unionMember(graph: PRICING, member: "NotFoundError")
+  @join__unionMember(graph: PRICING, member: "ValidationError")
+  @join__unionMember(graph: PRICING, member: "ExternalServiceError")
+ = AvailabilityResult | NotFoundError | ValidationError | ExternalServiceError
+
+enum Season
+  @join__type(graph: CONTENT)
+{
+  SPRING @join__enumValue(graph: CONTENT)
+  SUMMER @join__enumValue(graph: CONTENT)
+  FALL @join__enumValue(graph: CONTENT)
+  WINTER @join__enumValue(graph: CONTENT)
+  YEAR_ROUND @join__enumValue(graph: CONTENT)
+}
+
+input SendMessageInput
+  @join__type(graph: NOTIFICATIONS)
+{
+  threadId: ID
+  hotelId: ID
+  reservationId: ID
+  subject: String
+  body: String!
+  attachmentUrls: [URL!]
+}
+
+union SendMessageResult
+  @join__type(graph: NOTIFICATIONS)
+  @join__unionMember(graph: NOTIFICATIONS, member: "Message")
+  @join__unionMember(graph: NOTIFICATIONS, member: "ValidationError")
+  @join__unionMember(graph: NOTIFICATIONS, member: "NotFoundError")
+ = Message | ValidationError | NotFoundError
+
+enum SetupStyle
+  @join__type(graph: MEETINGS)
+{
+  THEATER @join__enumValue(graph: MEETINGS)
+  CLASSROOM @join__enumValue(graph: MEETINGS)
+  BANQUET @join__enumValue(graph: MEETINGS)
+  BOARDROOM @join__enumValue(graph: MEETINGS)
+  RECEPTION @join__enumValue(graph: MEETINGS)
+  U_SHAPE @join__enumValue(graph: MEETINGS)
+  COCKTAIL @join__enumValue(graph: MEETINGS)
+  HOLLOW_SQUARE @join__enumValue(graph: MEETINGS)
+  CRESCENT_ROUNDS @join__enumValue(graph: MEETINGS)
+}
+
+input SignInInput
+  @join__type(graph: GUEST)
+{
+  email: EmailAddress!
+  password: String!
+}
+
+union SignInResult
+  @join__type(graph: GUEST)
+  @join__unionMember(graph: GUEST, member: "AuthPayload")
+  @join__unionMember(graph: GUEST, member: "AuthenticationError")
+  @join__unionMember(graph: GUEST, member: "ValidationError")
+ = AuthPayload | AuthenticationError | ValidationError
+
+input SignUpInput
+  @join__type(graph: GUEST)
+{
+  email: EmailAddress!
+  password: String!
+  firstName: String!
+  lastName: String!
+  phone: PhoneNumber
+}
+
+union SignUpResult
+  @join__type(graph: GUEST)
+  @join__unionMember(graph: GUEST, member: "AuthPayload")
+  @join__unionMember(graph: GUEST, member: "ValidationError")
+ = AuthPayload | ValidationError
+
+type SlotUnavailableError
+  @join__type(graph: EXPERIENCES)
+{
+  code: String!
+  message: String!
+  slotToken: String!
+  suggestedAlternativeTokens: [String!]!
+}
+
+type Spa implements Node
+  @join__implements(graph: PROPERTY, interface: "Node")
+  @join__type(graph: PROPERTY, key: "id")
+{
+  id: ID!
+  hotelId: ID!
+  name: String!
+  description: PropertyLocalizedContent
+  openingHours: String
+  bookingRequired: Boolean!
+  media(first: Int): PropertyMediaConnection!
+}
+
+type SpaAppointment
+  @join__type(graph: RESERVATIONS)
+{
+  id: ID!
+  reservationId: ID!
+  treatmentId: ID!
+  treatmentName: String!
+  therapistName: String
+  date: Date!
+  time: String!
+  durationMinutes: Int!
+  price: Money!
+  status: AppointmentStatus!
+  confirmationNumber: String!
+  createdAt: DateTime!
+}
+
+enum SpaCategory
+  @join__type(graph: EXPERIENCES)
+{
+  MASSAGE @join__enumValue(graph: EXPERIENCES)
+  FACIAL @join__enumValue(graph: EXPERIENCES)
+  BODY_TREATMENT @join__enumValue(graph: EXPERIENCES)
+  HYDROTHERAPY @join__enumValue(graph: EXPERIENCES)
+  THERMAL @join__enumValue(graph: EXPERIENCES)
+  SIGNATURE @join__enumValue(graph: EXPERIENCES)
+  COUPLES @join__enumValue(graph: EXPERIENCES)
+  MENS_GROOMING @join__enumValue(graph: EXPERIENCES)
+  WELLNESS_RITUAL @join__enumValue(graph: EXPERIENCES)
+}
+
+type SpaceRequirement
+  @join__type(graph: MEETINGS)
+{
+  name: String!
+  setup: SetupStyle!
+  attendees: Int!
+  durationHours: Float!
+  startTime: String
+}
+
+input SpaceRequirementInput
+  @join__type(graph: MEETINGS)
+{
+  name: String!
+  setup: SetupStyle!
+  attendees: Int!
+  durationHours: Float!
+  startTime: String
+}
+
+type SpaTreatment implements Node
+  @join__implements(graph: EXPERIENCES, interface: "Node")
+  @join__type(graph: EXPERIENCES)
+{
+  id: ID!
+  hotelId: ID!
+  name: String!
+  category: SpaCategory!
+  description: String!
+  durationMinutes: Int!
+  pricePerPerson: Money!
+  modalities: [String!]!
+  contraindications: [String!]!
+  ageMinimum: Int
+}
+
+type SpecialRequest
+  @join__type(graph: RESERVATIONS)
+{
+  id: ID!
+  category: SpecialRequestCategory!
+  request: String!
+  status: RequestStatus!
+  fulfilledAt: DateTime
+}
+
+enum SpecialRequestCategory
+  @join__type(graph: RESERVATIONS)
+{
+  BED_CONFIGURATION @join__enumValue(graph: RESERVATIONS)
+  PILLOW_TYPE @join__enumValue(graph: RESERVATIONS)
+  FLOOR_PREFERENCE @join__enumValue(graph: RESERVATIONS)
+  ACCESSIBILITY @join__enumValue(graph: RESERVATIONS)
+  DIETARY @join__enumValue(graph: RESERVATIONS)
+  ROOM_SETUP @join__enumValue(graph: RESERVATIONS)
+  CELEBRATION @join__enumValue(graph: RESERVATIONS)
+  EARLY_CHECKIN @join__enumValue(graph: RESERVATIONS)
+  LATE_CHECKOUT @join__enumValue(graph: RESERVATIONS)
+  OTHER @join__enumValue(graph: RESERVATIONS)
+}
+
+input SpecialRequestInput
+  @join__type(graph: RESERVATIONS)
+{
+  category: SpecialRequestCategory!
+  request: String!
+}
+
+input SubmitReviewInput
+  @join__type(graph: PROPERTY)
+{
+  hotelId: ID!
+  overallRating: Float!
+  categoryRatings: CategoryRatingsInput
+  title: String
+  body: String!
+  stayDate: Date!
+}
+
+union SubmitReviewResult
+  @join__type(graph: PROPERTY)
+  @join__unionMember(graph: PROPERTY, member: "Review")
+  @join__unionMember(graph: PROPERTY, member: "ValidationError")
+  @join__unionMember(graph: PROPERTY, member: "AuthorizationError")
+  @join__unionMember(graph: PROPERTY, member: "NotFoundError")
+ = Review | ValidationError | AuthorizationError | NotFoundError
+
+input SubmitRFPInput
+  @join__type(graph: MEETINGS)
+{
+  organizer: String!
+  organization: String!
+  contactEmail: String!
+  contactPhone: String!
+  eventName: String!
+  eventType: EventType!
+  startDate: Date!
+  endDate: Date!
+  attendees: Int!
+  guestRoomsPerNight: Int
+  preferredHotelIds: [ID!]!
+  spaceRequirements: [SpaceRequirementInput!]!
+  cateringRequirements: String
+  additionalRequirements: String
+}
+
+union SubmitRFPResult
+  @join__type(graph: MEETINGS)
+  @join__unionMember(graph: MEETINGS, member: "RFP")
+  @join__unionMember(graph: MEETINGS, member: "ValidationError")
+  @join__unionMember(graph: MEETINGS, member: "NotFoundError")
+ = RFP | ValidationError | NotFoundError
+
+type SustainabilityCertification
+  @join__type(graph: PROPERTY)
+{
+  name: String!
+  issuedBy: String!
+  year: Int!
+}
+
+type SustainabilityInfo
+  @join__type(graph: PROPERTY)
+{
+  ecoScore: Int
+  certifications: [SustainabilityCertification!]!
+  carbonOffsetProgram: Boolean!
+  renewableEnergyPct: Int
+  localSourcingPct: Int
+}
+
+type TaxBreakdown
+  @join__type(graph: PRICING)
+  @join__type(graph: RESERVATIONS)
+{
+  subtotal: Money!
+  taxes: Money!
+  fees: Money!
+  total: Money!
+  breakdown: [TaxLineItem!]!
+}
+
+type TaxLineItem
+  @join__type(graph: PRICING)
+  @join__type(graph: RESERVATIONS)
+{
+  name: String!
+  amount: Money!
+  type: String!
+}
+
+type TechnicalSpecs
+  @join__type(graph: MEETINGS)
+{
+  power: String!
+  internetSpeedMbps: Int!
+  riggingPoints: Int
+  loadInDoorsHeightFt: Float
+  freightElevator: Boolean!
+  noiseRating: String
+}
+
+enum ThreadStatus
+  @join__type(graph: NOTIFICATIONS)
+{
+  OPEN @join__enumValue(graph: NOTIFICATIONS)
+  PENDING_GUEST @join__enumValue(graph: NOTIFICATIONS)
+  PENDING_AGENT @join__enumValue(graph: NOTIFICATIONS)
+  RESOLVED @join__enumValue(graph: NOTIFICATIONS)
+  CLOSED @join__enumValue(graph: NOTIFICATIONS)
+}
+
+type TierProgress
+  @join__type(graph: LOYALTY)
+{
+  currentTier: LoyaltyTier!
+  nextTier: LoyaltyTier
+  qualifyingNights: Int!
+  nightsToNextTier: Int
+  nightsToRetain: Int
+  qualifyingSpend: Money!
+  tierProgressPct: Float!
+  qualificationYearEndDate: Date!
+  projectedTier: LoyaltyTier
+}
+
+type TimeSlot
+  @join__type(graph: EXPERIENCES)
+{
+  slotToken: String!
+  startTime: String!
+  endTime: String!
+  available: Boolean!
+  remainingCapacity: Int!
+  pricePerPerson: Money!
+  guideName: String
+}
+
+input TransactionFilter
+  @join__type(graph: LOYALTY)
+{
+  type: TransactionType
+  fromDate: Date
+  toDate: Date
+  reservationId: ID
+}
+
+enum TransactionSortField
+  @join__type(graph: LOYALTY)
+{
+  DATE_DESC @join__enumValue(graph: LOYALTY)
+  DATE_ASC @join__enumValue(graph: LOYALTY)
+  POINTS_DESC @join__enumValue(graph: LOYALTY)
+  POINTS_ASC @join__enumValue(graph: LOYALTY)
+}
+
+enum TransactionType
+  @join__type(graph: LOYALTY)
+{
+  EARN_STAY @join__enumValue(graph: LOYALTY)
+  EARN_BONUS @join__enumValue(graph: LOYALTY)
+  EARN_TRANSFER @join__enumValue(graph: LOYALTY)
+  EARN_PARTNER @join__enumValue(graph: LOYALTY)
+  EARN_PURCHASE @join__enumValue(graph: LOYALTY)
+  EARN_GIFT @join__enumValue(graph: LOYALTY)
+  REDEEM @join__enumValue(graph: LOYALTY)
+  REDEEM_CERTIFICATE @join__enumValue(graph: LOYALTY)
+  REDEEM_TRANSFER @join__enumValue(graph: LOYALTY)
+  EXPIRE @join__enumValue(graph: LOYALTY)
+  ADJUST @join__enumValue(graph: LOYALTY)
+  AWARD @join__enumValue(graph: LOYALTY)
+  GIFT_OUT @join__enumValue(graph: LOYALTY)
+  GIFT_IN @join__enumValue(graph: LOYALTY)
+}
+
+input TransferPointsInput
+  @join__type(graph: LOYALTY)
+{
+  fromLoyaltyNumber: String!
+  toLoyaltyNumber: String!
+  points: Int!
+  message: String
+}
+
+union TransferPointsResult
+  @join__type(graph: LOYALTY)
+  @join__unionMember(graph: LOYALTY, member: "PointsTransaction")
+  @join__unionMember(graph: LOYALTY, member: "InsufficientPointsError")
+  @join__unionMember(graph: LOYALTY, member: "ValidationError")
+  @join__unionMember(graph: LOYALTY, member: "NotFoundError")
+ = PointsTransaction | InsufficientPointsError | ValidationError | NotFoundError
+
+type TransportationBooking
+  @join__type(graph: RESERVATIONS)
+{
+  id: ID!
+  reservationId: ID!
+  type: TransportationType!
+  pickupLocation: String!
+  dropoffLocation: String!
+  scheduledAt: DateTime!
+  vehicleType: String
+  price: Money!
+  status: TransportStatus!
+  notes: String
+  confirmationNumber: String!
+  createdAt: DateTime!
+}
+
+enum TransportationType
+  @join__type(graph: RESERVATIONS)
+{
+  AIRPORT_PICKUP @join__enumValue(graph: RESERVATIONS)
+  AIRPORT_DROPOFF @join__enumValue(graph: RESERVATIONS)
+  CAR_SERVICE @join__enumValue(graph: RESERVATIONS)
+  HELICOPTER @join__enumValue(graph: RESERVATIONS)
+  BOAT_TRANSFER @join__enumValue(graph: RESERVATIONS)
+}
+
+type TransportPreferences
+  @join__type(graph: GUEST)
+{
+  preferredMode: String
+  frequentFlyerNumbers: [FrequentFlyerNumber!]!
+}
+
+enum TransportStatus
+  @join__type(graph: RESERVATIONS)
+{
+  CONFIRMED @join__enumValue(graph: RESERVATIONS)
+  DISPATCHED @join__enumValue(graph: RESERVATIONS)
+  EN_ROUTE @join__enumValue(graph: RESERVATIONS)
+  COMPLETED @join__enumValue(graph: RESERVATIONS)
+  CANCELLED @join__enumValue(graph: RESERVATIONS)
+}
+
+type TravelApproval implements Node
+  @join__implements(graph: CORPORATE, interface: "Node")
+  @join__type(graph: CORPORATE)
+{
+  id: ID!
+  accountId: ID!
+  travelerId: ID!
+  reservationId: ID
+  status: ApprovalStatus!
+  totalAmount: Money!
+  policyExceptions: [PolicyException!]!
+  businessJustification: String
+  requestedAt: DateTime!
+  decidedAt: DateTime
+  decidedBy: String
+  notes: String
+}
+
+enum TravelClass
+  @join__type(graph: CORPORATE)
+{
+  ECONOMY @join__enumValue(graph: CORPORATE)
+  PREMIUM_ECONOMY @join__enumValue(graph: CORPORATE)
+  BUSINESS @join__enumValue(graph: CORPORATE)
+  FIRST @join__enumValue(graph: CORPORATE)
+}
+
+type TravelCompanion
+  @join__type(graph: GUEST)
+{
+  id: ID!
+  name: GuestName!
+  relationship: String!
+  email: EmailAddress
+  phone: PhoneNumber
+  loyaltyNumber: String
+  dateOfBirth: Date
+  addedAt: DateTime!
+}
+
+input TravelCompanionInput
+  @join__type(graph: GUEST)
+{
+  firstName: String!
+  lastName: String!
+  relationship: String!
+  email: EmailAddress
+  phone: PhoneNumber
+}
+
+type TravelerTypeRating
+  @join__type(graph: PROPERTY)
+{
+  type: String!
+  rating: Float!
+  count: Int!
+}
+
+type TravelInspiration implements Node
+  @join__implements(graph: CONTENT, interface: "Node")
+  @join__type(graph: CONTENT)
+{
+  id: ID!
+  slug: String!
+  destination: String!
+  region: String!
+  bestSeason: Season!
+  title: LocalizedContent!
+  description: LocalizedContent!
+  heroImage: MediaAsset!
+  gallery: [MediaAsset!]!
+  highlights: [LocalizedContent!]!
+  featuredHotels: [Hotel!]!
+  approxBudget: Money
+  recommendedDays: Int!
+  publishedAt: DateTime!
+}
+
+type TravelPolicy implements Node
+  @join__implements(graph: CORPORATE, interface: "Node")
+  @join__type(graph: CORPORATE)
+{
+  id: ID!
+  accountId: ID!
+  rateCaps: [RateCap!]!
+  maxNightlyRateUsd: Money
+  requiresApprovalAboveUsd: Money
+  approvalChain: [ApprovalLevel!]!
+  allowedRoomCategories: [String!]!
+  advanceBookingRequired: Boolean!
+  advanceBookingDays: Int
+  requiresBusinessJustification: Boolean!
+  blockedHotels: [Hotel!]!
+  preferredHotels: [Hotel!]!
+  perDiemMeals: Money
+  updatedAt: DateTime!
+}
+
+input TravelPolicyInput
+  @join__type(graph: CORPORATE)
+{
+  maxNightlyRateUsd: Float
+  requiresApprovalAboveUsd: Float
+  rateCaps: [RateCapInput!]
+  approvalChain: [ApprovalLevelInput!]
+  allowedRoomCategories: [String!]
+  advanceBookingRequired: Boolean
+  advanceBookingDays: Int
+  requiresBusinessJustification: Boolean
+  blockedHotelIds: [ID!]
+  preferredHotelIds: [ID!]
+  perDiemMealsUsd: Float
+}
+
+type TravelReport
+  @join__type(graph: CORPORATE)
+{
+  accountId: ID!
+  period: ReportingPeriod!
+  totalTrips: Int!
+  totalSpend: Money!
+  totalNights: Int!
+  policyComplianceRate: Float!
+  outOfPolicyTrips: Int!
+  topDestinations: [DestinationSpend!]!
+  spendByBrand: [BrandSpend!]!
+  spendByMonth: [MonthlySpend!]!
+  carbonFootprintKg: Float!
+  generatedAt: DateTime!
+}
+
+input UpdateGuestProfileInput
+  @join__type(graph: GUEST)
+{
+  phone: PhoneNumber
+  dateOfBirth: Date
+  nationality: CountryCode
+}
+
+input UpdatePreferencesInput
+  @join__type(graph: GUEST)
+{
+  room: RoomPreferencesInput
+  bed: BedPreferencesInput
+  dietary: DietaryPreferencesInput
+  communication: CommunicationPreferencesInput
+}
+
+union UpdateProfileResult
+  @join__type(graph: GUEST)
+  @join__unionMember(graph: GUEST, member: "GuestProfile")
+  @join__unionMember(graph: GUEST, member: "ValidationError")
+  @join__unionMember(graph: GUEST, member: "AuthorizationError")
+ = GuestProfile | ValidationError | AuthorizationError
+
+input UpdateRFPInput
+  @join__type(graph: MEETINGS)
+{
+  startDate: Date
+  endDate: Date
+  attendees: Int
+  guestRoomsPerNight: Int
+  spaceRequirements: [SpaceRequirementInput!]
+  cateringRequirements: String
+  additionalRequirements: String
+}
+
+union UpdateRFPResult
+  @join__type(graph: MEETINGS)
+  @join__unionMember(graph: MEETINGS, member: "RFP")
+  @join__unionMember(graph: MEETINGS, member: "ValidationError")
+  @join__unionMember(graph: MEETINGS, member: "NotFoundError")
+ = RFP | ValidationError | NotFoundError
+
+union UpdateTravelPolicyResult
+  @join__type(graph: CORPORATE)
+  @join__unionMember(graph: CORPORATE, member: "TravelPolicy")
+  @join__unionMember(graph: CORPORATE, member: "ValidationError")
+  @join__unionMember(graph: CORPORATE, member: "NotFoundError")
+ = TravelPolicy | ValidationError | NotFoundError
+
+enum UpgradeStatus
+  @join__type(graph: RESERVATIONS)
+{
+  PENDING @join__enumValue(graph: RESERVATIONS)
+  CONFIRMED @join__enumValue(graph: RESERVATIONS)
+  DECLINED @join__enumValue(graph: RESERVATIONS)
+  EXPIRED @join__enumValue(graph: RESERVATIONS)
+}
+
+type UrgencySignal
+  @join__type(graph: PRICING)
+{
+  type: String!
+  message: String!
+  count: Int
+}
+
+scalar URL
+  @join__type(graph: CONTENT)
+  @join__type(graph: CORPORATE)
+  @join__type(graph: EXPERIENCES)
+  @join__type(graph: GUEST)
+  @join__type(graph: LOYALTY)
+  @join__type(graph: MEETINGS)
+  @join__type(graph: NOTIFICATIONS)
+  @join__type(graph: PRICING)
+  @join__type(graph: PROPERTY)
+  @join__type(graph: RESERVATIONS)
+
+scalar UUID
+  @join__type(graph: CONTENT)
+  @join__type(graph: CORPORATE)
+  @join__type(graph: EXPERIENCES)
+  @join__type(graph: GUEST)
+  @join__type(graph: LOYALTY)
+  @join__type(graph: MEETINGS)
+  @join__type(graph: NOTIFICATIONS)
+  @join__type(graph: PRICING)
+  @join__type(graph: RESERVATIONS)
+
+union ValidateRateResult
+  @join__type(graph: PRICING)
+  @join__unionMember(graph: PRICING, member: "Rate")
+  @join__unionMember(graph: PRICING, member: "RateExpiredError")
+  @join__unionMember(graph: PRICING, member: "ValidationError")
+ = Rate | RateExpiredError | ValidationError
+
+type ValidationError
+  @join__type(graph: CORPORATE)
+  @join__type(graph: EXPERIENCES)
+  @join__type(graph: GUEST)
+  @join__type(graph: LOYALTY)
+  @join__type(graph: MEETINGS)
+  @join__type(graph: NOTIFICATIONS)
+  @join__type(graph: PRICING)
+  @join__type(graph: PROPERTY)
+  @join__type(graph: RESERVATIONS)
+{
+  code: String!
+  message: String!
+  fieldErrors: [FieldError!] @join__field(graph: CORPORATE, type: "[FieldError!]!") @join__field(graph: EXPERIENCES, type: "[FieldError!]!") @join__field(graph: GUEST, type: "[FieldError!]!") @join__field(graph: LOYALTY, type: "[FieldError!]!") @join__field(graph: MEETINGS, type: "[FieldError!]!") @join__field(graph: NOTIFICATIONS, type: "[FieldError!]!") @join__field(graph: PRICING, type: "[FieldError!]!") @join__field(graph: PROPERTY, type: "[FieldError!]") @join__field(graph: RESERVATIONS, type: "[FieldError!]!")
+}

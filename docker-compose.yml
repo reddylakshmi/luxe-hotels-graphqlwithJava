@@ -1,0 +1,191 @@
+version: "3.9"
+
+services:
+
+  # ── Subgraphs ──────────────────────────────────────────────────────────────
+
+  subgraph-property:
+    build:
+      context: .
+      dockerfile: subgraph-property/Dockerfile
+    ports:
+      - "4001:4001"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4001/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  subgraph-guest:
+    build:
+      context: .
+      dockerfile: subgraph-guest/Dockerfile
+    ports:
+      - "4002:4002"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4002/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  subgraph-pricing:
+    build:
+      context: .
+      dockerfile: subgraph-pricing/Dockerfile
+    ports:
+      - "4003:4003"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4003/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  subgraph-reservations:
+    build:
+      context: .
+      dockerfile: subgraph-reservations/Dockerfile
+    ports:
+      - "4004:4004"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4004/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  subgraph-loyalty:
+    build:
+      context: .
+      dockerfile: subgraph-loyalty/Dockerfile
+    ports:
+      - "4005:4005"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4005/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  subgraph-content:
+    build:
+      context: .
+      dockerfile: subgraph-content/Dockerfile
+    ports:
+      - "4006:4006"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4006/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  subgraph-experiences:
+    build:
+      context: .
+      dockerfile: subgraph-experiences/Dockerfile
+    ports:
+      - "4007:4007"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4007/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  subgraph-meetings:
+    build:
+      context: .
+      dockerfile: subgraph-meetings/Dockerfile
+    ports:
+      - "4008:4008"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4008/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  subgraph-notifications:
+    build:
+      context: .
+      dockerfile: subgraph-notifications/Dockerfile
+    ports:
+      - "4009:4009"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4009/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  subgraph-corporate:
+    build:
+      context: .
+      dockerfile: subgraph-corporate/Dockerfile
+    ports:
+      - "4010:4010"
+
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4010/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── Apollo Router ──────────────────────────────────────────────────────────
+
+  router:
+    image: ghcr.io/apollographql/router:v1.52.0
+    ports:
+      - "4000:4000"
+      - "8088:8088"
+    volumes:
+      - ./router/router.yaml:/dist/config/router.yaml
+      - ./supergraph.schema:/dist/schema/supergraph.graphqls
+    environment:
+      - APOLLO_ROUTER_CONFIG_PATH=/dist/config/router.yaml
+      - APOLLO_ROUTER_SUPERGRAPH_PATH=/dist/schema/supergraph.graphqls
+    depends_on:
+      subgraph-property:
+        condition: service_healthy
+      subgraph-guest:
+        condition: service_healthy
+      subgraph-pricing:
+        condition: service_healthy
+      subgraph-reservations:
+        condition: service_healthy
+      subgraph-loyalty:
+        condition: service_healthy
+      subgraph-content:
+        condition: service_healthy
+      subgraph-experiences:
+        condition: service_healthy
+      subgraph-meetings:
+        condition: service_healthy
+      subgraph-notifications:
+        condition: service_healthy
+      subgraph-corporate:
+        condition: service_healthy

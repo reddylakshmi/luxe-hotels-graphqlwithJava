@@ -1,0 +1,52 @@
+federation_version: =2.9.0
+
+subgraphs:
+  property:
+    routing_url: http://localhost:4001/graphql
+    schema:
+      file: subgraph-property/src/main/resources/schema/schema.graphqls
+
+  guest:
+    routing_url: http://localhost:4002/graphql
+    schema:
+      file: subgraph-guest/src/main/resources/schema/schema.graphqls
+
+  pricing:
+    routing_url: http://localhost:4003/graphql
+    schema:
+      file: subgraph-pricing/src/main/resources/schema/schema.graphqls
+
+  reservations:
+    routing_url: http://localhost:4004/graphql
+    schema:
+      file: subgraph-reservations/src/main/resources/schema/schema.graphqls
+
+  loyalty:
+    routing_url: http://localhost:4005/graphql
+    schema:
+      file: subgraph-loyalty/src/main/resources/schema/schema.graphqls
+
+  content:
+    routing_url: http://localhost:4006/graphql
+    schema:
+      file: subgraph-content/src/main/resources/schema/schema.graphqls
+
+  experiences:
+    routing_url: http://localhost:4007/graphql
+    schema:
+      file: subgraph-experiences/src/main/resources/schema/schema.graphqls
+
+  meetings:
+    routing_url: http://localhost:4008/graphql
+    schema:
+      file: subgraph-meetings/src/main/resources/schema/schema.graphqls
+
+  notifications:
+    routing_url: http://localhost:4009/graphql
+    schema:
+      file: subgraph-notifications/src/main/resources/schema/schema.graphqls
+
+  corporate:
+    routing_url: http://localhost:4010/graphql
+    schema:
+      file: subgraph-corporate/src/main/resources/schema/schema.graphqls

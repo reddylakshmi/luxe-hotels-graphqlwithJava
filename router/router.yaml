@@ -1,0 +1,61 @@
+supergraph:
+  listen: 0.0.0.0:4000
+  introspection: true
+
+sandbox:
+  enabled: true
+
+homepage:
+  enabled: false
+
+health_check:
+  listen: 0.0.0.0:8088
+  enabled: true
+  path: /health
+
+cors:
+  policies:
+    - origins:
+        - http://localhost:3000
+        - https://studio.apollographql.com
+        - https://luxehotels.com
+      methods:
+        - GET
+        - POST
+        - OPTIONS
+      allow_headers:
+        - Content-Type
+        - Authorization
+        - x-request-id
+        - x-correlation-id
+      allow_credentials: false
+
+headers:
+  all:
+    request:
+      - propagate:
+          named: authorization
+      - propagate:
+          named: x-request-id
+      - propagate:
+          named: x-correlation-id
+
+traffic_shaping:
+  all:
+    timeout: 30s
+
+# Surface subgraph errors during local dev so we can diagnose federation calls
+include_subgraph_errors:
+  all: true
+
+override_subgraph_url:
+  property:      http://localhost:4001/graphql
+  guest:         http://localhost:4002/graphql
+  pricing:       http://localhost:4003/graphql
+  reservations:  http://localhost:4004/graphql
+  loyalty:       http://localhost:4005/graphql
+  content:       http://localhost:4006/graphql
+  experiences:   http://localhost:4007/graphql
+  meetings:      http://localhost:4008/graphql
+  notifications: http://localhost:4009/graphql
+  corporate:     http://localhost:4010/graphql

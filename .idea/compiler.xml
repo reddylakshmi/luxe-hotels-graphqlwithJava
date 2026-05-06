@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="subgraph-reservations" />
+        <module name="subgraph-content" />
+        <module name="subgraph-loyalty" />
+        <module name="subgraph-property" />
+        <module name="common" />
+        <module name="subgraph-experiences" />
+        <module name="subgraph-guest" />
+        <module name="subgraph-corporate" />
+        <module name="subgraph-pricing" />
+        <module name="subgraph-meetings" />
+        <module name="subgraph-notifications" />
+      </profile>
+    </annotationProcessing>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="common" options="-parameters --enable-preview" />
+      <module name="luxe-hotels-graphql" options="-parameters --enable-preview" />
+      <module name="subgraph-content" options="-parameters --enable-preview" />
+      <module name="subgraph-corporate" options="-parameters --enable-preview" />
+      <module name="subgraph-experiences" options="-parameters --enable-preview" />
+      <module name="subgraph-guest" options="-parameters --enable-preview" />
+      <module name="subgraph-loyalty" options="-parameters --enable-preview" />
+      <module name="subgraph-meetings" options="-parameters --enable-preview" />
+      <module name="subgraph-notifications" options="-parameters --enable-preview" />
+      <module name="subgraph-pricing" options="-parameters --enable-preview" />
+      <module name="subgraph-property" options="-parameters --enable-preview" />
+      <module name="subgraph-reservations" options="-parameters --enable-preview" />
+    </option>
+  </component>
+</project>

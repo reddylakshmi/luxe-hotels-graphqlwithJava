@@ -1,0 +1,13 @@
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-content/src/main/java/com/luxe/content/ContentApplication.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-content/src/main/java/com/luxe/content/config/ContentGraphQLConfig.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-content/src/main/java/com/luxe/content/datasource/ContentDataSource.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-content/src/main/java/com/luxe/content/datasource/ContentMockDataSource.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-content/src/main/java/com/luxe/content/resolver/ContentDataFetcher.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-content/src/main/java/com/luxe/content/schema/types/Article.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-content/src/main/java/com/luxe/content/schema/types/BrandStory.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-content/src/main/java/com/luxe/content/schema/types/ContentAuthor.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-content/src/main/java/com/luxe/content/schema/types/ContentCollection.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-content/src/main/java/com/luxe/content/schema/types/DealSpotlight.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-content/src/main/java/com/luxe/content/schema/types/LocalizedContent.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-content/src/main/java/com/luxe/content/schema/types/MediaAsset.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-content/src/main/java/com/luxe/content/schema/types/TravelInspiration.java

@@ -1,0 +1,179 @@
+extend schema
+  @link(url: "https://specs.apollo.dev/federation/v2.3",
+        import: ["@key", "@shareable", "@external", "@requires", "@provides"])
+
+interface Node { id: ID! }
+
+scalar DateTime
+scalar Date
+scalar URL
+scalar UUID
+
+# ── Queries ───────────────────────────────────────────────────────────────────
+
+type Query {
+  articles(first: Int, after: String, filter: ArticleFilter, locale: String): ArticleConnection!
+  article(slug: String!, locale: String): Article
+  featuredArticles(first: Int, locale: String): [Article!]!
+  travelInspirations(destination: String, season: Season, first: Int, locale: String): [TravelInspiration!]!
+  brandStory(locale: String): BrandStory!
+  dealSpotlights(active: Boolean, locale: String): [DealSpotlight!]!
+  contentCollection(slug: String!, locale: String): ContentCollection
+}
+
+# ── Core types ────────────────────────────────────────────────────────────────
+
+type Article implements Node @key(fields: "id") {
+  id: ID!
+  slug: String!
+  category: ArticleCategory!
+  status: ContentStatus!
+  title: LocalizedContent!
+  subtitle: LocalizedContent
+  body: LocalizedContent!
+  excerpt: LocalizedContent!
+  heroImage: MediaAsset!
+  gallery: [MediaAsset!]!
+  author: ContentAuthor!
+  tags: [String!]!
+  relatedHotels: [Hotel!]!
+  readTimeMinutes: Int!
+  publishedAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type TravelInspiration implements Node {
+  id: ID!
+  slug: String!
+  destination: String!
+  region: String!
+  bestSeason: Season!
+  title: LocalizedContent!
+  description: LocalizedContent!
+  heroImage: MediaAsset!
+  gallery: [MediaAsset!]!
+  highlights: [LocalizedContent!]!
+  featuredHotels: [Hotel!]!
+  approxBudget: Money
+  recommendedDays: Int!
+  publishedAt: DateTime!
+}
+
+type BrandStory {
+  id: ID!
+  title: LocalizedContent!
+  tagline: LocalizedContent!
+  body: LocalizedContent!
+  pillars: [BrandPillar!]!
+  heroImage: MediaAsset!
+  videoUrl: URL
+  updatedAt: DateTime!
+}
+
+type BrandPillar {
+  code: String!
+  title: LocalizedContent!
+  description: LocalizedContent!
+  icon: String
+}
+
+type DealSpotlight implements Node {
+  id: ID!
+  slug: String!
+  status: ContentStatus!
+  title: LocalizedContent!
+  description: LocalizedContent!
+  heroImage: MediaAsset!
+  promoCode: String
+  discountPercent: Float
+  validFrom: Date!
+  validTo: Date!
+  applicableHotels: [Hotel!]!
+  termsAndConditions: LocalizedContent!
+  ctaLabel: LocalizedContent!
+  ctaUrl: URL!
+}
+
+type ContentCollection implements Node {
+  id: ID!
+  slug: String!
+  title: LocalizedContent!
+  description: LocalizedContent!
+  heroImage: MediaAsset
+  articles: [Article!]!
+  inspirations: [TravelInspiration!]!
+  spotlights: [DealSpotlight!]!
+  updatedAt: DateTime!
+}
+
+# ── Localized content / supporting types ──────────────────────────────────────
+
+type LocalizedContent @shareable {
+  locale: String!
+  text: String!
+  fallbackUsed: Boolean!
+  translations: [LocaleText!]!
+}
+
+type LocaleText {
+  locale: String!
+  text: String!
+}
+
+type MediaAsset implements Node {
+  id: ID!
+  url: URL!
+  thumbnailUrl: URL
+  altText: LocalizedContent
+  caption: LocalizedContent
+  type: MediaType!
+  width: Int
+  height: Int
+  durationSeconds: Int
+}
+
+type ContentAuthor {
+  id: ID!
+  name: String!
+  title: String
+  bio: LocalizedContent
+  photoUrl: URL
+}
+
+type Money @shareable {
+  amount: String!
+  currency: String!
+}
+
+# ── Federation ────────────────────────────────────────────────────────────────
+
+type Hotel @key(fields: "id") {
+  id: ID!
+}
+
+# ── Connections ───────────────────────────────────────────────────────────────
+
+type ArticleConnection {
+  edges: [ArticleEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+type ArticleEdge { node: Article! cursor: String! }
+type PageInfo @shareable { hasNextPage: Boolean! hasPreviousPage: Boolean! startCursor: String endCursor: String }
+
+# ── Inputs / enums ────────────────────────────────────────────────────────────
+
+input ArticleFilter {
+  category: ArticleCategory
+  tag: String
+  hotelId: ID
+}
+
+enum ArticleCategory {
+  DESTINATION FOOD_AND_WINE WELLNESS DESIGN PEOPLE SUSTAINABILITY
+  CULTURE FAMILY ROMANCE LUXURY_TRENDS
+}
+
+enum ContentStatus { DRAFT SCHEDULED PUBLISHED ARCHIVED }
+enum Season { SPRING SUMMER FALL WINTER YEAR_ROUND }
+enum MediaType { PHOTO VIDEO VIRTUAL_TOUR FLOOR_PLAN }
