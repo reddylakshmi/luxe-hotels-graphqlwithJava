@@ -1,0 +1,468 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReservationMockDataSource.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Reservations Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.reservations.datasource</a> &gt; <span class="el_source">ReservationMockDataSource.java</span></div><h1>ReservationMockDataSource.java</h1><pre class="source lang-java linenums">package com.luxe.reservations.datasource;
+
+import com.luxe.common.scalar.Money;
+import com.luxe.reservations.schema.types.*;
+import org.springframework.stereotype.Component;
+
+import java.time.*;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Component
+public class ReservationMockDataSource implements ReservationDataSource {
+
+<span class="fc" id="L14">    private final Map&lt;String, Reservation&gt; reservations = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L15">    private final Map&lt;String, DiningReservation&gt; diningReservations = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L16">    private final Map&lt;String, SpaAppointment&gt; spaAppointments = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L17">    private final Map&lt;String, TransportationBooking&gt; transportationBookings = new LinkedHashMap&lt;&gt;();</span>
+
+<span class="fc" id="L19">    public ReservationMockDataSource() {</span>
+<span class="fc" id="L20">        initData();</span>
+<span class="fc" id="L21">    }</span>
+
+    private void initData() {
+<span class="fc" id="L24">        LocalDate today = LocalDate.now();</span>
+
+        // Paris — upcoming confirmed
+<span class="fc" id="L27">        Reservation r1 = res(&quot;res-001&quot;, &quot;LUX-2025-100001&quot;, &quot;guest-001&quot;, &quot;prop-paris-001&quot;,</span>
+                &quot;rt-paris-dlx-001&quot;, &quot;rate-paris-dlx-flex&quot;, null,
+<span class="fc" id="L29">                today.plusDays(10), today.plusDays(15), 5, 2, 0,</span>
+<span class="fc" id="L30">                Money.of(520, &quot;EUR&quot;), Money.of(2600, &quot;EUR&quot;), &quot;EUR&quot;,</span>
+<span class="fc" id="L31">                &quot;CONFIRMED&quot;, &quot;Late check-in requested&quot;, today.minusDays(30));</span>
+<span class="fc" id="L32">        r1.setLoyaltyContext(new ReservationLoyaltyContext(&quot;LUX0001234567&quot;, &quot;GOLD&quot;,</span>
+<span class="fc" id="L33">                2600, null, 1.5, 5));</span>
+<span class="fc" id="L34">        reservations.put(r1.getId(), r1);</span>
+
+        // London — upcoming confirmed, check-in in 3 days (eligible for online check-in)
+<span class="fc" id="L37">        Reservation r2 = res(&quot;res-002&quot;, &quot;LUX-2025-100002&quot;, &quot;guest-002&quot;, &quot;prop-london-001&quot;,</span>
+                &quot;rt-london-dlx-001&quot;, &quot;rate-london-dlx-flex&quot;, null,
+<span class="fc" id="L39">                today.plusDays(3), today.plusDays(6), 3, 2, 0,</span>
+<span class="fc" id="L40">                Money.of(580, &quot;GBP&quot;), Money.of(1740, &quot;GBP&quot;), &quot;GBP&quot;,</span>
+<span class="fc" id="L41">                &quot;CONFIRMED&quot;, null, today.minusDays(15));</span>
+<span class="fc" id="L42">        r2.setLoyaltyContext(new ReservationLoyaltyContext(&quot;LUX0002345678&quot;, &quot;PLATINUM&quot;,</span>
+<span class="fc" id="L43">                1740, null, 2.0, 3));</span>
+<span class="fc" id="L44">        reservations.put(r2.getId(), r2);</span>
+
+        // Tokyo — far future, anniversary
+<span class="fc" id="L47">        Reservation r3 = res(&quot;res-003&quot;, &quot;LUX-2025-100003&quot;, &quot;guest-001&quot;, &quot;prop-tokyo-001&quot;,</span>
+                &quot;rt-tokyo-suite-001&quot;, &quot;rate-tokyo-suite-flex&quot;, null,
+<span class="fc" id="L49">                today.plusDays(60), today.plusDays(65), 5, 2, 1,</span>
+<span class="fc" id="L50">                Money.of(180000, &quot;JPY&quot;), Money.of(900000, &quot;JPY&quot;), &quot;JPY&quot;,</span>
+<span class="fc" id="L51">                &quot;CONFIRMED&quot;, &quot;Celebrating anniversary — surprise decoration please&quot;, today.minusDays(5));</span>
+<span class="fc" id="L52">        r3.setLoyaltyContext(new ReservationLoyaltyContext(&quot;LUX0001234567&quot;, &quot;GOLD&quot;,</span>
+<span class="fc" id="L53">                9000, null, 1.5, 5));</span>
+<span class="fc" id="L54">        reservations.put(r3.getId(), r3);</span>
+
+        // Dubai — currently checked in
+<span class="fc" id="L57">        Reservation r4 = res(&quot;res-004&quot;, &quot;LUX-2025-100004&quot;, &quot;guest-003&quot;, &quot;prop-dubai-001&quot;,</span>
+                &quot;rt-dubai-dlx-001&quot;, &quot;rate-dubai-dlx-flex&quot;, &quot;1205&quot;,
+<span class="fc" id="L59">                today.minusDays(2), today.plusDays(3), 5, 2, 0,</span>
+<span class="fc" id="L60">                Money.of(1100, &quot;AED&quot;), Money.of(5500, &quot;AED&quot;), &quot;AED&quot;,</span>
+<span class="fc" id="L61">                &quot;CHECKED_IN&quot;, null, today.minusDays(20));</span>
+<span class="fc" id="L62">        r4.setCheckedInAt(today.minusDays(2).atTime(15, 30).atOffset(ZoneOffset.UTC));</span>
+<span class="fc" id="L63">        r4.setDigitalKey(new DigitalKey(&quot;res-004&quot;, &quot;DK-&quot; + UUID.randomUUID().toString().substring(0, 8).toUpperCase(),</span>
+<span class="fc" id="L64">                &quot;ACTIVE&quot;, today.minusDays(2).atTime(15, 30).atOffset(ZoneOffset.UTC),</span>
+<span class="fc" id="L65">                today.plusDays(3).atTime(12, 0).atOffset(ZoneOffset.UTC),</span>
+<span class="fc" id="L66">                List.of(&quot;1205&quot;)));</span>
+<span class="fc" id="L67">        r4.setPaymentSummary(new PaymentSummary(&quot;CREDIT_CARD&quot;, &quot;4242&quot;, &quot;Visa&quot;,</span>
+<span class="fc" id="L68">                &quot;AUTH-&quot; + UUID.randomUUID().toString().substring(0, 8).toUpperCase(),</span>
+<span class="fc" id="L69">                today.minusDays(2).atTime(10, 0).atOffset(ZoneOffset.UTC),</span>
+<span class="fc" id="L70">                Money.of(5500, &quot;AED&quot;), &quot;AED&quot;, &quot;CAPTURED&quot;));</span>
+<span class="fc" id="L71">        reservations.put(r4.getId(), r4);</span>
+
+        // NYC — checked out
+<span class="fc" id="L74">        Reservation r5 = res(&quot;res-005&quot;, &quot;LUX-2025-100005&quot;, &quot;guest-004&quot;, &quot;prop-nyc-001&quot;,</span>
+                &quot;rt-nyc-dlx-001&quot;, &quot;rate-nyc-dlx-flex&quot;, &quot;2501&quot;,
+<span class="fc" id="L76">                today.minusDays(10), today.minusDays(7), 3, 1, 0,</span>
+<span class="fc" id="L77">                Money.of(720, &quot;USD&quot;), Money.of(2160, &quot;USD&quot;), &quot;USD&quot;,</span>
+<span class="fc" id="L78">                &quot;CHECKED_OUT&quot;, null, today.minusDays(30));</span>
+<span class="fc" id="L79">        r5.setCheckedInAt(today.minusDays(10).atTime(16, 0).atOffset(ZoneOffset.UTC));</span>
+<span class="fc" id="L80">        r5.setCheckedOutAt(today.minusDays(7).atTime(11, 30).atOffset(ZoneOffset.UTC));</span>
+<span class="fc" id="L81">        r5.setPaymentSummary(new PaymentSummary(&quot;CREDIT_CARD&quot;, &quot;5678&quot;, &quot;Mastercard&quot;,</span>
+<span class="fc" id="L82">                &quot;AUTH-5678&quot;, today.minusDays(10).atTime(16, 0).atOffset(ZoneOffset.UTC),</span>
+<span class="fc" id="L83">                Money.of(2496, &quot;USD&quot;), &quot;USD&quot;, &quot;CAPTURED&quot;));</span>
+<span class="fc" id="L84">        r5.setFolio(buildFolio(&quot;res-005&quot;, &quot;USD&quot;, Money.of(720, &quot;USD&quot;), 3));</span>
+<span class="fc" id="L85">        reservations.put(r5.getId(), r5);</span>
+
+        // Paris — cancelled
+<span class="fc" id="L88">        Reservation r6 = res(&quot;res-006&quot;, &quot;LUX-2025-100006&quot;, &quot;guest-005&quot;, &quot;prop-paris-001&quot;,</span>
+                &quot;rt-paris-std-001&quot;, &quot;rate-paris-std-flex&quot;, null,
+<span class="fc" id="L90">                today.plusDays(20), today.plusDays(23), 3, 2, 0,</span>
+<span class="fc" id="L91">                Money.of(350, &quot;EUR&quot;), Money.of(1050, &quot;EUR&quot;), &quot;EUR&quot;,</span>
+<span class="fc" id="L92">                &quot;CANCELLED&quot;, null, today.minusDays(45));</span>
+<span class="fc" id="L93">        r6.setCancellation(new CancellationRecord(</span>
+<span class="fc" id="L94">                today.minusDays(10).atTime(9, 0).atOffset(ZoneOffset.UTC),</span>
+                &quot;Change of travel plans&quot;, &quot;GUEST&quot;,
+<span class="fc" id="L96">                Money.of(1050, &quot;EUR&quot;), &quot;REFUNDED&quot;,</span>
+<span class="fc" id="L97">                &quot;CXL-&quot; + UUID.randomUUID().toString().substring(0, 8).toUpperCase()));</span>
+<span class="fc" id="L98">        reservations.put(r6.getId(), r6);</span>
+
+        // London — upcoming, family trip
+<span class="fc" id="L101">        Reservation r7 = res(&quot;res-007&quot;, &quot;LUX-2025-100007&quot;, &quot;guest-005&quot;, &quot;prop-london-001&quot;,</span>
+                &quot;rt-london-std-001&quot;, &quot;rate-london-std-flex&quot;, null,
+<span class="fc" id="L103">                today.plusDays(30), today.plusDays(35), 5, 2, 1,</span>
+<span class="fc" id="L104">                Money.of(380, &quot;GBP&quot;), Money.of(1900, &quot;GBP&quot;), &quot;GBP&quot;,</span>
+<span class="fc" id="L105">                &quot;CONFIRMED&quot;, &quot;High floor preferred&quot;, today.minusDays(10));</span>
+<span class="fc" id="L106">        reservations.put(r7.getId(), r7);</span>
+
+        // Dubai — suite, future family trip
+<span class="fc" id="L109">        Reservation r8 = res(&quot;res-008&quot;, &quot;LUX-2025-100008&quot;, &quot;guest-002&quot;, &quot;prop-dubai-001&quot;,</span>
+                &quot;rt-dubai-suite-001&quot;, &quot;rate-dubai-suite-flex&quot;, null,
+<span class="fc" id="L111">                today.plusDays(90), today.plusDays(95), 5, 2, 2,</span>
+<span class="fc" id="L112">                Money.of(3800, &quot;AED&quot;), Money.of(19000, &quot;AED&quot;), &quot;AED&quot;,</span>
+<span class="fc" id="L113">                &quot;CONFIRMED&quot;, &quot;Family trip with children aged 4 and 7&quot;, today.minusDays(3));</span>
+<span class="fc" id="L114">        reservations.put(r8.getId(), r8);</span>
+
+        // Dining reservations
+<span class="fc" id="L117">        diningReservations.put(&quot;din-001&quot;, new DiningReservation(&quot;din-001&quot;, &quot;res-001&quot;,</span>
+<span class="fc" id="L118">                &quot;rest-paris-001&quot;, &quot;Le Grand Salon&quot;, today.plusDays(11), &quot;19:30&quot;, 2,</span>
+                &quot;CONFIRMED&quot;, &quot;Window table preferred&quot;, &quot;DIN-001234&quot;,
+<span class="fc" id="L120">                OffsetDateTime.now().minusDays(25)));</span>
+<span class="fc" id="L121">        diningReservations.put(&quot;din-002&quot;, new DiningReservation(&quot;din-002&quot;, &quot;res-004&quot;,</span>
+<span class="fc" id="L122">                &quot;rest-dubai-001&quot;, &quot;Sky Terrace&quot;, today.plusDays(1), &quot;20:00&quot;, 2,</span>
+                &quot;CONFIRMED&quot;, null, &quot;DIN-002345&quot;,
+<span class="fc" id="L124">                OffsetDateTime.now().minusDays(2)));</span>
+
+        // Spa appointments
+<span class="fc" id="L127">        spaAppointments.put(&quot;spa-001&quot;, new SpaAppointment(&quot;spa-001&quot;, &quot;res-001&quot;,</span>
+                &quot;spa-treat-001&quot;, &quot;Signature Luxe Massage&quot;, &quot;Marie Dupont&quot;,
+<span class="fc" id="L129">                today.plusDays(12), &quot;10:00&quot;, 90, Money.of(280, &quot;EUR&quot;),</span>
+<span class="fc" id="L130">                &quot;CONFIRMED&quot;, &quot;SPA-001234&quot;, OffsetDateTime.now().minusDays(20)));</span>
+<span class="fc" id="L131">        spaAppointments.put(&quot;spa-002&quot;, new SpaAppointment(&quot;spa-002&quot;, &quot;res-004&quot;,</span>
+                &quot;spa-treat-002&quot;, &quot;Arabian Hammam Experience&quot;, null,
+<span class="fc" id="L133">                today.plusDays(2), &quot;14:00&quot;, 120, Money.of(450, &quot;AED&quot;),</span>
+<span class="fc" id="L134">                &quot;CONFIRMED&quot;, &quot;SPA-002345&quot;, OffsetDateTime.now().minusDays(1)));</span>
+
+        // Transportation bookings
+<span class="fc" id="L137">        transportationBookings.put(&quot;trans-001&quot;, new TransportationBooking(&quot;trans-001&quot;, &quot;res-001&quot;,</span>
+                &quot;AIRPORT_PICKUP&quot;, &quot;CDG Airport Terminal 2E&quot;, &quot;Hôtel Luxe Paris&quot;,
+<span class="fc" id="L139">                today.plusDays(10).atTime(14, 0).atOffset(ZoneOffset.UTC),</span>
+<span class="fc" id="L140">                &quot;Mercedes E-Class&quot;, Money.of(95, &quot;EUR&quot;), &quot;CONFIRMED&quot;,</span>
+                &quot;Flight AF1234 arriving 13:30&quot;, &quot;TRN-001234&quot;,
+<span class="fc" id="L142">                OffsetDateTime.now().minusDays(28)));</span>
+<span class="fc" id="L143">        transportationBookings.put(&quot;trans-002&quot;, new TransportationBooking(&quot;trans-002&quot;, &quot;res-004&quot;,</span>
+                &quot;AIRPORT_DROPOFF&quot;, &quot;Atlantis The Palm Hotel&quot;, &quot;DXB Airport Terminal 3&quot;,
+<span class="fc" id="L145">                today.plusDays(3).atTime(10, 0).atOffset(ZoneOffset.UTC),</span>
+<span class="fc" id="L146">                &quot;BMW 7 Series&quot;, Money.of(220, &quot;AED&quot;), &quot;CONFIRMED&quot;,</span>
+                null, &quot;TRN-002345&quot;,
+<span class="fc" id="L148">                OffsetDateTime.now().minusDays(2)));</span>
+<span class="fc" id="L149">    }</span>
+
+    private Reservation res(String id, String conf, String guestId, String hotelId,
+                              String rtId, String rateId, String roomNumber,
+                              LocalDate checkIn, LocalDate checkOut, int nights,
+                              int adults, int children, Money nightly, Money total, String currency,
+                              String status, String specialReqs, LocalDate createdDate) {
+<span class="fc" id="L156">        return new Reservation(id, conf, guestId, hotelId, rtId, rateId, roomNumber,</span>
+                checkIn, checkOut, nights, adults, children, nightly, total, currency,
+<span class="fc" id="L158">                status, specialReqs, createdDate.atTime(10, 0).atOffset(ZoneOffset.UTC));</span>
+    }
+
+    private Folio buildFolio(String reservationId, String currency, Money nightlyRate, int nights) {
+<span class="fc" id="L162">        double nightly = Double.parseDouble(nightlyRate.amount());</span>
+<span class="fc" id="L163">        double subtotal = nightly * nights;</span>
+<span class="fc" id="L164">        double taxes = subtotal * 0.15;</span>
+<span class="fc" id="L165">        List&lt;Folio.FolioLineItem&gt; items = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L166">        LocalDate checkIn = LocalDate.now().minusDays(10);</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">        for (int i = 0; i &lt; nights; i++) {</span>
+<span class="fc" id="L168">            items.add(new Folio.FolioLineItem(&quot;fli-&quot; + i, checkIn.plusDays(i),</span>
+                    &quot;Room Charge&quot;, nightlyRate, &quot;ROOM&quot;, 1));
+        }
+<span class="fc" id="L171">        items.add(new Folio.FolioLineItem(&quot;fli-tax&quot;, checkIn.plusDays(nights - 1),</span>
+<span class="fc" id="L172">                &quot;Taxes &amp; Fees&quot;, Money.of(taxes, currency), &quot;TAX&quot;, 1));</span>
+<span class="fc" id="L173">        return new Folio(&quot;folio-&quot; + reservationId, reservationId, currency, items,</span>
+<span class="fc" id="L174">                Money.of(subtotal, currency), Money.of(taxes, currency),</span>
+<span class="fc" id="L175">                Money.of(subtotal + taxes, currency), &quot;SETTLED&quot;);</span>
+    }
+
+    // ── Interface implementations ─────────────────────────────────────────────
+
+    @Override
+    public Optional&lt;Reservation&gt; findById(String id) {
+<span class="fc" id="L182">        return Optional.ofNullable(reservations.get(id));</span>
+    }
+
+    @Override
+    public Optional&lt;Reservation&gt; findByConfirmationNumber(String confirmationNumber, String guestLastName) {
+<span class="fc" id="L187">        return reservations.values().stream()</span>
+<span class="fc" id="L188">                .filter(r -&gt; r.getConfirmationNumber().equals(confirmationNumber))</span>
+<span class="fc" id="L189">                .findFirst();</span>
+    }
+
+    @Override
+    public List&lt;Reservation&gt; findByGuestId(String guestId, String status, String hotelId, String sortBy) {
+<span class="fc" id="L194">        return reservations.values().stream()</span>
+<span class="fc" id="L195">                .filter(r -&gt; r.getGuestId().equals(guestId))</span>
+<span class="pc bpc" id="L196" title="1 of 4 branches missed.">                .filter(r -&gt; status == null || r.getStatus().equals(status))</span>
+<span class="fc bfc" id="L197" title="All 4 branches covered.">                .filter(r -&gt; hotelId == null || r.getHotelId().equals(hotelId))</span>
+<span class="fc bfc" id="L198" title="All 2 branches covered.">                .sorted(&quot;CHECK_IN_ASC&quot;.equals(sortBy)</span>
+<span class="fc" id="L199">                        ? Comparator.comparing(Reservation::getCheckIn)</span>
+<span class="fc" id="L200">                        : Comparator.comparing(Reservation::getCheckIn).reversed())</span>
+<span class="fc" id="L201">                .collect(Collectors.toList());</span>
+    }
+
+    @Override
+    public List&lt;Reservation&gt; findByHotelId(String hotelId) {
+<span class="fc" id="L206">        return reservations.values().stream()</span>
+<span class="fc" id="L207">                .filter(r -&gt; r.getHotelId().equals(hotelId))</span>
+<span class="fc" id="L208">                .collect(Collectors.toList());</span>
+    }
+
+    @Override
+    public List&lt;Reservation&gt; findUpcoming(String hotelId) {
+<span class="fc" id="L213">        LocalDate today = LocalDate.now();</span>
+<span class="fc" id="L214">        return reservations.values().stream()</span>
+<span class="fc" id="L215">                .filter(r -&gt; r.getHotelId().equals(hotelId))</span>
+<span class="pc bpc" id="L216" title="1 of 4 branches missed.">                .filter(r -&gt; (&quot;CONFIRMED&quot;.equals(r.getStatus()) || &quot;CHECKED_IN&quot;.equals(r.getStatus()))</span>
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">                        &amp;&amp; !r.getCheckIn().isBefore(today))</span>
+<span class="fc" id="L218">                .sorted(Comparator.comparing(Reservation::getCheckIn))</span>
+<span class="fc" id="L219">                .collect(Collectors.toList());</span>
+    }
+
+    @Override
+    public Reservation create(Map&lt;String, Object&gt; input, String guestId) {
+<span class="fc" id="L224">        String hotelId    = (String) input.get(&quot;hotelId&quot;);</span>
+<span class="fc" id="L225">        String roomTypeId = (String) input.get(&quot;roomTypeId&quot;);</span>
+<span class="fc" id="L226">        LocalDate checkIn  = LocalDate.parse((String) input.get(&quot;checkIn&quot;));</span>
+<span class="fc" id="L227">        LocalDate checkOut = LocalDate.parse((String) input.get(&quot;checkOut&quot;));</span>
+<span class="fc" id="L228">        int adults   = ((Number) input.getOrDefault(&quot;adults&quot;, 1)).intValue();</span>
+<span class="fc" id="L229">        int children = ((Number) input.getOrDefault(&quot;children&quot;, 0)).intValue();</span>
+<span class="fc" id="L230">        int nights   = (int) checkIn.until(checkOut).getDays();</span>
+
+<span class="fc" id="L232">        String currency = hotelCurrency(hotelId);</span>
+<span class="fc" id="L233">        double baseNightly = 500.0;</span>
+<span class="fc" id="L234">        Money nightly = Money.of(baseNightly, currency);</span>
+<span class="fc" id="L235">        Money total   = Money.of(baseNightly * nights, currency);</span>
+
+<span class="fc" id="L237">        String id   = &quot;res-&quot; + UUID.randomUUID().toString().substring(0, 8);</span>
+<span class="fc" id="L238">        String conf = &quot;LUX-&quot; + LocalDate.now().getYear() + &quot;-&quot; + (100000 + new Random().nextInt(899999));</span>
+
+<span class="fc" id="L240">        Reservation r = new Reservation(id, conf, guestId, hotelId, roomTypeId, &quot;rate-new&quot;,</span>
+                null, checkIn, checkOut, nights, adults, children, nightly, total, currency,
+<span class="fc" id="L242">                &quot;PENDING_PAYMENT&quot;, null, OffsetDateTime.now());</span>
+<span class="fc" id="L243">        r.setSource(&quot;WEB&quot;);</span>
+<span class="fc" id="L244">        reservations.put(id, r);</span>
+<span class="fc" id="L245">        return r;</span>
+    }
+
+    @Override
+    public Reservation confirm(String id, String paymentMethodId, String guestProfileId) {
+<span class="fc" id="L250">        Reservation r = reservations.get(id);</span>
+<span class="fc bfc" id="L251" title="All 2 branches covered.">        if (r == null) return null;</span>
+<span class="fc" id="L252">        r.setStatus(&quot;CONFIRMED&quot;);</span>
+<span class="fc" id="L253">        r.setPaymentSummary(new PaymentSummary(&quot;CREDIT_CARD&quot;, &quot;****&quot;,</span>
+<span class="fc" id="L254">                &quot;Visa&quot;, &quot;AUTH-&quot; + UUID.randomUUID().toString().substring(0, 8).toUpperCase(),</span>
+<span class="fc" id="L255">                OffsetDateTime.now(), r.getTotalAmount(), r.getCurrency(), &quot;AUTHORIZED&quot;));</span>
+<span class="fc" id="L256">        r.setUpdatedAt(OffsetDateTime.now());</span>
+<span class="fc" id="L257">        return r;</span>
+    }
+
+    @Override
+    public Reservation modify(String id, Map&lt;String, Object&gt; input) {
+<span class="fc" id="L262">        Reservation r = reservations.get(id);</span>
+<span class="fc bfc" id="L263" title="All 2 branches covered.">        if (r == null) return null;</span>
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">        if (input.containsKey(&quot;checkIn&quot;)) r.setCheckIn(LocalDate.parse((String) input.get(&quot;checkIn&quot;)));</span>
+<span class="pc bpc" id="L265" title="1 of 2 branches missed.">        if (input.containsKey(&quot;checkOut&quot;)) r.setCheckOut(LocalDate.parse((String) input.get(&quot;checkOut&quot;)));</span>
+<span class="pc bpc" id="L266" title="2 of 4 branches missed.">        if (r.getCheckIn() != null &amp;&amp; r.getCheckOut() != null)</span>
+<span class="fc" id="L267">            r.setNights((int) r.getCheckIn().until(r.getCheckOut()).getDays());</span>
+<span class="pc bpc" id="L268" title="1 of 2 branches missed.">        if (input.containsKey(&quot;adults&quot;)) r.setAdults(((Number) input.get(&quot;adults&quot;)).intValue());</span>
+<span class="fc" id="L269">        r.setStatus(&quot;MODIFIED&quot;);</span>
+<span class="fc" id="L270">        r.setUpdatedAt(OffsetDateTime.now());</span>
+<span class="fc" id="L271">        r.rebuildRateBreakdown();</span>
+<span class="fc" id="L272">        return r;</span>
+    }
+
+    @Override
+    public Reservation cancel(String id, String reason, boolean acceptPenalty) {
+<span class="fc" id="L277">        Reservation r = reservations.get(id);</span>
+<span class="fc bfc" id="L278" title="All 2 branches covered.">        if (r == null) return null;</span>
+<span class="fc bfc" id="L279" title="All 2 branches covered.">        String newStatus = acceptPenalty ? &quot;CANCELLED_WITH_FEE&quot; : &quot;CANCELLED&quot;;</span>
+<span class="fc" id="L280">        r.setStatus(newStatus);</span>
+<span class="fc" id="L281">        r.setCancellation(new CancellationRecord(</span>
+<span class="fc" id="L282">                OffsetDateTime.now(), reason, &quot;GUEST&quot;,</span>
+<span class="fc bfc" id="L283" title="All 2 branches covered.">                acceptPenalty ? null : r.getTotalAmount(),</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">                acceptPenalty ? &quot;PENDING&quot; : &quot;REFUNDED&quot;,</span>
+<span class="fc" id="L285">                &quot;CXL-&quot; + UUID.randomUUID().toString().substring(0, 8).toUpperCase()));</span>
+<span class="fc" id="L286">        r.setUpdatedAt(OffsetDateTime.now());</span>
+<span class="fc" id="L287">        return r;</span>
+    }
+
+    @Override
+    public Reservation mobileCheckIn(String id, Map&lt;String, Object&gt; input) {
+<span class="fc" id="L292">        Reservation r = reservations.get(id);</span>
+<span class="fc bfc" id="L293" title="All 2 branches covered.">        if (r == null) return null;</span>
+<span class="fc" id="L294">        r.setStatus(&quot;CHECKED_IN&quot;);</span>
+<span class="fc" id="L295">        r.setCheckedInAt(OffsetDateTime.now());</span>
+<span class="fc" id="L296">        r.setUpdatedAt(OffsetDateTime.now());</span>
+<span class="fc" id="L297">        String keyCode = &quot;DK-&quot; + UUID.randomUUID().toString().substring(0, 8).toUpperCase();</span>
+<span class="fc" id="L298">        r.setDigitalKey(new DigitalKey(id, keyCode, &quot;ACTIVE&quot;, OffsetDateTime.now(),</span>
+<span class="fc" id="L299">                r.getCheckOut().atTime(12, 0).atOffset(ZoneOffset.UTC),</span>
+<span class="pc bpc" id="L300" title="1 of 2 branches missed.">                r.getRoom() != null ? List.of(r.getRoom().number()) : List.of()));</span>
+<span class="fc" id="L301">        return r;</span>
+    }
+
+    @Override
+    public Reservation expressCheckout(String id) {
+<span class="fc" id="L306">        Reservation r = reservations.get(id);</span>
+<span class="fc bfc" id="L307" title="All 2 branches covered.">        if (r == null) return null;</span>
+<span class="fc" id="L308">        r.setStatus(&quot;CHECKED_OUT&quot;);</span>
+<span class="fc" id="L309">        r.setCheckedOutAt(OffsetDateTime.now());</span>
+<span class="fc" id="L310">        r.setUpdatedAt(OffsetDateTime.now());</span>
+<span class="pc bpc" id="L311" title="1 of 2 branches missed.">        if (r.getFolio() == null) {</span>
+<span class="fc" id="L312">            r.setFolio(buildFolio(id, r.getCurrency(), r.getNightlyRate(), r.getNights()));</span>
+        }
+<span class="pc bpc" id="L314" title="1 of 2 branches missed.">        if (r.getDigitalKey() != null) r.getDigitalKey().activate();</span>
+<span class="fc" id="L315">        return r;</span>
+    }
+
+    @Override
+    public Reservation requestUpgrade(String id, Map&lt;String, Object&gt; input) {
+<span class="fc" id="L320">        Reservation r = reservations.get(id);</span>
+<span class="fc bfc" id="L321" title="All 2 branches covered.">        if (r == null) return null;</span>
+<span class="fc" id="L322">        String prefRoomTypeId = (String) input.getOrDefault(&quot;preferredRoomTypeId&quot;, &quot;suite&quot;);</span>
+<span class="fc" id="L323">        String reason = (String) input.get(&quot;reason&quot;);</span>
+<span class="fc" id="L324">        r.setRoomUpgradeRequest(new RoomUpgradeRequest(</span>
+<span class="fc" id="L325">                &quot;upg-&quot; + UUID.randomUUID().toString().substring(0, 8),</span>
+                prefRoomTypeId, &quot;Suite Room&quot;, &quot;PENDING&quot;, null, null, reason));
+<span class="fc" id="L327">        r.setUpdatedAt(OffsetDateTime.now());</span>
+<span class="fc" id="L328">        return r;</span>
+    }
+
+    @Override
+    public Reservation applyGiftCard(String id, String giftCardCode) {
+<span class="fc" id="L333">        Reservation r = reservations.get(id);</span>
+<span class="fc bfc" id="L334" title="All 2 branches covered.">        if (r == null) return null;</span>
+<span class="fc" id="L335">        r.setUpdatedAt(OffsetDateTime.now());</span>
+<span class="fc" id="L336">        return r;</span>
+    }
+
+    @Override
+    public CheckInEligibility checkInEligibility(String reservationId) {
+<span class="fc" id="L341">        Reservation r = reservations.get(reservationId);</span>
+<span class="fc bfc" id="L342" title="All 2 branches covered.">        if (r == null) return new CheckInEligibility(false, reservationId,</span>
+<span class="fc" id="L343">                LocalDate.now(), List.of(&quot;Reservation not found&quot;), false, false);</span>
+
+<span class="fc" id="L345">        List&lt;String&gt; reasons = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L346">        long daysUntil = LocalDate.now().until(r.getCheckIn()).getDays();</span>
+<span class="pc bpc" id="L347" title="1 of 4 branches missed.">        boolean eligible = &quot;CONFIRMED&quot;.equals(r.getStatus()) || &quot;MODIFIED&quot;.equals(r.getStatus());</span>
+
+<span class="fc bfc" id="L349" title="All 2 branches covered.">        if (!eligible) reasons.add(&quot;Reservation is not in a confirmable state&quot;);</span>
+<span class="fc bfc" id="L350" title="All 2 branches covered.">        if (daysUntil &gt; 3) reasons.add(&quot;Online check-in available within 3 days of arrival&quot;);</span>
+<span class="pc bpc" id="L351" title="1 of 2 branches missed.">        if (daysUntil &lt; 0) reasons.add(&quot;Check-in date has passed&quot;);</span>
+
+<span class="pc bpc" id="L353" title="1 of 6 branches missed.">        boolean onlineOk = eligible &amp;&amp; daysUntil &gt;= 0 &amp;&amp; daysUntil &lt;= 3;</span>
+<span class="fc" id="L354">        return new CheckInEligibility(eligible, reservationId, r.getCheckIn(),</span>
+                reasons, onlineOk, onlineOk);
+    }
+
+    @Override
+    public List&lt;DiningReservation&gt; findDiningByGuestId(String guestId, Boolean upcoming) {
+<span class="fc" id="L360">        LocalDate today = LocalDate.now();</span>
+<span class="fc" id="L361">        Set&lt;String&gt; guestResIds = reservations.values().stream()</span>
+<span class="fc" id="L362">                .filter(r -&gt; r.getGuestId().equals(guestId))</span>
+<span class="fc" id="L363">                .map(Reservation::getId)</span>
+<span class="fc" id="L364">                .collect(Collectors.toSet());</span>
+<span class="fc" id="L365">        return diningReservations.values().stream()</span>
+<span class="fc" id="L366">                .filter(d -&gt; guestResIds.contains(d.getReservationId()))</span>
+<span class="pc bpc" id="L367" title="3 of 4 branches missed.">                .filter(d -&gt; upcoming == null || upcoming</span>
+<span class="pc bpc" id="L368" title="1 of 2 branches missed.">                        ? !d.getDate().isBefore(today) : d.getDate().isBefore(today))</span>
+<span class="fc" id="L369">                .sorted(Comparator.comparing(DiningReservation::getDate))</span>
+<span class="fc" id="L370">                .collect(Collectors.toList());</span>
+    }
+
+    @Override
+    public DiningReservation createDining(Map&lt;String, Object&gt; input, String guestId) {
+<span class="fc" id="L375">        String id = &quot;din-&quot; + UUID.randomUUID().toString().substring(0, 8);</span>
+<span class="fc" id="L376">        String conf = &quot;DIN-&quot; + (100000 + new Random().nextInt(899999));</span>
+<span class="fc" id="L377">        DiningReservation d = new DiningReservation(id,</span>
+<span class="fc" id="L378">                (String) input.get(&quot;reservationId&quot;),</span>
+<span class="fc" id="L379">                (String) input.get(&quot;restaurantId&quot;),</span>
+                &quot;Restaurant&quot;,
+<span class="fc" id="L381">                LocalDate.parse((String) input.get(&quot;date&quot;)),</span>
+<span class="fc" id="L382">                (String) input.get(&quot;time&quot;),</span>
+<span class="fc" id="L383">                ((Number) input.getOrDefault(&quot;partySize&quot;, 2)).intValue(),</span>
+<span class="fc" id="L384">                &quot;CONFIRMED&quot;, (String) input.get(&quot;specialRequests&quot;), conf, OffsetDateTime.now());</span>
+<span class="fc" id="L385">        diningReservations.put(id, d);</span>
+<span class="fc" id="L386">        return d;</span>
+    }
+
+    @Override
+    public List&lt;SpaAppointment&gt; findSpaByGuestId(String guestId, Boolean upcoming) {
+<span class="fc" id="L391">        LocalDate today = LocalDate.now();</span>
+<span class="fc" id="L392">        Set&lt;String&gt; guestResIds = reservations.values().stream()</span>
+<span class="fc" id="L393">                .filter(r -&gt; r.getGuestId().equals(guestId))</span>
+<span class="fc" id="L394">                .map(Reservation::getId)</span>
+<span class="fc" id="L395">                .collect(Collectors.toSet());</span>
+<span class="fc" id="L396">        return spaAppointments.values().stream()</span>
+<span class="fc" id="L397">                .filter(s -&gt; guestResIds.contains(s.getReservationId()))</span>
+<span class="pc bpc" id="L398" title="3 of 4 branches missed.">                .filter(s -&gt; upcoming == null || upcoming</span>
+<span class="pc bpc" id="L399" title="1 of 2 branches missed.">                        ? !s.getDate().isBefore(today) : s.getDate().isBefore(today))</span>
+<span class="fc" id="L400">                .sorted(Comparator.comparing(SpaAppointment::getDate))</span>
+<span class="fc" id="L401">                .collect(Collectors.toList());</span>
+    }
+
+    @Override
+    public SpaAppointment bookSpa(Map&lt;String, Object&gt; input, String guestId) {
+<span class="fc" id="L406">        String id = &quot;spa-&quot; + UUID.randomUUID().toString().substring(0, 8);</span>
+<span class="fc" id="L407">        String conf = &quot;SPA-&quot; + (100000 + new Random().nextInt(899999));</span>
+<span class="fc" id="L408">        String currency = &quot;USD&quot;;</span>
+<span class="fc" id="L409">        String resId = (String) input.get(&quot;reservationId&quot;);</span>
+<span class="fc" id="L410">        Reservation r = reservations.get(resId);</span>
+<span class="fc bfc" id="L411" title="All 2 branches covered.">        if (r != null) currency = r.getCurrency();</span>
+<span class="fc" id="L412">        SpaAppointment s = new SpaAppointment(id, resId,</span>
+<span class="fc" id="L413">                (String) input.get(&quot;treatmentId&quot;),</span>
+                &quot;Spa Treatment&quot;,
+<span class="fc" id="L415">                (String) input.get(&quot;therapistPreference&quot;),</span>
+<span class="fc" id="L416">                LocalDate.parse((String) input.get(&quot;date&quot;)),</span>
+<span class="fc" id="L417">                (String) input.get(&quot;time&quot;), 60,</span>
+<span class="fc" id="L418">                Money.of(200, currency), &quot;CONFIRMED&quot;, conf, OffsetDateTime.now());</span>
+<span class="fc" id="L419">        spaAppointments.put(id, s);</span>
+<span class="fc" id="L420">        return s;</span>
+    }
+
+    @Override
+    public List&lt;TransportationBooking&gt; findTransportByGuestId(String guestId, Boolean upcoming) {
+<span class="fc" id="L425">        OffsetDateTime now = OffsetDateTime.now();</span>
+<span class="fc" id="L426">        Set&lt;String&gt; guestResIds = reservations.values().stream()</span>
+<span class="fc" id="L427">                .filter(r -&gt; r.getGuestId().equals(guestId))</span>
+<span class="fc" id="L428">                .map(Reservation::getId)</span>
+<span class="fc" id="L429">                .collect(Collectors.toSet());</span>
+<span class="fc" id="L430">        return transportationBookings.values().stream()</span>
+<span class="fc" id="L431">                .filter(t -&gt; guestResIds.contains(t.getReservationId()))</span>
+<span class="pc bpc" id="L432" title="3 of 4 branches missed.">                .filter(t -&gt; upcoming == null || upcoming</span>
+<span class="pc bpc" id="L433" title="1 of 2 branches missed.">                        ? !t.getScheduledAt().isBefore(now) : t.getScheduledAt().isBefore(now))</span>
+<span class="fc" id="L434">                .sorted(Comparator.comparing(TransportationBooking::getScheduledAt))</span>
+<span class="fc" id="L435">                .collect(Collectors.toList());</span>
+    }
+
+    @Override
+    public TransportationBooking bookTransport(Map&lt;String, Object&gt; input, String guestId) {
+<span class="fc" id="L440">        String id = &quot;trans-&quot; + UUID.randomUUID().toString().substring(0, 8);</span>
+<span class="fc" id="L441">        String conf = &quot;TRN-&quot; + (100000 + new Random().nextInt(899999));</span>
+<span class="fc" id="L442">        String currency = &quot;USD&quot;;</span>
+<span class="fc" id="L443">        String resId = (String) input.get(&quot;reservationId&quot;);</span>
+<span class="fc" id="L444">        Reservation r = reservations.get(resId);</span>
+<span class="pc bpc" id="L445" title="1 of 2 branches missed.">        if (r != null) currency = r.getCurrency();</span>
+<span class="fc" id="L446">        TransportationBooking t = new TransportationBooking(id, resId,</span>
+<span class="fc" id="L447">                (String) input.get(&quot;type&quot;),</span>
+<span class="fc" id="L448">                (String) input.get(&quot;pickupLocation&quot;),</span>
+<span class="fc" id="L449">                (String) input.get(&quot;dropoffLocation&quot;),</span>
+<span class="fc" id="L450">                OffsetDateTime.parse((String) input.get(&quot;scheduledAt&quot;)),</span>
+<span class="fc" id="L451">                (String) input.get(&quot;vehicleType&quot;),</span>
+<span class="fc" id="L452">                Money.of(100, currency), &quot;CONFIRMED&quot;,</span>
+<span class="fc" id="L453">                (String) input.get(&quot;notes&quot;), conf, OffsetDateTime.now());</span>
+<span class="fc" id="L454">        transportationBookings.put(id, t);</span>
+<span class="fc" id="L455">        return t;</span>
+    }
+
+    private String hotelCurrency(String hotelId) {
+<span class="pc bpc" id="L459" title="5 of 7 branches missed.">        return switch (hotelId != null ? hotelId : &quot;&quot;) {</span>
+<span class="fc" id="L460">            case &quot;prop-paris-001&quot; -&gt; &quot;EUR&quot;;</span>
+<span class="nc" id="L461">            case &quot;prop-tokyo-001&quot; -&gt; &quot;JPY&quot;;</span>
+<span class="nc" id="L462">            case &quot;prop-dubai-001&quot; -&gt; &quot;AED&quot;;</span>
+<span class="nc" id="L463">            case &quot;prop-london-001&quot; -&gt; &quot;GBP&quot;;</span>
+<span class="nc" id="L464">            default -&gt; &quot;USD&quot;;</span>
+        };
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

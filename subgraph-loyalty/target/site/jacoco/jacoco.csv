@@ -1,0 +1,17 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+Luxe Hotels - Loyalty Subgraph,com.luxe.loyalty.resolver,LoyaltyDataFetcher,711,442,96,21,118,84,63,34,6,28
+Luxe Hotels - Loyalty Subgraph,com.luxe.loyalty.config,LoyaltyGraphQLConfig,0,19,0,0,0,5,0,2,0,2
+Luxe Hotels - Loyalty Subgraph,com.luxe.loyalty.datasource,LoyaltyMockDataSource,145,1638,19,72,21,235,17,74,0,42
+Luxe Hotels - Loyalty Subgraph,com.luxe.loyalty.schema.types,LoyaltyPartner,0,36,0,0,0,2,0,2,0,2
+Luxe Hotels - Loyalty Subgraph,com.luxe.loyalty.schema.types,PointsBalance,0,21,0,0,0,1,0,1,0,1
+Luxe Hotels - Loyalty Subgraph,com.luxe.loyalty.schema.types,PointsValuation,0,21,0,0,0,1,0,1,0,1
+Luxe Hotels - Loyalty Subgraph,com.luxe.loyalty.schema.types,LinkedPartnerAccount,0,21,0,0,0,1,0,1,0,1
+Luxe Hotels - Loyalty Subgraph,com.luxe.loyalty.schema.types,PointsTransaction,0,36,0,0,0,2,0,2,0,2
+Luxe Hotels - Loyalty Subgraph,com.luxe.loyalty.schema.types,TierProgress,0,30,0,0,0,1,0,1,0,1
+Luxe Hotels - Loyalty Subgraph,com.luxe.loyalty.schema.types,Challenge.ChallengeProgress,2,31,1,1,0,3,1,2,0,2
+Luxe Hotels - Loyalty Subgraph,com.luxe.loyalty.schema.types,Certificate,20,67,2,2,6,16,8,7,6,7
+Luxe Hotels - Loyalty Subgraph,com.luxe.loyalty.schema.types,LoyaltyBenefit,0,18,0,0,0,1,0,1,0,1
+Luxe Hotels - Loyalty Subgraph,com.luxe.loyalty.schema.types,PointsValuation.PointsRedemptionExample,0,12,0,0,0,1,0,1,0,1
+Luxe Hotels - Loyalty Subgraph,com.luxe.loyalty.schema.types,Challenge,12,53,0,0,4,12,4,8,4,8
+Luxe Hotels - Loyalty Subgraph,com.luxe.loyalty.schema.types,LoyaltyAccount,38,156,0,0,8,36,8,22,8,22
+Luxe Hotels - Loyalty Subgraph,com.luxe.loyalty.schema.types,Challenge.ChallengeReward,0,15,0,0,0,1,0,1,0,1

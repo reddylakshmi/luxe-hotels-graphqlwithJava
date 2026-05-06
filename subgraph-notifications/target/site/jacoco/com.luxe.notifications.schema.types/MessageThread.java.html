@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MessageThread.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Notifications Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.notifications.schema.types</a> &gt; <span class="el_source">MessageThread.java</span></div><h1>MessageThread.java</h1><pre class="source lang-java linenums">package com.luxe.notifications.schema.types;
+
+import com.luxe.common.pagination.HasId;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+public class MessageThread implements HasId {
+    private final String id, guestId, hotelId, reservationId;
+    private String subject;
+    private String status;
+    private String assignedAgent;
+<span class="fc" id="L13">    private final List&lt;Message&gt; messages = new ArrayList&lt;&gt;();</span>
+    private OffsetDateTime lastMessageAt;
+
+    public MessageThread(String id, String guestId, String subject, String status,
+                          String hotelId, String reservationId, String assignedAgent,
+<span class="fc" id="L18">                          OffsetDateTime lastMessageAt) {</span>
+<span class="fc" id="L19">        this.id = id; this.guestId = guestId; this.subject = subject;</span>
+<span class="fc" id="L20">        this.status = status; this.hotelId = hotelId; this.reservationId = reservationId;</span>
+<span class="fc" id="L21">        this.assignedAgent = assignedAgent; this.lastMessageAt = lastMessageAt;</span>
+<span class="fc" id="L22">    }</span>
+
+<span class="fc" id="L24">    @Override public String getId() { return id; }</span>
+<span class="fc" id="L25">    public String getGuestId() { return guestId; }</span>
+<span class="fc" id="L26">    public String getSubject() { return subject; }</span>
+<span class="fc" id="L27">    public String getStatus() { return status; }</span>
+<span class="nc" id="L28">    public String getHotelId() { return hotelId; }</span>
+<span class="nc" id="L29">    public String getReservationId() { return reservationId; }</span>
+<span class="nc" id="L30">    public String getAssignedAgent() { return assignedAgent; }</span>
+<span class="fc" id="L31">    public List&lt;Message&gt; getMessages() { return messages; }</span>
+<span class="nc" id="L32">    public OffsetDateTime getLastMessageAt() { return lastMessageAt; }</span>
+    public int getUnreadCount() {
+<span class="nc" id="L34">        return (int) messages.stream()</span>
+<span class="nc bnc" id="L35" title="All 4 branches missed.">                .filter(m -&gt; m.getReadAt() == null &amp;&amp; &quot;AGENT&quot;.equals(m.getSender()))</span>
+<span class="nc" id="L36">                .count();</span>
+    }
+
+    public void addMessage(Message m) {
+<span class="fc" id="L40">        this.messages.add(m);</span>
+<span class="fc" id="L41">        this.lastMessageAt = m.getSentAt();</span>
+<span class="fc" id="L42">    }</span>
+<span class="fc" id="L43">    public void setStatus(String s) { this.status = s; }</span>
+<span class="nc" id="L44">    public void setAssignedAgent(String agent) { this.assignedAgent = agent; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

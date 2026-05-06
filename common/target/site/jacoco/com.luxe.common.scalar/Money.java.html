@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Money.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Common</a> &gt; <a href="index.source.html" class="el_package">com.luxe.common.scalar</a> &gt; <span class="el_source">Money.java</span></div><h1>Money.java</h1><pre class="source lang-java linenums">package com.luxe.common.scalar;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
+<span class="fc" id="L6">public record Money(String amount, String currency) {</span>
+
+    public static Money of(double amount, String currency) {
+<span class="fc" id="L9">        return new Money(String.format(&quot;%.2f&quot;, amount), currency);</span>
+    }
+
+    public static Money of(BigDecimal amount, String currency) {
+<span class="fc" id="L13">        return new Money(amount.setScale(2, RoundingMode.HALF_UP).toPlainString(), currency);</span>
+    }
+
+    public static Money fromString(String value) {
+<span class="fc" id="L17">        String[] parts = value.trim().split(&quot;\\s+&quot;);</span>
+<span class="fc bfc" id="L18" title="All 2 branches covered.">        if (parts.length != 2) {</span>
+<span class="fc" id="L19">            throw new IllegalArgumentException(&quot;Invalid Money format, expected 'amount currency': &quot; + value);</span>
+        }
+<span class="fc" id="L21">        return new Money(parts[0], parts[1]);</span>
+    }
+
+    public BigDecimal amountAsBigDecimal() {
+<span class="fc" id="L25">        return new BigDecimal(amount);</span>
+    }
+
+    public Money add(Money other) {
+<span class="fc bfc" id="L29" title="All 2 branches covered.">        if (!this.currency.equals(other.currency)) {</span>
+<span class="fc" id="L30">            throw new IllegalArgumentException(&quot;Cannot add Money with different currencies&quot;);</span>
+        }
+<span class="fc" id="L32">        return Money.of(amountAsBigDecimal().add(other.amountAsBigDecimal()), currency);</span>
+    }
+
+    public Money multiply(double factor) {
+<span class="fc" id="L36">        return Money.of(amountAsBigDecimal().multiply(BigDecimal.valueOf(factor)), currency);</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="fc" id="L41">        return amount + &quot; &quot; + currency;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

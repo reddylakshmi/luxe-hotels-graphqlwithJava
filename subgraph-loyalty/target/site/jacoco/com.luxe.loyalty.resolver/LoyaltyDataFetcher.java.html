@@ -1,0 +1,396 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LoyaltyDataFetcher.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Loyalty Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.loyalty.resolver</a> &gt; <span class="el_source">LoyaltyDataFetcher.java</span></div><h1>LoyaltyDataFetcher.java</h1><pre class="source lang-java linenums">package com.luxe.loyalty.resolver;
+
+import com.luxe.loyalty.schema.types.GuestProfile;
+
+import com.luxe.common.auth.AuthContext;
+import com.luxe.common.auth.AuthRole;
+import com.luxe.common.error.AlreadyEnrolledError;
+import com.luxe.common.error.InsufficientPointsError;
+import com.luxe.common.error.NotFoundError;
+import com.luxe.common.error.ValidationError;
+import com.luxe.common.error.FieldError;
+import com.luxe.common.pagination.Connection;
+import com.luxe.common.scalar.Money;
+import com.luxe.loyalty.datasource.LoyaltyDataSource;
+import com.luxe.loyalty.schema.types.*;
+import com.netflix.graphql.dgs.*;
+import graphql.schema.DataFetchingEnvironment;
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+@DgsComponent
+public class LoyaltyDataFetcher {
+
+    private final LoyaltyDataSource dataSource;
+
+<span class="fc" id="L31">    public LoyaltyDataFetcher(LoyaltyDataSource dataSource) {</span>
+<span class="fc" id="L32">        this.dataSource = dataSource;</span>
+<span class="fc" id="L33">    }</span>
+
+    private AuthContext getAuth(DataFetchingEnvironment dfe) {
+        try {
+<span class="fc" id="L37">            HttpServletRequest req = dfe.getGraphQlContext().get(HttpServletRequest.class);</span>
+<span class="pc bpc" id="L38" title="1 of 2 branches missed.">            if (req == null) return AuthContext.anonymous();</span>
+<span class="nc" id="L39">            AuthContext ctx = (AuthContext) req.getAttribute(&quot;authContext&quot;);</span>
+<span class="nc bnc" id="L40" title="All 2 branches missed.">            return ctx != null ? ctx : AuthContext.anonymous();</span>
+<span class="nc" id="L41">        } catch (Exception e) { return AuthContext.anonymous(); }</span>
+    }
+
+    // ── Queries ───────────────────────────────────────────────────────────────
+
+    @DgsQuery
+    public LoyaltyAccount myLoyaltyAccount(DataFetchingEnvironment dfe) {
+<span class="fc" id="L48">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L49">        auth.requireAuth();</span>
+<span class="nc" id="L50">        return dataSource.findByGuestId(auth.guestId()).orElse(null);</span>
+    }
+
+    @DgsQuery
+    public LoyaltyAccount loyaltyAccount(@InputArgument String loyaltyNumber, DataFetchingEnvironment dfe) {
+<span class="nc" id="L55">        getAuth(dfe).requireRole(AuthRole.PROPERTY_STAFF);</span>
+<span class="nc" id="L56">        return dataSource.findByLoyaltyNumber(loyaltyNumber).orElse(null);</span>
+    }
+
+    @DgsQuery
+    public Object loyaltyPartners(@InputArgument Integer first,
+                                   @InputArgument List&lt;String&gt; categories) {
+<span class="fc" id="L62">        List&lt;LoyaltyPartner&gt; all = dataSource.findPartners(categories);</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        Connection&lt;LoyaltyPartner&gt; conn = Connection.of(all, first != null ? first : 20, null);</span>
+<span class="fc" id="L64">        return Map.of(</span>
+<span class="fc" id="L65">                &quot;edges&quot;, conn.edges().stream()</span>
+<span class="fc" id="L66">                        .map(e -&gt; Map.of(&quot;node&quot;, e.node(), &quot;cursor&quot;, e.cursor())).toList(),</span>
+<span class="fc" id="L67">                &quot;pageInfo&quot;, pageInfo(conn),</span>
+<span class="fc" id="L68">                &quot;totalCount&quot;, conn.totalCount());</span>
+    }
+
+    @DgsQuery
+    public PointsValuation pointsValuation(@InputArgument int points,
+                                            @InputArgument String currency) {
+<span class="fc" id="L74">        return dataSource.valuePoints(points, currency);</span>
+    }
+
+    @DgsQuery
+    public List&lt;Challenge&gt; availableChallenges(@InputArgument Integer first) {
+<span class="fc" id="L79">        List&lt;Challenge&gt; all = dataSource.findAvailableChallenges();</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        return first != null ? all.stream().limit(first).toList() : all;</span>
+    }
+
+    // ── Mutations ─────────────────────────────────────────────────────────────
+
+    @DgsMutation
+    public Object enrollInLoyalty(@InputArgument Map&lt;String, Object&gt; input,
+                                    DataFetchingEnvironment dfe) {
+<span class="nc" id="L88">        getAuth(dfe).requireAuth();</span>
+<span class="nc" id="L89">        String guestId = (String) input.get(&quot;guestId&quot;);</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">        if (guestId == null) {</span>
+<span class="nc" id="L91">            return new ValidationError(&quot;MISSING_GUEST_ID&quot;, &quot;guestId is required&quot;,</span>
+<span class="nc" id="L92">                    List.of(new FieldError(&quot;guestId&quot;, &quot;Required&quot;)));</span>
+        }
+<span class="nc" id="L94">        return dataSource.findByGuestId(guestId)</span>
+<span class="nc" id="L95">                .&lt;Object&gt;map(existing -&gt; new AlreadyEnrolledError(existing.getLoyaltyNumber()))</span>
+<span class="nc" id="L96">                .orElseGet(() -&gt; dataSource.enroll(guestId,</span>
+<span class="nc" id="L97">                        (String) input.get(&quot;referralCode&quot;),</span>
+<span class="nc" id="L98">                        (Boolean) input.get(&quot;marketingOptIn&quot;)));</span>
+    }
+
+    @DgsMutation
+    public Object transferPoints(@InputArgument Map&lt;String, Object&gt; input,
+                                  @InputArgument String idempotencyKey,
+                                  DataFetchingEnvironment dfe) {
+<span class="nc" id="L105">        getAuth(dfe).requireAuth();</span>
+<span class="nc" id="L106">        String fromNum = (String) input.get(&quot;fromLoyaltyNumber&quot;);</span>
+<span class="nc" id="L107">        String toNum   = (String) input.get(&quot;toLoyaltyNumber&quot;);</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">        Integer points = input.get(&quot;points&quot;) != null ? ((Number) input.get(&quot;points&quot;)).intValue() : null;</span>
+<span class="nc bnc" id="L109" title="All 8 branches missed.">        if (fromNum == null || toNum == null || points == null || points &lt;= 0) {</span>
+<span class="nc" id="L110">            return new ValidationError(&quot;INVALID_INPUT&quot;,</span>
+                    &quot;fromLoyaltyNumber, toLoyaltyNumber, and a positive points value are required&quot;,
+<span class="nc" id="L112">                    List.of());</span>
+        }
+<span class="nc" id="L114">        var from = dataSource.findByLoyaltyNumber(fromNum).orElse(null);</span>
+<span class="nc" id="L115">        var to   = dataSource.findByLoyaltyNumber(toNum).orElse(null);</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">        if (from == null) return new NotFoundError(&quot;LoyaltyAccount&quot;, fromNum);</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        if (to   == null) return new NotFoundError(&quot;LoyaltyAccount&quot;, toNum);</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">        if (from.getPointsAvailable() &lt; points) {</span>
+<span class="nc" id="L119">            return new InsufficientPointsError(from.getPointsAvailable(), points);</span>
+        }
+<span class="nc" id="L121">        return dataSource.transferPoints(fromNum, toNum, points, (String) input.get(&quot;message&quot;));</span>
+    }
+
+    @DgsMutation
+    public Object transferToAirline(@InputArgument Map&lt;String, Object&gt; input,
+                                     @InputArgument String idempotencyKey,
+                                     DataFetchingEnvironment dfe) {
+<span class="fc" id="L128">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L129">        auth.requireAuth();</span>
+<span class="nc" id="L130">        String partnerId = (String) input.get(&quot;partnerId&quot;);</span>
+<span class="nc" id="L131">        String partnerAcct = (String) input.get(&quot;partnerAccountNumber&quot;);</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">        Integer points = input.get(&quot;points&quot;) != null ? ((Number) input.get(&quot;points&quot;)).intValue() : null;</span>
+<span class="nc bnc" id="L133" title="All 8 branches missed.">        if (partnerId == null || partnerAcct == null || points == null || points &lt;= 0) {</span>
+<span class="nc" id="L134">            return new ValidationError(&quot;INVALID_INPUT&quot;,</span>
+                    &quot;partnerId, partnerAccountNumber, and positive points are required&quot;,
+<span class="nc" id="L136">                    List.of());</span>
+        }
+<span class="nc" id="L138">        var partner = dataSource.findPartnerById(partnerId).orElse(null);</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">        if (partner == null) return new NotFoundError(&quot;LoyaltyPartner&quot;, partnerId);</span>
+<span class="nc" id="L140">        var account = dataSource.findByGuestId(auth.guestId()).orElse(null);</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">        if (account == null) return new NotFoundError(&quot;LoyaltyAccount&quot;, auth.guestId());</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">        if (account.getPointsAvailable() &lt; points) {</span>
+<span class="nc" id="L143">            return new InsufficientPointsError(account.getPointsAvailable(), points);</span>
+        }
+<span class="nc" id="L145">        var tx = dataSource.transferToAirline(account.getId(), partnerId, partnerAcct, points);</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">        if (tx == null) return new ValidationError(&quot;TRANSFER_FAILED&quot;, &quot;Transfer could not be processed&quot;, List.of());</span>
+<span class="nc" id="L147">        int milesAwarded = (int) Math.round(points * partner.pointsRatio());</span>
+<span class="nc" id="L148">        return Map.of(</span>
+<span class="nc" id="L149">                &quot;transactionId&quot;, tx.id(),</span>
+                &quot;pointsDeducted&quot;, points,
+<span class="nc" id="L151">                &quot;partnerMilesAwarded&quot;, milesAwarded,</span>
+                &quot;partner&quot;, partner,
+<span class="nc" id="L153">                &quot;estimatedDeliveryDays&quot;, 3,</span>
+                &quot;message&quot;, &quot;Transfer initiated. Miles will be credited to &quot; + partnerAcct
+                        + &quot; within 3 business days.&quot;);
+    }
+
+    @DgsMutation
+    public Object linkPartnerAccount(@InputArgument Map&lt;String, Object&gt; input,
+                                      DataFetchingEnvironment dfe) {
+<span class="fc" id="L161">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L162">        auth.requireAuth();</span>
+<span class="nc" id="L163">        String partnerId = (String) input.get(&quot;partnerId&quot;);</span>
+<span class="nc" id="L164">        String partnerAcct = (String) input.get(&quot;partnerAccountNumber&quot;);</span>
+<span class="nc bnc" id="L165" title="All 4 branches missed.">        if (partnerId == null || partnerAcct == null) {</span>
+<span class="nc" id="L166">            return new ValidationError(&quot;INVALID_INPUT&quot;,</span>
+<span class="nc" id="L167">                    &quot;partnerId and partnerAccountNumber are required&quot;, List.of());</span>
+        }
+<span class="nc bnc" id="L169" title="All 2 branches missed.">        if (dataSource.findPartnerById(partnerId).isEmpty())</span>
+<span class="nc" id="L170">            return new NotFoundError(&quot;LoyaltyPartner&quot;, partnerId);</span>
+<span class="nc" id="L171">        var account = dataSource.findByGuestId(auth.guestId()).orElse(null);</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">        if (account == null) return new NotFoundError(&quot;LoyaltyAccount&quot;, auth.guestId());</span>
+<span class="nc" id="L173">        return dataSource.linkPartnerAccount(account.getId(), partnerId, partnerAcct,</span>
+<span class="nc" id="L174">                (String) input.get(&quot;partnerAccountLastName&quot;));</span>
+    }
+
+    @DgsMutation
+    public Object registerForChallenge(@InputArgument String challengeId,
+                                        DataFetchingEnvironment dfe) {
+<span class="fc" id="L180">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L181">        auth.requireAuth();</span>
+<span class="nc" id="L182">        var account = dataSource.findByGuestId(auth.guestId()).orElse(null);</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">        if (account == null) return new NotFoundError(&quot;LoyaltyAccount&quot;, auth.guestId());</span>
+<span class="nc" id="L184">        var challenge = dataSource.registerForChallenge(account.getId(), challengeId);</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">        return challenge != null ? challenge : new NotFoundError(&quot;Challenge&quot;, challengeId);</span>
+    }
+
+    @DgsMutation
+    public Object redeemCertificate(@InputArgument String certificateId,
+                                     @InputArgument String reservationId,
+                                     @InputArgument String idempotencyKey,
+                                     DataFetchingEnvironment dfe) {
+<span class="fc" id="L193">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L194">        auth.requireAuth();</span>
+<span class="nc" id="L195">        var account = dataSource.findByGuestId(auth.guestId()).orElse(null);</span>
+<span class="nc bnc" id="L196" title="All 2 branches missed.">        if (account == null) return new NotFoundError(&quot;LoyaltyAccount&quot;, auth.guestId());</span>
+<span class="nc" id="L197">        var cert = dataSource.redeemCertificate(account.getId(), certificateId, reservationId);</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">        if (cert == null) {</span>
+<span class="nc" id="L199">            return new ValidationError(&quot;INVALID_CERTIFICATE&quot;,</span>
+<span class="nc" id="L200">                    &quot;Certificate not found, already redeemed, or expired&quot;, List.of());</span>
+        }
+<span class="nc" id="L202">        return Map.of(</span>
+                &quot;certificate&quot;, cert,
+                &quot;reservationId&quot;, reservationId,
+<span class="nc" id="L205">                &quot;appliedAt&quot;, OffsetDateTime.now(),</span>
+                &quot;message&quot;, &quot;Certificate applied to reservation &quot; + reservationId);
+    }
+
+    @DgsMutation
+    public Object buyPoints(@InputArgument Map&lt;String, Object&gt; input,
+                              @InputArgument String idempotencyKey,
+                              DataFetchingEnvironment dfe) {
+<span class="fc" id="L213">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L214">        auth.requireAuth();</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">        Integer points = input.get(&quot;points&quot;) != null ? ((Number) input.get(&quot;points&quot;)).intValue() : null;</span>
+<span class="nc bnc" id="L216" title="All 4 branches missed.">        if (points == null || points &lt;= 0) {</span>
+<span class="nc" id="L217">            return new ValidationError(&quot;INVALID_INPUT&quot;,</span>
+<span class="nc" id="L218">                    &quot;Positive points value is required&quot;, List.of());</span>
+        }
+<span class="nc" id="L220">        var account = dataSource.findByGuestId(auth.guestId()).orElse(null);</span>
+<span class="nc bnc" id="L221" title="All 2 branches missed.">        if (account == null) return new ValidationError(&quot;NO_ACCOUNT&quot;,</span>
+<span class="nc" id="L222">                &quot;No loyalty account on file for the authenticated user&quot;, List.of());</span>
+<span class="nc" id="L223">        return dataSource.buyPoints(account.getId(), points, (String) input.get(&quot;paymentMethodId&quot;));</span>
+    }
+
+    @DgsMutation
+    public Object giftPoints(@InputArgument Map&lt;String, Object&gt; input,
+                              @InputArgument String idempotencyKey,
+                              DataFetchingEnvironment dfe) {
+<span class="fc" id="L230">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L231">        auth.requireAuth();</span>
+<span class="nc bnc" id="L232" title="All 2 branches missed.">        Integer points = input.get(&quot;points&quot;) != null ? ((Number) input.get(&quot;points&quot;)).intValue() : null;</span>
+<span class="nc" id="L233">        String recipient = (String) input.get(&quot;recipientLoyaltyNumber&quot;);</span>
+<span class="nc bnc" id="L234" title="All 6 branches missed.">        if (points == null || points &lt;= 0 || recipient == null) {</span>
+<span class="nc" id="L235">            return new ValidationError(&quot;INVALID_INPUT&quot;,</span>
+<span class="nc" id="L236">                    &quot;recipientLoyaltyNumber and positive points are required&quot;, List.of());</span>
+        }
+<span class="nc" id="L238">        var sender = dataSource.findByGuestId(auth.guestId()).orElse(null);</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">        if (sender == null) return new NotFoundError(&quot;LoyaltyAccount&quot;, auth.guestId());</span>
+<span class="nc" id="L240">        var recipientAcct = dataSource.findByLoyaltyNumber(recipient).orElse(null);</span>
+<span class="nc bnc" id="L241" title="All 2 branches missed.">        if (recipientAcct == null) return new NotFoundError(&quot;LoyaltyAccount&quot;, recipient);</span>
+<span class="nc bnc" id="L242" title="All 2 branches missed.">        if (sender.getPointsAvailable() &lt; points)</span>
+<span class="nc" id="L243">            return new InsufficientPointsError(sender.getPointsAvailable(), points);</span>
+<span class="nc" id="L244">        var tx = dataSource.giftPoints(sender.getLoyaltyNumber(), recipient, points,</span>
+<span class="nc" id="L245">                (String) input.get(&quot;message&quot;));</span>
+<span class="nc" id="L246">        return Map.of(</span>
+<span class="nc" id="L247">                &quot;transactionId&quot;, tx.id(),</span>
+                &quot;recipientLoyaltyNumber&quot;, recipient,
+                &quot;pointsGifted&quot;, points,
+<span class="nc" id="L250">                &quot;newBalance&quot;, sender.getPointsAvailable(),</span>
+                &quot;message&quot;, &quot;Gifted &quot; + points + &quot; points to &quot; + recipient);
+    }
+
+    @DgsMutation
+    public Object extendPointsExpiry(DataFetchingEnvironment dfe) {
+<span class="fc" id="L256">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L257">        auth.requireAuth();</span>
+<span class="nc" id="L258">        var account = dataSource.findByGuestId(auth.guestId()).orElse(null);</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">        if (account == null) return new ValidationError(&quot;NO_ACCOUNT&quot;,</span>
+<span class="nc" id="L260">                &quot;No loyalty account on file&quot;, List.of());</span>
+<span class="nc" id="L261">        return dataSource.extendPointsExpiry(account.getId());</span>
+    }
+
+    // ── LoyaltyAccount derived field resolvers ────────────────────────────────
+
+    @DgsData(parentType = &quot;LoyaltyAccount&quot;, field = &quot;pointsBalance&quot;)
+    public PointsBalance pointsBalance(DataFetchingEnvironment dfe) {
+<span class="fc" id="L268">        LoyaltyAccount a = dfe.getSource();</span>
+<span class="fc" id="L269">        int total = a.getPointsAvailable() + a.getPointsPending();</span>
+<span class="fc" id="L270">        Money cash = Money.of(a.getPointsAvailable() * 0.007, a.getCurrency());</span>
+<span class="fc" id="L271">        return new PointsBalance(a.getPointsAvailable(), a.getPointsPending(),</span>
+<span class="fc" id="L272">                a.getPointsExpiringSoon(), total, cash, a.getUpdatedAt());</span>
+    }
+
+    @DgsData(parentType = &quot;LoyaltyAccount&quot;, field = &quot;tierProgress&quot;)
+    public TierProgress tierProgress(DataFetchingEnvironment dfe) {
+<span class="fc" id="L277">        LoyaltyAccount a = dfe.getSource();</span>
+<span class="fc" id="L278">        return computeTierProgress(a);</span>
+    }
+
+    @DgsData(parentType = &quot;LoyaltyAccount&quot;, field = &quot;benefits&quot;)
+    public List&lt;LoyaltyBenefit&gt; benefits(DataFetchingEnvironment dfe) {
+<span class="fc" id="L283">        LoyaltyAccount a = dfe.getSource();</span>
+<span class="fc" id="L284">        return dataSource.benefitsForTier(a.getTier());</span>
+    }
+
+    @DgsData(parentType = &quot;LoyaltyAccount&quot;, field = &quot;certificates&quot;)
+    public List&lt;Certificate&gt; certificates(DataFetchingEnvironment dfe) {
+<span class="fc" id="L289">        LoyaltyAccount a = dfe.getSource();</span>
+<span class="fc" id="L290">        Integer first = dfe.getArgument(&quot;first&quot;);</span>
+<span class="fc" id="L291">        String status = dfe.getArgument(&quot;status&quot;);</span>
+<span class="fc" id="L292">        List&lt;Certificate&gt; certs = dataSource.findCertificates(a.getId(), status);</span>
+<span class="pc bpc" id="L293" title="1 of 2 branches missed.">        return first != null ? certs.stream().limit(first).toList() : certs;</span>
+    }
+
+    @DgsData(parentType = &quot;LoyaltyAccount&quot;, field = &quot;transactions&quot;)
+    public Object transactions(DataFetchingEnvironment dfe) {
+<span class="fc" id="L298">        LoyaltyAccount a = dfe.getSource();</span>
+<span class="fc" id="L299">        Integer first = dfe.getArgument(&quot;first&quot;);</span>
+<span class="fc" id="L300">        String after  = dfe.getArgument(&quot;after&quot;);</span>
+<span class="fc" id="L301">        Map&lt;String, Object&gt; filter = dfe.getArgument(&quot;filter&quot;);</span>
+<span class="fc" id="L302">        String sortBy = dfe.getArgument(&quot;sortBy&quot;);</span>
+<span class="fc" id="L303">        List&lt;PointsTransaction&gt; all = dataSource.findTransactions(a.getId(), filter, sortBy);</span>
+<span class="pc bpc" id="L304" title="1 of 2 branches missed.">        Connection&lt;PointsTransaction&gt; conn = Connection.of(all, first != null ? first : 20, after);</span>
+<span class="fc" id="L305">        return Map.of(</span>
+<span class="fc" id="L306">                &quot;edges&quot;, conn.edges().stream()</span>
+<span class="fc" id="L307">                        .map(e -&gt; Map.of(&quot;node&quot;, e.node(), &quot;cursor&quot;, e.cursor())).toList(),</span>
+<span class="fc" id="L308">                &quot;pageInfo&quot;, pageInfo(conn),</span>
+<span class="fc" id="L309">                &quot;totalCount&quot;, conn.totalCount());</span>
+    }
+
+    @DgsData(parentType = &quot;LoyaltyAccount&quot;, field = &quot;availableChallenges&quot;)
+    public List&lt;Challenge&gt; accountAvailableChallenges(DataFetchingEnvironment dfe) {
+<span class="nc" id="L314">        return dataSource.findAvailableChallenges();</span>
+    }
+
+    // ── GuestProfile.loyaltyAccount (federated) ───────────────────────────────
+
+    @DgsData(parentType = &quot;GuestProfile&quot;, field = &quot;loyaltyAccount&quot;)
+    public LoyaltyAccount guestLoyaltyAccount(DataFetchingEnvironment dfe) {
+<span class="fc" id="L321">        GuestProfile guest = dfe.getSource();</span>
+<span class="fc" id="L322">        return dataSource.findByGuestId(guest.getId()).orElse(null);</span>
+    }
+
+    // ── Entity fetcher ────────────────────────────────────────────────────────
+
+    @DgsEntityFetcher(name = &quot;LoyaltyAccount&quot;)
+    public LoyaltyAccount fetchAccount(Map&lt;String, Object&gt; values) {
+<span class="fc" id="L329">        return dataSource.findById((String) values.get(&quot;id&quot;)).orElse(null);</span>
+    }
+
+    // ── helpers ──────────────────────────────────────────────────────────────
+
+    private TierProgress computeTierProgress(LoyaltyAccount a) {
+<span class="fc" id="L335">        int qualifying = a.getQualifyingNights();</span>
+<span class="fc" id="L336">        String currentTier = a.getTier();</span>
+<span class="fc" id="L337">        String nextTier = nextTier(currentTier);</span>
+<span class="pc bpc" id="L338" title="1 of 2 branches missed.">        Integer toNext = nextTier == null ? null</span>
+<span class="fc" id="L339">                : Math.max(0, tierThreshold(nextTier) - qualifying);</span>
+<span class="pc bpc" id="L340" title="1 of 2 branches missed.">        Integer toRetain = currentTier.equals(&quot;MEMBER&quot;) ? null</span>
+<span class="fc" id="L341">                : Math.max(0, tierThreshold(currentTier) - qualifying);</span>
+<span class="pc bpc" id="L342" title="1 of 2 branches missed.">        double pct = nextTier == null ? 100.0</span>
+<span class="fc" id="L343">                : Math.min(100.0, (qualifying * 100.0) / tierThreshold(nextTier));</span>
+<span class="fc" id="L344">        Money spend = Money.of(a.getQualifyingSpend(), a.getCurrency());</span>
+<span class="fc" id="L345">        return new TierProgress(currentTier, nextTier, qualifying, toNext, toRetain,</span>
+<span class="fc" id="L346">                spend, pct, LocalDate.of(LocalDate.now().getYear(), 12, 31),</span>
+<span class="fc" id="L347">                projectTier(qualifying));</span>
+    }
+
+    private String nextTier(String tier) {
+<span class="pc bpc" id="L351" title="4 of 6 branches missed.">        return switch (tier) {</span>
+<span class="nc" id="L352">            case &quot;MEMBER&quot;     -&gt; &quot;SILVER&quot;;</span>
+<span class="fc" id="L353">            case &quot;SILVER&quot;     -&gt; &quot;GOLD&quot;;</span>
+<span class="fc" id="L354">            case &quot;GOLD&quot;       -&gt; &quot;PLATINUM&quot;;</span>
+<span class="nc" id="L355">            case &quot;PLATINUM&quot;   -&gt; &quot;TITANIUM&quot;;</span>
+<span class="nc" id="L356">            case &quot;TITANIUM&quot;   -&gt; &quot;AMBASSADOR&quot;;</span>
+<span class="nc" id="L357">            default           -&gt; null;</span>
+        };
+    }
+
+    private int tierThreshold(String tier) {
+<span class="pc bpc" id="L362" title="4 of 7 branches missed.">        return switch (tier) {</span>
+<span class="nc" id="L363">            case &quot;MEMBER&quot;     -&gt; 0;</span>
+<span class="fc" id="L364">            case &quot;SILVER&quot;     -&gt; 10;</span>
+<span class="fc" id="L365">            case &quot;GOLD&quot;       -&gt; 25;</span>
+<span class="fc" id="L366">            case &quot;PLATINUM&quot;   -&gt; 50;</span>
+<span class="nc" id="L367">            case &quot;TITANIUM&quot;   -&gt; 75;</span>
+<span class="nc" id="L368">            case &quot;AMBASSADOR&quot; -&gt; 100;</span>
+<span class="nc" id="L369">            default           -&gt; 0;</span>
+        };
+    }
+
+    private String projectTier(int qualifying) {
+<span class="pc bpc" id="L374" title="1 of 2 branches missed.">        if (qualifying &gt;= 100) return &quot;AMBASSADOR&quot;;</span>
+<span class="pc bpc" id="L375" title="1 of 2 branches missed.">        if (qualifying &gt;= 75)  return &quot;TITANIUM&quot;;</span>
+<span class="pc bpc" id="L376" title="1 of 2 branches missed.">        if (qualifying &gt;= 50)  return &quot;PLATINUM&quot;;</span>
+<span class="fc bfc" id="L377" title="All 2 branches covered.">        if (qualifying &gt;= 25)  return &quot;GOLD&quot;;</span>
+<span class="pc bpc" id="L378" title="1 of 2 branches missed.">        if (qualifying &gt;= 10)  return &quot;SILVER&quot;;</span>
+<span class="nc" id="L379">        return &quot;MEMBER&quot;;</span>
+    }
+
+    private Map&lt;String, Object&gt; pageInfo(Connection&lt;?&gt; conn) {
+<span class="fc" id="L383">        java.util.HashMap&lt;String, Object&gt; info = new java.util.HashMap&lt;&gt;();</span>
+<span class="fc" id="L384">        info.put(&quot;hasNextPage&quot;, conn.pageInfo().hasNextPage());</span>
+<span class="fc" id="L385">        info.put(&quot;hasPreviousPage&quot;, conn.pageInfo().hasPreviousPage());</span>
+<span class="fc" id="L386">        info.put(&quot;startCursor&quot;, conn.pageInfo().startCursor());</span>
+<span class="fc" id="L387">        info.put(&quot;endCursor&quot;, conn.pageInfo().endCursor());</span>
+<span class="fc" id="L388">        return info;</span>
+    }
+    @DgsEntityFetcher(name = &quot;GuestProfile&quot;)
+    public GuestProfile fetchGuestProfileReference(Map&lt;String, Object&gt; values) {
+<span class="fc" id="L392">        return new GuestProfile((String) values.get(&quot;id&quot;));</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,6 +1,7 @@
 package com.luxe.guest.resolver;
 
 import com.luxe.common.auth.AuthContext;
+import com.luxe.common.auth.AuthContextResolver;
 import com.luxe.common.auth.AuthRole;
 import com.luxe.common.error.NotFoundError;
 import com.luxe.common.pagination.Connection;
@@ -8,7 +9,6 @@ import com.luxe.guest.datasource.GuestDataSource;
 import com.luxe.guest.schema.types.*;
 import com.netflix.graphql.dgs.*;
 import graphql.schema.DataFetchingEnvironment;
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.*;
 
@@ -16,20 +16,15 @@ import java.util.*;
 public class GuestDataFetcher {
 
     private final GuestDataSource dataSource;
+    private final AuthContextResolver authResolver;
 
-    public GuestDataFetcher(GuestDataSource dataSource) {
+    public GuestDataFetcher(GuestDataSource dataSource, AuthContextResolver authResolver) {
         this.dataSource = dataSource;
+        this.authResolver = authResolver;
     }
 
     private AuthContext getAuthContext(DataFetchingEnvironment dfe) {
-        try {
-            HttpServletRequest request = dfe.getGraphQlContext().get(HttpServletRequest.class);
-            if (request == null) return AuthContext.anonymous();
-            AuthContext ctx = (AuthContext) request.getAttribute("authContext");
-            return ctx != null ? ctx : AuthContext.anonymous();
-        } catch (Exception e) {
-            return AuthContext.anonymous();
-        }
+        return authResolver.resolve(dfe);
     }
 
     // ── Queries ──────────────────────────────────────────────────────────────
@@ -89,8 +84,10 @@ public class GuestDataFetcher {
     }
 
     @DgsMutation
-    public Map<String, Object> signOut(DataFetchingEnvironment dfe) {
-        return Map.of("success", true, "message", "Signed out successfully");
+    public boolean signOut(DataFetchingEnvironment dfe) {
+        // Schema declares Boolean! — current implementation has no server-side
+        // session to invalidate, so we just acknowledge.
+        return true;
     }
 
     // ── Profile Mutations ─────────────────────────────────────────────────────
@@ -105,13 +102,14 @@ public class GuestDataFetcher {
     }
 
     @DgsMutation
-    public Object updatePreferences(@InputArgument Map<String, Object> input,
-                                     DataFetchingEnvironment dfe) {
+    public GuestPreferences updatePreferences(@InputArgument Map<String, Object> input,
+                                               DataFetchingEnvironment dfe) {
         AuthContext auth = getAuthContext(dfe);
         auth.requireAuth();
         GuestPreferences prefs = buildPreferences(input);
         GuestProfile updated = dataSource.updatePreferences(auth.guestId(), prefs);
-        return updated != null ? updated : new NotFoundError("GuestProfile", auth.guestId());
+        // Schema declares GuestPreferences! — return the merged preferences object.
+        return updated != null ? updated.getPreferences() : null;
     }
 
     // ── Payment Method Mutations ──────────────────────────────────────────────
@@ -122,63 +120,79 @@ public class GuestDataFetcher {
         AuthContext auth = getAuthContext(dfe);
         auth.requireAuth();
         GuestProfile updated = dataSource.addPaymentMethod(auth.guestId(), input);
-        return updated != null ? updated : new NotFoundError("GuestProfile", auth.guestId());
+        if (updated == null) {
+            return new com.luxe.common.error.ValidationError("ADD_PAYMENT_METHOD_FAILED",
+                    "Could not add payment method", List.of());
+        }
+        // Schema returns AddPaymentMethodResult union (PaymentMethod | error).
+        // Return the most-recently-added method (last entry).
+        var pms = updated.getPaymentMethods();
+        return pms.get(pms.size() - 1);
     }
 
     @DgsMutation
-    public Object removePaymentMethod(@InputArgument(name = "id") String paymentMethodId,
-                                       DataFetchingEnvironment dfe) {
+    public boolean removePaymentMethod(@InputArgument(name = "id") String paymentMethodId,
+                                        DataFetchingEnvironment dfe) {
         AuthContext auth = getAuthContext(dfe);
         auth.requireAuth();
-        GuestProfile updated = dataSource.removePaymentMethod(auth.guestId(), paymentMethodId);
-        return updated != null ? updated : new NotFoundError("GuestProfile", auth.guestId());
+        // Schema declares Boolean! — return success/failure of the operation.
+        return dataSource.removePaymentMethod(auth.guestId(), paymentMethodId) != null;
     }
 
     @DgsMutation
-    public Object setDefaultPaymentMethod(@InputArgument(name = "id") String paymentMethodId,
-                                           DataFetchingEnvironment dfe) {
+    public PaymentMethod setDefaultPaymentMethod(@InputArgument(name = "id") String paymentMethodId,
+                                                  DataFetchingEnvironment dfe) {
         AuthContext auth = getAuthContext(dfe);
         auth.requireAuth();
         GuestProfile updated = dataSource.setDefaultPaymentMethod(auth.guestId(), paymentMethodId);
-        return updated != null ? updated : new NotFoundError("GuestProfile", auth.guestId());
+        if (updated == null) return null;
+        // Schema declares nullable PaymentMethod — return the now-default method.
+        return updated.getPaymentMethods().stream()
+                .filter(pm -> pm.getId().equals(paymentMethodId))
+                .findFirst().orElse(null);
     }
 
     // ── Saved Hotel Mutations ─────────────────────────────────────────────────
 
     @DgsMutation
-    public Object saveHotel(@InputArgument String hotelId, DataFetchingEnvironment dfe) {
+    public SavedHotel saveHotel(@InputArgument String hotelId, DataFetchingEnvironment dfe) {
         AuthContext auth = getAuthContext(dfe);
         auth.requireAuth();
         GuestProfile updated = dataSource.saveHotel(auth.guestId(), hotelId);
-        return updated != null ? updated : new NotFoundError("GuestProfile", auth.guestId());
+        if (updated == null) return null;
+        // Schema declares SavedHotel! — locate the entry for the requested hotel.
+        return updated.getSavedHotels().stream()
+                .filter(sh -> sh.hotelId().equals(hotelId))
+                .findFirst().orElse(null);
     }
 
     @DgsMutation
-    public Object unsaveHotel(@InputArgument String hotelId, DataFetchingEnvironment dfe) {
+    public boolean unsaveHotel(@InputArgument String hotelId, DataFetchingEnvironment dfe) {
         AuthContext auth = getAuthContext(dfe);
         auth.requireAuth();
-        GuestProfile updated = dataSource.unsaveHotel(auth.guestId(), hotelId);
-        return updated != null ? updated : new NotFoundError("GuestProfile", auth.guestId());
+        return dataSource.unsaveHotel(auth.guestId(), hotelId) != null;
     }
 
     // ── Travel Companion Mutations ────────────────────────────────────────────
 
     @DgsMutation
-    public Object addTravelCompanion(@InputArgument Map<String, Object> input,
-                                      DataFetchingEnvironment dfe) {
+    public TravelCompanion addTravelCompanion(@InputArgument Map<String, Object> input,
+                                                DataFetchingEnvironment dfe) {
         AuthContext auth = getAuthContext(dfe);
         auth.requireAuth();
         GuestProfile updated = dataSource.addTravelCompanion(auth.guestId(), input);
-        return updated != null ? updated : new NotFoundError("GuestProfile", auth.guestId());
+        if (updated == null) return null;
+        // Schema declares TravelCompanion! — return the most-recently-added companion.
+        var companions = updated.getTravelCompanions();
+        return companions.get(companions.size() - 1);
     }
 
     @DgsMutation
-    public Object removeTravelCompanion(@InputArgument(name = "id") String companionId,
-                                         DataFetchingEnvironment dfe) {
+    public boolean removeTravelCompanion(@InputArgument(name = "id") String companionId,
+                                          DataFetchingEnvironment dfe) {
         AuthContext auth = getAuthContext(dfe);
         auth.requireAuth();
-        GuestProfile updated = dataSource.removeTravelCompanion(auth.guestId(), companionId);
-        return updated != null ? updated : new NotFoundError("GuestProfile", auth.guestId());
+        return dataSource.removeTravelCompanion(auth.guestId(), companionId) != null;
     }
 
     // ── Field Resolvers ───────────────────────────────────────────────────────

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RoomType.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Property Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.property.schema.types</a> &gt; <span class="el_source">RoomType.java</span></div><h1>RoomType.java</h1><pre class="source lang-java linenums">package com.luxe.property.schema.types;
+
+import com.luxe.common.pagination.HasId;
+import java.util.List;
+
+public class RoomType implements HasId {
+    private final String id, hotelId, code, name, category, view, floor;
+    private final LocalizedContent description;
+    private final Double sizeSqm;
+    private final OccupancyLimit maxOccupancy;
+    private final List&lt;BedConfiguration&gt; bedConfiguration;
+    private final List&lt;Amenity&gt; amenities;
+    private final List&lt;MediaAsset&gt; media;
+    private final List&lt;String&gt; accessibilityFeatures, highlights;
+    private final boolean isSmokingAllowed, connectingRoomsAvailable;
+
+    public RoomType(String id, String hotelId, String code, String name, String category,
+                    LocalizedContent description, Double sizeSqm, OccupancyLimit maxOccupancy,
+                    List&lt;BedConfiguration&gt; bedConfiguration, String view, String floor,
+                    List&lt;Amenity&gt; amenities, List&lt;MediaAsset&gt; media,
+                    List&lt;String&gt; accessibilityFeatures, List&lt;String&gt; highlights,
+<span class="fc" id="L22">                    boolean isSmokingAllowed, boolean connectingRoomsAvailable) {</span>
+<span class="fc" id="L23">        this.id = id; this.hotelId = hotelId; this.code = code; this.name = name;</span>
+<span class="fc" id="L24">        this.category = category; this.description = description; this.sizeSqm = sizeSqm;</span>
+<span class="fc" id="L25">        this.maxOccupancy = maxOccupancy; this.bedConfiguration = bedConfiguration;</span>
+<span class="fc" id="L26">        this.view = view; this.floor = floor; this.amenities = amenities; this.media = media;</span>
+<span class="fc" id="L27">        this.accessibilityFeatures = accessibilityFeatures; this.highlights = highlights;</span>
+<span class="fc" id="L28">        this.isSmokingAllowed = isSmokingAllowed;</span>
+<span class="fc" id="L29">        this.connectingRoomsAvailable = connectingRoomsAvailable;</span>
+<span class="fc" id="L30">    }</span>
+
+<span class="nc" id="L32">    @Override public String getId() { return id; }</span>
+<span class="fc" id="L33">    public String getHotelId() { return hotelId; }</span>
+<span class="nc" id="L34">    public String getCode() { return code; }</span>
+<span class="nc" id="L35">    public String getName() { return name; }</span>
+<span class="nc" id="L36">    public String getCategory() { return category; }</span>
+<span class="nc" id="L37">    public LocalizedContent getDescription() { return description; }</span>
+<span class="nc" id="L38">    public Double getSizeSqm() { return sizeSqm; }</span>
+<span class="nc" id="L39">    public OccupancyLimit getMaxOccupancy() { return maxOccupancy; }</span>
+<span class="nc" id="L40">    public List&lt;BedConfiguration&gt; getBedConfiguration() { return bedConfiguration; }</span>
+<span class="nc" id="L41">    public String getView() { return view; }</span>
+<span class="nc" id="L42">    public String getFloor() { return floor; }</span>
+<span class="nc" id="L43">    public List&lt;Amenity&gt; getAmenities() { return amenities; }</span>
+<span class="nc" id="L44">    public List&lt;MediaAsset&gt; getMedia() { return media; }</span>
+<span class="nc" id="L45">    public List&lt;String&gt; getAccessibilityFeatures() { return accessibilityFeatures; }</span>
+<span class="nc" id="L46">    public List&lt;String&gt; getHighlights() { return highlights; }</span>
+<span class="nc" id="L47">    public boolean isIsSmokingAllowed() { return isSmokingAllowed; }</span>
+<span class="nc" id="L48">    public boolean isConnectingRoomsAvailable() { return connectingRoomsAvailable; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

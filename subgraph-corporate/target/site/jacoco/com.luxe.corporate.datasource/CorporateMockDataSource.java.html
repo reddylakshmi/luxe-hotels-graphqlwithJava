@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CorporateMockDataSource.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Corporate Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.corporate.datasource</a> &gt; <span class="el_source">CorporateMockDataSource.java</span></div><h1>CorporateMockDataSource.java</h1><pre class="source lang-java linenums">package com.luxe.corporate.datasource;
+
+import com.luxe.common.scalar.Money;
+import com.luxe.corporate.schema.types.*;
+import com.luxe.corporate.schema.types.TravelPolicy.*;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Component
+public class CorporateMockDataSource implements CorporateDataSource {
+
+<span class="fc" id="L16">    private final Map&lt;String, CorporateAccount&gt; accounts = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L17">    private final Map&lt;String, CorporateAccount&gt; byContract = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L18">    private final Map&lt;String, String&gt; guestToAccount = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L19">    private final Map&lt;String, TravelApproval&gt; approvals = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L20">    private final Random random = new Random();</span>
+
+<span class="fc" id="L22">    public CorporateMockDataSource() {</span>
+<span class="fc" id="L23">        initAccounts();</span>
+<span class="fc" id="L24">        initApprovals();</span>
+<span class="fc" id="L25">    }</span>
+
+    // ── Seed: accounts ───────────────────────────────────────────────────────
+
+    private void initAccounts() {
+<span class="fc" id="L30">        OffsetDateTime now = OffsetDateTime.now();</span>
+
+<span class="fc" id="L32">        CorporateAccount acme = new CorporateAccount(</span>
+                &quot;corp-001&quot;, &quot;Acme Pharma&quot;, &quot;LUX-CORP-2024-001&quot;, &quot;PREMIER&quot;, &quot;Pharmaceutical&quot;, &quot;ACTIVE&quot;,
+                new CorporateContact(&quot;Maria Chen&quot;, &quot;events@acme.example&quot;, &quot;+1-415-555-0142&quot;, &quot;Director, Travel&quot;),
+                new CorporateContact(&quot;Accounts Payable&quot;, &quot;ap@acme.example&quot;, null, &quot;Billing&quot;),
+<span class="fc" id="L36">                List.of(new CorporateContact(&quot;Sarah Lim&quot;, &quot;sarah@acme.example&quot;, null, &quot;Travel Manager&quot;),</span>
+                        new CorporateContact(&quot;Renee Park&quot;, &quot;renee@acme.example&quot;, null, &quot;Travel Manager&quot;)),
+<span class="fc" id="L38">                LocalDate.of(2024, 1, 1), LocalDate.of(2026, 12, 31),</span>
+<span class="fc" id="L39">                Money.of(842500, &quot;USD&quot;),</span>
+<span class="fc" id="L40">                now.minusYears(2));</span>
+<span class="fc" id="L41">        acme.setTravelPolicy(buildPolicy(&quot;policy-001&quot;, &quot;corp-001&quot;,</span>
+<span class="fc" id="L42">                List.of(new RateCap(&quot;New York&quot;, &quot;US&quot;, Money.of(620, &quot;USD&quot;), null),</span>
+<span class="fc" id="L43">                        new RateCap(&quot;London&quot;,   &quot;GB&quot;, Money.of(540, &quot;GBP&quot;), null),</span>
+<span class="fc" id="L44">                        new RateCap(&quot;Paris&quot;,    &quot;FR&quot;, Money.of(560, &quot;EUR&quot;), null)),</span>
+<span class="fc" id="L45">                Money.of(700, &quot;USD&quot;), Money.of(900, &quot;USD&quot;),</span>
+<span class="fc" id="L46">                List.of(new ApprovalLevel(1, Money.of(900, &quot;USD&quot;), &quot;TRAVEL_MANAGER&quot;, &quot;sarah@acme.example&quot;),</span>
+<span class="fc" id="L47">                        new ApprovalLevel(2, Money.of(1500, &quot;USD&quot;), &quot;VP_FINANCE&quot;, &quot;renee@acme.example&quot;)),</span>
+<span class="fc" id="L48">                List.of(&quot;STANDARD&quot;, &quot;DELUXE&quot;),</span>
+<span class="fc" id="L49">                true, 14, true,</span>
+<span class="fc" id="L50">                List.of(), List.of(&quot;prop-paris-001&quot;, &quot;prop-london-001&quot;, &quot;prop-nyc-001&quot;),</span>
+<span class="fc" id="L51">                Money.of(85, &quot;USD&quot;)));</span>
+<span class="fc" id="L52">        acme.addTraveler(new CorporateTraveler(&quot;trv-001&quot;, &quot;corp-001&quot;, &quot;guest-001&quot;,</span>
+                &quot;ACME-1042&quot;, &quot;R&amp;D&quot;, &quot;RD-1000&quot;, &quot;rd-mgr@acme.example&quot;, &quot;BUSINESS&quot;, true));
+<span class="fc" id="L54">        acme.addTraveler(new CorporateTraveler(&quot;trv-002&quot;, &quot;corp-001&quot;, &quot;guest-002&quot;,</span>
+                &quot;ACME-2018&quot;, &quot;Legal&quot;, &quot;LG-2000&quot;, &quot;legal-mgr@acme.example&quot;, &quot;BUSINESS&quot;, true));
+<span class="fc" id="L56">        acme.addNegotiatedRate(new NegotiatedRate(&quot;nrt-001&quot;, &quot;corp-001&quot;, &quot;prop-paris-001&quot;,</span>
+<span class="fc" id="L57">                &quot;Acme Corporate Paris&quot;, &quot;ACME-PAR&quot;, 18.0, Money.of(520, &quot;EUR&quot;),</span>
+<span class="fc" id="L58">                LocalDate.of(2024, 1, 1), LocalDate.of(2026, 12, 31), List.of(), true));</span>
+<span class="fc" id="L59">        acme.addNegotiatedRate(new NegotiatedRate(&quot;nrt-002&quot;, &quot;corp-001&quot;, &quot;prop-london-001&quot;,</span>
+<span class="fc" id="L60">                &quot;Acme Corporate London&quot;, &quot;ACME-LON&quot;, 16.0, Money.of(485, &quot;GBP&quot;),</span>
+<span class="fc" id="L61">                LocalDate.of(2024, 1, 1), LocalDate.of(2026, 12, 31), List.of(), true));</span>
+<span class="fc" id="L62">        accounts.put(acme.getId(), acme);</span>
+<span class="fc" id="L63">        byContract.put(acme.getContractNumber(), acme);</span>
+<span class="fc" id="L64">        guestToAccount.put(&quot;guest-001&quot;, acme.getId());</span>
+<span class="fc" id="L65">        guestToAccount.put(&quot;guest-002&quot;, acme.getId());</span>
+
+<span class="fc" id="L67">        CorporateAccount greenfield = new CorporateAccount(</span>
+                &quot;corp-002&quot;, &quot;Greenfield Capital&quot;, &quot;LUX-CORP-2025-002&quot;, &quot;ELITE&quot;, &quot;Financial Services&quot;, &quot;ACTIVE&quot;,
+                new CorporateContact(&quot;Tomás Rivera&quot;, &quot;tomas@greenfield.example&quot;, &quot;+1-212-555-0177&quot;, &quot;Head of Operations&quot;),
+                new CorporateContact(&quot;Greenfield AP&quot;, &quot;ap@greenfield.example&quot;, null, &quot;Billing&quot;),
+<span class="fc" id="L71">                List.of(new CorporateContact(&quot;Lara Hayes&quot;, &quot;lara@greenfield.example&quot;, null, &quot;Travel Manager&quot;)),</span>
+<span class="fc" id="L72">                LocalDate.of(2025, 3, 1), LocalDate.of(2028, 2, 28),</span>
+<span class="fc" id="L73">                Money.of(1_580_000, &quot;USD&quot;),</span>
+<span class="fc" id="L74">                now.minusYears(1));</span>
+<span class="fc" id="L75">        greenfield.setTravelPolicy(buildPolicy(&quot;policy-002&quot;, &quot;corp-002&quot;,</span>
+<span class="fc" id="L76">                List.of(new RateCap(&quot;New York&quot;, &quot;US&quot;, Money.of(900, &quot;USD&quot;), null),</span>
+<span class="fc" id="L77">                        new RateCap(&quot;London&quot;,   &quot;GB&quot;, Money.of(820, &quot;GBP&quot;), null),</span>
+<span class="fc" id="L78">                        new RateCap(&quot;Tokyo&quot;,    &quot;JP&quot;, Money.of(120000, &quot;JPY&quot;), null)),</span>
+<span class="fc" id="L79">                Money.of(1100, &quot;USD&quot;), Money.of(1500, &quot;USD&quot;),</span>
+<span class="fc" id="L80">                List.of(new ApprovalLevel(1, Money.of(1500, &quot;USD&quot;), &quot;TRAVEL_MANAGER&quot;, &quot;lara@greenfield.example&quot;),</span>
+<span class="fc" id="L81">                        new ApprovalLevel(2, Money.of(3000, &quot;USD&quot;), &quot;CFO&quot;, &quot;cfo@greenfield.example&quot;)),</span>
+<span class="fc" id="L82">                List.of(&quot;DELUXE&quot;, &quot;SUITE&quot;),</span>
+                false, null, true,
+<span class="fc" id="L84">                List.of(), List.of(&quot;prop-nyc-001&quot;, &quot;prop-london-001&quot;, &quot;prop-tokyo-001&quot;),</span>
+<span class="fc" id="L85">                Money.of(120, &quot;USD&quot;)));</span>
+<span class="fc" id="L86">        greenfield.addTraveler(new CorporateTraveler(&quot;trv-003&quot;, &quot;corp-002&quot;, &quot;guest-007&quot;,</span>
+                &quot;GFC-1003&quot;, &quot;Investments&quot;, &quot;INV-100&quot;, &quot;inv-mgr@greenfield.example&quot;, &quot;FIRST&quot;, true));
+<span class="fc" id="L88">        greenfield.addNegotiatedRate(new NegotiatedRate(&quot;nrt-003&quot;, &quot;corp-002&quot;, &quot;prop-nyc-001&quot;,</span>
+<span class="fc" id="L89">                &quot;Greenfield Manhattan&quot;, &quot;GFC-NYC&quot;, 22.0, Money.of(685, &quot;USD&quot;),</span>
+<span class="fc" id="L90">                LocalDate.of(2025, 3, 1), LocalDate.of(2028, 2, 28), List.of(), true));</span>
+<span class="fc" id="L91">        accounts.put(greenfield.getId(), greenfield);</span>
+<span class="fc" id="L92">        byContract.put(greenfield.getContractNumber(), greenfield);</span>
+<span class="fc" id="L93">        guestToAccount.put(&quot;guest-007&quot;, greenfield.getId());</span>
+
+<span class="fc" id="L95">        CorporateAccount tanaka = new CorporateAccount(</span>
+                &quot;corp-003&quot;, &quot;Tanaka Industries&quot;, &quot;LUX-CORP-2023-005&quot;, &quot;PREFERRED&quot;, &quot;Manufacturing&quot;, &quot;ACTIVE&quot;,
+                new CorporateContact(&quot;Yuki Tanaka&quot;, &quot;yuki@tanaka.example&quot;, &quot;+81-3-5555-0148&quot;, &quot;Travel Lead&quot;),
+                null,
+<span class="fc" id="L99">                List.of(),</span>
+<span class="fc" id="L100">                LocalDate.of(2023, 6, 1), LocalDate.of(2026, 5, 31),</span>
+<span class="fc" id="L101">                Money.of(420000, &quot;USD&quot;),</span>
+<span class="fc" id="L102">                now.minusYears(2).minusMonths(11));</span>
+<span class="fc" id="L103">        tanaka.setTravelPolicy(buildPolicy(&quot;policy-003&quot;, &quot;corp-003&quot;,</span>
+<span class="fc" id="L104">                List.of(new RateCap(&quot;Tokyo&quot;, &quot;JP&quot;, Money.of(85000, &quot;JPY&quot;), null)),</span>
+<span class="fc" id="L105">                Money.of(550, &quot;USD&quot;), Money.of(700, &quot;USD&quot;),</span>
+<span class="fc" id="L106">                List.of(new ApprovalLevel(1, Money.of(700, &quot;USD&quot;), &quot;TRAVEL_MANAGER&quot;, &quot;yuki@tanaka.example&quot;)),</span>
+<span class="fc" id="L107">                List.of(&quot;STANDARD&quot;, &quot;DELUXE&quot;),</span>
+<span class="fc" id="L108">                true, 21, false,</span>
+<span class="fc" id="L109">                List.of(), List.of(&quot;prop-tokyo-001&quot;), Money.of(60, &quot;USD&quot;)));</span>
+<span class="fc" id="L110">        accounts.put(tanaka.getId(), tanaka);</span>
+<span class="fc" id="L111">        byContract.put(tanaka.getContractNumber(), tanaka);</span>
+<span class="fc" id="L112">    }</span>
+
+    private TravelPolicy buildPolicy(String id, String accountId, List&lt;RateCap&gt; caps,
+                                       Money max, Money apprAbove,
+                                       List&lt;ApprovalLevel&gt; chain, List&lt;String&gt; allowed,
+                                       boolean advReq, Integer advDays, boolean reqJust,
+                                       List&lt;String&gt; blocked, List&lt;String&gt; preferred, Money perDiem) {
+<span class="fc" id="L119">        return new TravelPolicy(id, accountId, caps, max, apprAbove, chain,</span>
+                allowed, advReq, advDays, reqJust, blocked, preferred, perDiem);
+    }
+
+    // ── Seed: approvals ──────────────────────────────────────────────────────
+
+    private void initApprovals() {
+<span class="fc" id="L126">        OffsetDateTime now = OffsetDateTime.now();</span>
+<span class="fc" id="L127">        approvals.put(&quot;apr-001&quot;, new TravelApproval(&quot;apr-001&quot;, &quot;corp-001&quot;, &quot;trv-001&quot;, &quot;res-101&quot;,</span>
+<span class="fc" id="L128">                &quot;PENDING&quot;, Money.of(1100, &quot;USD&quot;),</span>
+<span class="fc" id="L129">                List.of(new TravelApproval.PolicyException(</span>
+                        &quot;MAX_NIGHTLY_RATE&quot;, &quot;Quoted USD 1,100/nt exceeds USD 700 cap&quot;, &quot;WARNING&quot;),
+                        new TravelApproval.PolicyException(
+                        &quot;ADVANCE_BOOKING&quot;, &quot;Booked 8 days ahead vs 14-day rule&quot;, &quot;INFO&quot;)),
+                &quot;Client meeting moved up due to product launch&quot;,
+<span class="fc" id="L134">                now.minusHours(20)));</span>
+<span class="fc" id="L135">        approvals.put(&quot;apr-002&quot;, new TravelApproval(&quot;apr-002&quot;, &quot;corp-002&quot;, &quot;trv-003&quot;, &quot;res-301&quot;,</span>
+<span class="fc" id="L136">                &quot;PENDING&quot;, Money.of(2400, &quot;USD&quot;),</span>
+<span class="fc" id="L137">                List.of(new TravelApproval.PolicyException(</span>
+                        &quot;MAX_NIGHTLY_RATE&quot;, &quot;Suite at USD 2,400/nt exceeds USD 1,100 cap&quot;, &quot;BLOCKING&quot;)),
+                &quot;Hosting board offsite — suite required&quot;,
+<span class="fc" id="L140">                now.minusHours(36)));</span>
+<span class="fc" id="L141">    }</span>
+
+    // ── Lookups ──────────────────────────────────────────────────────────────
+
+    @Override public Optional&lt;CorporateAccount&gt; findById(String id) {
+<span class="fc" id="L146">        return Optional.ofNullable(accounts.get(id));</span>
+    }
+
+    @Override public Optional&lt;CorporateAccount&gt; findByGuestId(String guestId) {
+<span class="fc" id="L150">        String accountId = guestToAccount.get(guestId);</span>
+<span class="fc bfc" id="L151" title="All 2 branches covered.">        return accountId == null ? Optional.empty() : Optional.ofNullable(accounts.get(accountId));</span>
+    }
+
+    @Override public Optional&lt;CorporateAccount&gt; findByContractNumber(String contractNumber) {
+<span class="fc" id="L155">        return Optional.ofNullable(byContract.get(contractNumber));</span>
+    }
+
+    @Override public Optional&lt;TravelPolicy&gt; findPolicy(String accountId) {
+<span class="fc" id="L159">        return Optional.ofNullable(accounts.get(accountId)).map(CorporateAccount::getTravelPolicy);</span>
+    }
+
+    @Override
+    public List&lt;NegotiatedRate&gt; findRates(String accountId, String hotelId) {
+<span class="fc" id="L164">        CorporateAccount a = accounts.get(accountId);</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">        if (a == null) return List.of();</span>
+<span class="fc" id="L166">        return a.getNegotiatedRates().stream()</span>
+<span class="fc bfc" id="L167" title="All 4 branches covered.">                .filter(r -&gt; hotelId == null || r.hotelId().equals(hotelId))</span>
+<span class="fc" id="L168">                .collect(Collectors.toList());</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    public CorporateAccount enroll(Map&lt;String, Object&gt; input) {
+<span class="fc" id="L174">        String id = &quot;corp-&quot; + UUID.randomUUID().toString().substring(0, 8);</span>
+<span class="fc" id="L175">        String contract = &quot;LUX-CORP-&quot; + LocalDate.now().getYear() + &quot;-&quot;</span>
+<span class="fc" id="L176">                + String.format(&quot;%03d&quot;, random.nextInt(900) + 100);</span>
+<span class="fc" id="L177">        Map&lt;String, Object&gt; primary = (Map&lt;String, Object&gt;) input.get(&quot;primaryContact&quot;);</span>
+<span class="fc" id="L178">        Map&lt;String, Object&gt; billing = (Map&lt;String, Object&gt;) input.get(&quot;billingContact&quot;);</span>
+<span class="fc" id="L179">        CorporateContact pc = new CorporateContact(</span>
+<span class="fc" id="L180">                (String) primary.get(&quot;name&quot;), (String) primary.get(&quot;email&quot;),</span>
+<span class="fc" id="L181">                (String) primary.get(&quot;phone&quot;), (String) primary.get(&quot;title&quot;));</span>
+<span class="pc bpc" id="L182" title="1 of 2 branches missed.">        CorporateContact bc = billing == null ? null</span>
+<span class="nc" id="L183">                : new CorporateContact((String) billing.get(&quot;name&quot;), (String) billing.get(&quot;email&quot;),</span>
+<span class="pc" id="L184">                        (String) billing.get(&quot;phone&quot;), (String) billing.get(&quot;title&quot;));</span>
+<span class="fc" id="L185">        CorporateAccount a = new CorporateAccount(id,</span>
+<span class="fc" id="L186">                (String) input.get(&quot;companyName&quot;), contract,</span>
+<span class="fc" id="L187">                (String) input.getOrDefault(&quot;tier&quot;, &quot;STANDARD&quot;),</span>
+<span class="fc" id="L188">                (String) input.get(&quot;industry&quot;),</span>
+<span class="fc" id="L189">                &quot;PENDING_REVIEW&quot;, pc, bc, List.of(),</span>
+<span class="fc" id="L190">                LocalDate.parse((String) input.get(&quot;contractStartDate&quot;)),</span>
+<span class="fc" id="L191">                LocalDate.parse((String) input.get(&quot;contractEndDate&quot;)),</span>
+<span class="fc" id="L192">                Money.of(0, &quot;USD&quot;), OffsetDateTime.now());</span>
+<span class="fc" id="L193">        a.setTravelPolicy(buildPolicy(&quot;policy-&quot; + id, id,</span>
+<span class="fc" id="L194">                List.of(), Money.of(500, &quot;USD&quot;), Money.of(750, &quot;USD&quot;),</span>
+<span class="fc" id="L195">                List.of(new ApprovalLevel(1, Money.of(750, &quot;USD&quot;), &quot;TRAVEL_MANAGER&quot;,</span>
+<span class="fc" id="L196">                        pc.email())),</span>
+<span class="fc" id="L197">                List.of(&quot;STANDARD&quot;), false, null, true,</span>
+<span class="fc" id="L198">                List.of(), List.of(), Money.of(75, &quot;USD&quot;)));</span>
+<span class="fc" id="L199">        accounts.put(id, a);</span>
+<span class="fc" id="L200">        byContract.put(contract, a);</span>
+<span class="fc" id="L201">        return a;</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    public TravelPolicy updatePolicy(String accountId, Map&lt;String, Object&gt; input) {
+<span class="fc" id="L207">        CorporateAccount a = accounts.get(accountId);</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">        if (a == null) return null;</span>
+<span class="fc" id="L209">        TravelPolicy p = a.getTravelPolicy();</span>
+<span class="fc bfc" id="L210" title="All 2 branches covered.">        Money max = input.get(&quot;maxNightlyRateUsd&quot;) != null</span>
+<span class="fc" id="L211">                ? Money.of(((Number) input.get(&quot;maxNightlyRateUsd&quot;)).doubleValue(), &quot;USD&quot;) : null;</span>
+<span class="pc bpc" id="L212" title="1 of 2 branches missed.">        Money apprAbove = input.get(&quot;requiresApprovalAboveUsd&quot;) != null</span>
+<span class="pc" id="L213">                ? Money.of(((Number) input.get(&quot;requiresApprovalAboveUsd&quot;)).doubleValue(), &quot;USD&quot;) : null;</span>
+<span class="fc bfc" id="L214" title="All 2 branches covered.">        Money perDiem = input.get(&quot;perDiemMealsUsd&quot;) != null</span>
+<span class="fc" id="L215">                ? Money.of(((Number) input.get(&quot;perDiemMealsUsd&quot;)).doubleValue(), &quot;USD&quot;) : null;</span>
+
+<span class="fc" id="L217">        List&lt;Map&lt;String, Object&gt;&gt; capsRaw = (List&lt;Map&lt;String, Object&gt;&gt;) input.get(&quot;rateCaps&quot;);</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">        List&lt;RateCap&gt; caps = capsRaw == null ? null : capsRaw.stream().map(m -&gt;</span>
+<span class="fc" id="L219">                new RateCap((String) m.get(&quot;city&quot;), (String) m.get(&quot;countryCode&quot;),</span>
+<span class="fc" id="L220">                        Money.of(((Number) m.get(&quot;maxNightlyRateUsd&quot;)).doubleValue(), &quot;USD&quot;),</span>
+<span class="fc" id="L221">                        (String) m.get(&quot;appliesToTier&quot;))).toList();</span>
+
+<span class="fc" id="L223">        List&lt;Map&lt;String, Object&gt;&gt; chainRaw = (List&lt;Map&lt;String, Object&gt;&gt;) input.get(&quot;approvalChain&quot;);</span>
+<span class="fc bfc" id="L224" title="All 2 branches covered.">        List&lt;ApprovalLevel&gt; chain = chainRaw == null ? null : chainRaw.stream().map(m -&gt;</span>
+<span class="fc" id="L225">                new ApprovalLevel(((Number) m.get(&quot;level&quot;)).intValue(),</span>
+<span class="fc" id="L226">                        Money.of(((Number) m.get(&quot;thresholdUsd&quot;)).doubleValue(), &quot;USD&quot;),</span>
+<span class="fc" id="L227">                        (String) m.get(&quot;approverRole&quot;),</span>
+<span class="fc" id="L228">                        (String) m.get(&quot;approverEmail&quot;))).toList();</span>
+
+<span class="fc" id="L230">        p.apply(max, apprAbove, caps, chain,</span>
+<span class="fc" id="L231">                (List&lt;String&gt;) input.get(&quot;allowedRoomCategories&quot;),</span>
+<span class="fc" id="L232">                (Boolean) input.get(&quot;advanceBookingRequired&quot;),</span>
+<span class="fc bfc" id="L233" title="All 2 branches covered.">                input.get(&quot;advanceBookingDays&quot;) != null</span>
+<span class="fc" id="L234">                        ? ((Number) input.get(&quot;advanceBookingDays&quot;)).intValue() : null,</span>
+<span class="fc" id="L235">                (Boolean) input.get(&quot;requiresBusinessJustification&quot;),</span>
+<span class="fc" id="L236">                (List&lt;String&gt;) input.get(&quot;blockedHotelIds&quot;),</span>
+<span class="fc" id="L237">                (List&lt;String&gt;) input.get(&quot;preferredHotelIds&quot;),</span>
+                perDiem);
+<span class="fc" id="L239">        return p;</span>
+    }
+
+    @Override
+    public CorporateTraveler addTraveler(Map&lt;String, Object&gt; input) {
+<span class="fc" id="L244">        String accountId = (String) input.get(&quot;accountId&quot;);</span>
+<span class="fc" id="L245">        CorporateAccount a = accounts.get(accountId);</span>
+<span class="fc bfc" id="L246" title="All 2 branches covered.">        if (a == null) return null;</span>
+<span class="fc" id="L247">        String id = &quot;trv-&quot; + UUID.randomUUID().toString().substring(0, 8);</span>
+<span class="fc" id="L248">        CorporateTraveler t = new CorporateTraveler(id, accountId,</span>
+<span class="fc" id="L249">                (String) input.get(&quot;guestId&quot;),</span>
+<span class="fc" id="L250">                (String) input.get(&quot;employeeId&quot;),</span>
+<span class="fc" id="L251">                (String) input.get(&quot;department&quot;),</span>
+<span class="fc" id="L252">                (String) input.get(&quot;costCenter&quot;),</span>
+<span class="fc" id="L253">                (String) input.get(&quot;managerEmail&quot;),</span>
+<span class="fc" id="L254">                (String) input.getOrDefault(&quot;travelClass&quot;, &quot;BUSINESS&quot;),</span>
+                true);
+<span class="fc" id="L256">        a.addTraveler(t);</span>
+<span class="pc bpc" id="L257" title="1 of 2 branches missed.">        if (t.getGuestId() != null) guestToAccount.put(t.getGuestId(), accountId);</span>
+<span class="fc" id="L258">        return t;</span>
+    }
+
+    @Override
+    public boolean removeTraveler(String travelerId) {
+<span class="fc bfc" id="L263" title="All 2 branches covered.">        for (CorporateAccount a : accounts.values()) {</span>
+<span class="fc bfc" id="L264" title="All 2 branches covered.">            for (CorporateTraveler t : a.getTravelers()) {</span>
+<span class="pc bpc" id="L265" title="1 of 4 branches missed.">                if (t.getId().equals(travelerId) &amp;&amp; t.isActive()) {</span>
+<span class="fc" id="L266">                    t.deactivate();</span>
+<span class="fc" id="L267">                    return true;</span>
+                }
+<span class="fc" id="L269">            }</span>
+<span class="fc" id="L270">        }</span>
+<span class="fc" id="L271">        return false;</span>
+    }
+
+    @Override
+    public List&lt;TravelApproval&gt; pendingApprovals(String accountId) {
+<span class="fc" id="L276">        return approvals.values().stream()</span>
+<span class="fc" id="L277">                .filter(ap -&gt; &quot;PENDING&quot;.equals(ap.getStatus()))</span>
+<span class="fc bfc" id="L278" title="All 4 branches covered.">                .filter(ap -&gt; accountId == null || ap.getAccountId().equals(accountId))</span>
+<span class="fc" id="L279">                .sorted(Comparator.comparing(TravelApproval::getRequestedAt).reversed())</span>
+<span class="fc" id="L280">                .collect(Collectors.toList());</span>
+    }
+
+    @Override public Optional&lt;TravelApproval&gt; findApproval(String id) {
+<span class="fc" id="L284">        return Optional.ofNullable(approvals.get(id));</span>
+    }
+
+    @Override
+    public TravelApproval reviewApproval(String id, String decision, String reviewer, String notes) {
+<span class="fc" id="L289">        TravelApproval a = approvals.get(id);</span>
+<span class="fc bfc" id="L290" title="All 2 branches covered.">        if (a == null) return null;</span>
+<span class="fc bfc" id="L291" title="All 2 branches covered.">        a.decide(&quot;APPROVE&quot;.equals(decision) ? &quot;APPROVED&quot; : &quot;DENIED&quot;, reviewer, notes);</span>
+<span class="fc" id="L292">        return a;</span>
+    }
+
+    @Override
+    public TravelReport report(String accountId, String period) {
+<span class="fc" id="L297">        CorporateAccount a = accounts.get(accountId);</span>
+<span class="fc bfc" id="L298" title="All 2 branches covered.">        Money total = a != null ? a.getYtdSpend() : Money.of(0, &quot;USD&quot;);</span>
+<span class="fc" id="L299">        return new TravelReport(accountId, period,</span>
+                184, total, 462, 0.91, 17,
+<span class="fc" id="L301">                List.of(new TravelReport.DestinationSpend(&quot;Paris&quot;, &quot;FR&quot;, 38, Money.of(285000, &quot;USD&quot;)),</span>
+<span class="fc" id="L302">                        new TravelReport.DestinationSpend(&quot;London&quot;, &quot;GB&quot;, 32, Money.of(232000, &quot;USD&quot;)),</span>
+<span class="fc" id="L303">                        new TravelReport.DestinationSpend(&quot;New York&quot;, &quot;US&quot;, 41, Money.of(312000, &quot;USD&quot;))),</span>
+<span class="fc" id="L304">                List.of(new TravelReport.BrandSpend(&quot;Luxe&quot;, 184, total)),</span>
+<span class="fc" id="L305">                List.of(new TravelReport.MonthlySpend(&quot;2026-01&quot;, 28, Money.of(118000, &quot;USD&quot;)),</span>
+<span class="fc" id="L306">                        new TravelReport.MonthlySpend(&quot;2026-02&quot;, 22, Money.of(96000, &quot;USD&quot;)),</span>
+<span class="fc" id="L307">                        new TravelReport.MonthlySpend(&quot;2026-03&quot;, 31, Money.of(141000, &quot;USD&quot;)),</span>
+<span class="fc" id="L308">                        new TravelReport.MonthlySpend(&quot;2026-04&quot;, 24, Money.of(102000, &quot;USD&quot;))),</span>
+                124850.0,
+<span class="fc" id="L310">                OffsetDateTime.now());</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

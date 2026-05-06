@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Promotion.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Pricing Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.pricing.schema.types</a> &gt; <span class="el_source">Promotion.java</span></div><h1>Promotion.java</h1><pre class="source lang-java linenums">package com.luxe.pricing.schema.types;
+
+import com.luxe.common.pagination.HasId;
+import java.time.LocalDate;
+import java.util.List;
+
+public class Promotion implements HasId {
+    private final String id, code, name, description, discountType, brandId;
+    private final double discountValue;
+    private final Integer minimumStay, maxUsesPerGuest;
+    private final List&lt;String&gt; hotelIds;
+    private final boolean memberOnly, stackable, active;
+    private final LocalDate validFrom, validTo;
+
+    public Promotion(String id, String code, String name, String description,
+                     String discountType, double discountValue, Integer minimumStay,
+                     String brandId, List&lt;String&gt; hotelIds,
+                     boolean memberOnly, boolean stackable, Integer maxUsesPerGuest,
+<span class="fc" id="L19">                     LocalDate validFrom, LocalDate validTo, boolean active) {</span>
+<span class="fc" id="L20">        this.id = id; this.code = code; this.name = name; this.description = description;</span>
+<span class="fc" id="L21">        this.discountType = discountType; this.discountValue = discountValue;</span>
+<span class="fc" id="L22">        this.minimumStay = minimumStay; this.brandId = brandId; this.hotelIds = hotelIds;</span>
+<span class="fc" id="L23">        this.memberOnly = memberOnly; this.stackable = stackable;</span>
+<span class="fc" id="L24">        this.maxUsesPerGuest = maxUsesPerGuest;</span>
+<span class="fc" id="L25">        this.validFrom = validFrom; this.validTo = validTo; this.active = active;</span>
+<span class="fc" id="L26">    }</span>
+
+<span class="fc" id="L28">    @Override public String getId() { return id; }</span>
+<span class="fc" id="L29">    public String getCode() { return code; }</span>
+<span class="fc" id="L30">    public String getName() { return name; }</span>
+<span class="nc" id="L31">    public String getDescription() { return description; }</span>
+<span class="nc" id="L32">    public String getDiscountType() { return discountType; }</span>
+<span class="nc" id="L33">    public double getDiscountValue() { return discountValue; }</span>
+<span class="nc" id="L34">    public Integer getMinimumStay() { return minimumStay; }</span>
+<span class="fc" id="L35">    public String getBrandId() { return brandId; }</span>
+<span class="nc bnc" id="L36" title="All 2 branches missed.">    public List&lt;String&gt; getHotelIds() { return hotelIds != null ? hotelIds : List.of(); }</span>
+<span class="fc" id="L37">    public boolean isMemberOnly() { return memberOnly; }</span>
+<span class="nc" id="L38">    public boolean isStackable() { return stackable; }</span>
+<span class="nc" id="L39">    public Integer getMaxUsesPerGuest() { return maxUsesPerGuest; }</span>
+<span class="nc" id="L40">    public LocalDate getValidFrom() { return validFrom; }</span>
+<span class="fc" id="L41">    public LocalDate getValidTo() { return validTo; }</span>
+<span class="fc" id="L42">    public boolean isActive() { return active; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

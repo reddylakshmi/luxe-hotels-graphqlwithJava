@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReservationDataFetcher.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Reservations Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.reservations.resolver</a> &gt; <span class="el_source">ReservationDataFetcher.java</span></div><h1>ReservationDataFetcher.java</h1><pre class="source lang-java linenums">package com.luxe.reservations.resolver;
+
+import com.luxe.reservations.schema.types.GuestProfile;
+
+import com.luxe.common.auth.AuthContext;
+import com.luxe.common.auth.AuthRole;
+import com.luxe.common.error.NotFoundError;
+import com.luxe.common.pagination.Connection;
+import com.luxe.reservations.datasource.ReservationDataSource;
+import com.luxe.reservations.schema.types.*;
+import com.netflix.graphql.dgs.*;
+import graphql.schema.DataFetchingEnvironment;
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.Base64;
+import java.util.List;
+import java.util.Map;
+
+@DgsComponent
+public class ReservationDataFetcher {
+
+    private final ReservationDataSource dataSource;
+
+<span class="fc" id="L24">    public ReservationDataFetcher(ReservationDataSource dataSource) {</span>
+<span class="fc" id="L25">        this.dataSource = dataSource;</span>
+<span class="fc" id="L26">    }</span>
+
+    private AuthContext getAuth(DataFetchingEnvironment dfe) {
+        try {
+<span class="fc" id="L30">            HttpServletRequest req = dfe.getGraphQlContext().get(HttpServletRequest.class);</span>
+<span class="pc bpc" id="L31" title="1 of 2 branches missed.">            if (req == null) return AuthContext.anonymous();</span>
+<span class="nc" id="L32">            AuthContext ctx = (AuthContext) req.getAttribute(&quot;authContext&quot;);</span>
+<span class="nc bnc" id="L33" title="All 2 branches missed.">            return ctx != null ? ctx : AuthContext.anonymous();</span>
+<span class="nc" id="L34">        } catch (Exception e) { return AuthContext.anonymous(); }</span>
+    }
+
+    // ── Queries ───────────────────────────────────────────────────────────────
+
+    @DgsQuery
+    public Reservation reservation(@InputArgument String id, DataFetchingEnvironment dfe) {
+<span class="nc" id="L41">        getAuth(dfe).requireAuth();</span>
+        // Schema returns nullable Reservation, not a union — return null when missing.
+<span class="nc" id="L43">        return dataSource.findById(id).orElse(null);</span>
+    }
+
+    @DgsQuery
+    public Reservation reservationByConfirmationNumber(@InputArgument String confirmationNumber,
+                                                        @InputArgument String guestLastName) {
+<span class="fc" id="L49">        return dataSource.findByConfirmationNumber(confirmationNumber, guestLastName).orElse(null);</span>
+    }
+
+    @DgsQuery
+    public Object myReservations(@InputArgument Integer first, @InputArgument String after,
+                                  @InputArgument Map&lt;String, Object&gt; filter,
+                                  @InputArgument String sortBy,
+                                  DataFetchingEnvironment dfe) {
+<span class="fc" id="L57">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L58">        auth.requireAuth();</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        String status  = filter != null ? (String) filter.get(&quot;status&quot;) : null;</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        String hotelId = filter != null ? (String) filter.get(&quot;hotelId&quot;) : null;</span>
+<span class="nc" id="L61">        List&lt;Reservation&gt; all = dataSource.findByGuestId(auth.guestId(), status, hotelId, sortBy);</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">        Connection&lt;Reservation&gt; conn = Connection.of(all, first != null ? first : 10, after);</span>
+<span class="nc" id="L63">        return Map.of(</span>
+<span class="nc" id="L64">                &quot;edges&quot;, conn.edges().stream().map(e -&gt; Map.of(&quot;node&quot;, e.node(), &quot;cursor&quot;, e.cursor())).toList(),</span>
+<span class="nc" id="L65">                &quot;pageInfo&quot;, Map.of(&quot;hasNextPage&quot;, conn.pageInfo().hasNextPage(),</span>
+<span class="nc" id="L66">                        &quot;hasPreviousPage&quot;, conn.pageInfo().hasPreviousPage(),</span>
+<span class="nc" id="L67">                        &quot;startCursor&quot;, conn.pageInfo().startCursor(),</span>
+<span class="nc" id="L68">                        &quot;endCursor&quot;, conn.pageInfo().endCursor()),</span>
+<span class="nc" id="L69">                &quot;totalCount&quot;, conn.totalCount());</span>
+    }
+
+    @DgsQuery
+    public Object checkInEligibility(@InputArgument String reservationId,
+                                      DataFetchingEnvironment dfe) {
+<span class="nc" id="L75">        getAuth(dfe).requireAuth();</span>
+<span class="nc" id="L76">        return dataSource.checkInEligibility(reservationId);</span>
+    }
+
+    @DgsQuery
+    public Object digitalKey(@InputArgument String reservationId, DataFetchingEnvironment dfe) {
+<span class="nc" id="L81">        getAuth(dfe).requireAuth();</span>
+<span class="nc" id="L82">        return dataSource.findById(reservationId)</span>
+<span class="nc" id="L83">                .map(Reservation::getDigitalKey)</span>
+<span class="nc" id="L84">                .orElse(null);</span>
+    }
+
+    @DgsQuery
+    public List&lt;DiningReservation&gt; myDiningReservations(@InputArgument Boolean upcoming,
+                                                         @InputArgument Integer first,
+                                                         @InputArgument String after,
+                                                         DataFetchingEnvironment dfe) {
+<span class="nc" id="L92">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L93">        auth.requireAuth();</span>
+<span class="nc" id="L94">        List&lt;DiningReservation&gt; all = dataSource.findDiningByGuestId(auth.guestId(), upcoming);</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        return first != null ? all.stream().limit(first).toList() : all;</span>
+    }
+
+    @DgsQuery
+    public List&lt;SpaAppointment&gt; mySpaAppointments(@InputArgument Boolean upcoming,
+                                                   @InputArgument Integer first,
+                                                   @InputArgument String after,
+                                                   DataFetchingEnvironment dfe) {
+<span class="nc" id="L103">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L104">        auth.requireAuth();</span>
+<span class="nc" id="L105">        List&lt;SpaAppointment&gt; all = dataSource.findSpaByGuestId(auth.guestId(), upcoming);</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">        return first != null ? all.stream().limit(first).toList() : all;</span>
+    }
+
+    @DgsQuery
+    public List&lt;TransportationBooking&gt; myTransportationBookings(@InputArgument Boolean upcoming,
+                                                                 @InputArgument Integer first,
+                                                                 DataFetchingEnvironment dfe) {
+<span class="nc" id="L113">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L114">        auth.requireAuth();</span>
+<span class="nc" id="L115">        List&lt;TransportationBooking&gt; all = dataSource.findTransportByGuestId(auth.guestId(), upcoming);</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">        return first != null ? all.stream().limit(first).toList() : all;</span>
+    }
+
+    // ── Mutations ─────────────────────────────────────────────────────────────
+
+    @DgsMutation
+    public Object createReservation(@InputArgument Map&lt;String, Object&gt; input,
+                                     @InputArgument String idempotencyKey,
+                                     DataFetchingEnvironment dfe) {
+<span class="fc" id="L125">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L126">        auth.requireAuth();</span>
+<span class="nc" id="L127">        String checkInStr  = (String) input.get(&quot;checkIn&quot;);</span>
+<span class="nc" id="L128">        String checkOutStr = (String) input.get(&quot;checkOut&quot;);</span>
+<span class="nc bnc" id="L129" title="All 4 branches missed.">        if (checkInStr == null || checkOutStr == null) {</span>
+<span class="nc" id="L130">            return new com.luxe.common.error.ValidationError(&quot;MISSING_DATES&quot;,</span>
+                    &quot;checkIn and checkOut are required&quot;,
+<span class="nc" id="L132">                    List.of(new com.luxe.common.error.FieldError(&quot;checkIn&quot;, &quot;Required&quot;)));</span>
+        }
+<span class="nc" id="L134">        java.time.LocalDate ci = java.time.LocalDate.parse(checkInStr);</span>
+<span class="nc" id="L135">        java.time.LocalDate co = java.time.LocalDate.parse(checkOutStr);</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">        if (!ci.isBefore(co)) {</span>
+<span class="nc" id="L137">            return new com.luxe.common.error.ValidationError(&quot;INVALID_DATES&quot;,</span>
+                    &quot;checkOut must be after checkIn&quot;,
+<span class="nc" id="L139">                    List.of(new com.luxe.common.error.FieldError(&quot;checkOut&quot;, &quot;Must be after checkIn&quot;)));</span>
+        }
+<span class="nc" id="L141">        return dataSource.create(input, auth.guestId());</span>
+    }
+
+    @DgsMutation
+    public Object confirmReservation(@InputArgument String reservationId,
+                                      @InputArgument Map&lt;String, Object&gt; input,
+                                      @InputArgument String idempotencyKey,
+                                      DataFetchingEnvironment dfe) {
+<span class="nc" id="L149">        getAuth(dfe).requireAuth();</span>
+<span class="nc" id="L150">        Reservation r = dataSource.findById(reservationId).orElse(null);</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">        if (r == null) return new NotFoundError(&quot;Reservation&quot;, reservationId);</span>
+<span class="nc" id="L152">        String paymentMethodId = (String) input.get(&quot;paymentMethodId&quot;);</span>
+<span class="nc" id="L153">        String guestProfileId  = (String) input.get(&quot;guestProfileId&quot;);</span>
+<span class="nc" id="L154">        return dataSource.confirm(reservationId, paymentMethodId, guestProfileId);</span>
+    }
+
+    @DgsMutation
+    public Object modifyReservation(@InputArgument String reservationId,
+                                     @InputArgument Map&lt;String, Object&gt; input,
+                                     @InputArgument String idempotencyKey,
+                                     DataFetchingEnvironment dfe) {
+<span class="nc" id="L162">        getAuth(dfe).requireAuth();</span>
+<span class="nc bnc" id="L163" title="All 2 branches missed.">        if (dataSource.findById(reservationId).isEmpty())</span>
+<span class="nc" id="L164">            return new NotFoundError(&quot;Reservation&quot;, reservationId);</span>
+<span class="nc" id="L165">        return dataSource.modify(reservationId, input);</span>
+    }
+
+    @DgsMutation
+    public Object cancelReservation(@InputArgument String reservationId,
+                                     @InputArgument Map&lt;String, Object&gt; input,
+                                     @InputArgument String idempotencyKey,
+                                     DataFetchingEnvironment dfe) {
+<span class="nc" id="L173">        getAuth(dfe).requireAuth();</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        if (dataSource.findById(reservationId).isEmpty())</span>
+<span class="nc" id="L175">            return new NotFoundError(&quot;Reservation&quot;, reservationId);</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">        String reason = input != null ? (String) input.get(&quot;reason&quot;) : null;</span>
+<span class="nc bnc" id="L177" title="All 4 branches missed.">        boolean acceptPenalty = input != null &amp;&amp; Boolean.TRUE.equals(input.get(&quot;acceptPenalty&quot;));</span>
+<span class="nc" id="L178">        return dataSource.cancel(reservationId, reason, acceptPenalty);</span>
+    }
+
+    @DgsMutation
+    public Object mobileCheckIn(@InputArgument String reservationId,
+                                  @InputArgument Map&lt;String, Object&gt; input,
+                                  @InputArgument String idempotencyKey,
+                                  DataFetchingEnvironment dfe) {
+<span class="nc" id="L186">        getAuth(dfe).requireAuth();</span>
+<span class="nc" id="L187">        Reservation r = dataSource.findById(reservationId).orElse(null);</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">        if (r == null) return new NotFoundError(&quot;Reservation&quot;, reservationId);</span>
+<span class="nc" id="L189">        Reservation updated = dataSource.mobileCheckIn(reservationId, input);</span>
+<span class="nc" id="L190">        return Map.of(&quot;reservation&quot;, updated, &quot;digitalKey&quot;, updated.getDigitalKey(),</span>
+                &quot;message&quot;, &quot;Mobile check-in successful. Your digital key is ready.&quot;);
+    }
+
+    @DgsMutation
+    public Object expressCheckout(@InputArgument String reservationId,
+                                   DataFetchingEnvironment dfe) {
+<span class="nc" id="L197">        getAuth(dfe).requireAuth();</span>
+<span class="nc" id="L198">        Reservation r = dataSource.findById(reservationId).orElse(null);</span>
+<span class="nc bnc" id="L199" title="All 2 branches missed.">        if (r == null) return new NotFoundError(&quot;Reservation&quot;, reservationId);</span>
+<span class="nc" id="L200">        Reservation updated = dataSource.expressCheckout(reservationId);</span>
+<span class="nc" id="L201">        return Map.of(&quot;reservationId&quot;, reservationId, &quot;folio&quot;, updated.getFolio(),</span>
+                &quot;emailedTo&quot;, &quot;guest@email.com&quot;,
+                &quot;message&quot;, &quot;Express checkout complete. Your folio has been emailed.&quot;);
+    }
+
+    @DgsMutation
+    public Object requestRoomUpgrade(@InputArgument String reservationId,
+                                      @InputArgument Map&lt;String, Object&gt; input,
+                                      DataFetchingEnvironment dfe) {
+<span class="nc" id="L210">        getAuth(dfe).requireAuth();</span>
+<span class="nc bnc" id="L211" title="All 2 branches missed.">        if (dataSource.findById(reservationId).isEmpty())</span>
+<span class="nc" id="L212">            return new NotFoundError(&quot;Reservation&quot;, reservationId);</span>
+<span class="nc" id="L213">        Reservation updated = dataSource.requestUpgrade(reservationId,</span>
+<span class="nc bnc" id="L214" title="All 2 branches missed.">                input != null ? input : Map.of());</span>
+<span class="nc" id="L215">        return updated.getRoomUpgradeRequest();</span>
+    }
+
+    @DgsMutation
+    public Object applyGiftCard(@InputArgument String reservationId,
+                                 @InputArgument String giftCardCode,
+                                 DataFetchingEnvironment dfe) {
+<span class="nc" id="L222">        getAuth(dfe).requireAuth();</span>
+<span class="nc bnc" id="L223" title="All 2 branches missed.">        if (dataSource.findById(reservationId).isEmpty())</span>
+<span class="nc" id="L224">            return new NotFoundError(&quot;Reservation&quot;, reservationId);</span>
+<span class="nc" id="L225">        Reservation updated = dataSource.applyGiftCard(reservationId, giftCardCode);</span>
+<span class="nc" id="L226">        return updated.getRateBreakdown();</span>
+    }
+
+    @DgsMutation
+    public Object createDiningReservation(@InputArgument Map&lt;String, Object&gt; input,
+                                           @InputArgument String idempotencyKey,
+                                           DataFetchingEnvironment dfe) {
+<span class="nc" id="L233">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L234">        auth.requireAuth();</span>
+<span class="nc bnc" id="L235" title="All 4 branches missed.">        if (input.get(&quot;reservationId&quot;) == null || input.get(&quot;restaurantId&quot;) == null)</span>
+<span class="nc" id="L236">            return new com.luxe.common.error.ValidationError(&quot;MISSING_FIELDS&quot;,</span>
+                    &quot;reservationId and restaurantId are required&quot;,
+<span class="nc" id="L238">                    List.of(new com.luxe.common.error.FieldError(&quot;reservationId&quot;, &quot;Required&quot;)));</span>
+<span class="nc" id="L239">        return dataSource.createDining(input, auth.guestId());</span>
+    }
+
+    @DgsMutation
+    public Object bookSpaAppointment(@InputArgument Map&lt;String, Object&gt; input,
+                                      @InputArgument String idempotencyKey,
+                                      DataFetchingEnvironment dfe) {
+<span class="nc" id="L246">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L247">        auth.requireAuth();</span>
+<span class="nc" id="L248">        return dataSource.bookSpa(input, auth.guestId());</span>
+    }
+
+    @DgsMutation
+    public Object bookTransportation(@InputArgument Map&lt;String, Object&gt; input,
+                                      @InputArgument String idempotencyKey,
+                                      DataFetchingEnvironment dfe) {
+<span class="nc" id="L255">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L256">        auth.requireAuth();</span>
+<span class="nc" id="L257">        return dataSource.bookTransport(input, auth.guestId());</span>
+    }
+
+    // ── GuestProfile field resolvers ──────────────────────────────────────────
+
+    @DgsData(parentType = &quot;GuestProfile&quot;, field = &quot;reservations&quot;)
+    public List&lt;Reservation&gt; guestReservations(DataFetchingEnvironment dfe) {
+<span class="nc" id="L264">        GuestProfile guest = dfe.getSource();</span>
+<span class="nc" id="L265">        String guestId = guest.getId();</span>
+<span class="nc" id="L266">        Map&lt;String, Object&gt; filter = dfe.getArgument(&quot;filter&quot;);</span>
+<span class="nc bnc" id="L267" title="All 2 branches missed.">        String status  = filter != null ? (String) filter.get(&quot;status&quot;) : null;</span>
+<span class="nc bnc" id="L268" title="All 2 branches missed.">        String hotelId = filter != null ? (String) filter.get(&quot;hotelId&quot;) : null;</span>
+<span class="nc" id="L269">        return dataSource.findByGuestId(guestId, status, hotelId, null);</span>
+    }
+
+    @DgsData(parentType = &quot;GuestProfile&quot;, field = &quot;upcomingReservation&quot;)
+    public Reservation upcomingReservation(DataFetchingEnvironment dfe) {
+<span class="nc" id="L274">        GuestProfile guest = dfe.getSource();</span>
+<span class="nc" id="L275">        String guestId = guest.getId();</span>
+<span class="nc" id="L276">        return dataSource.findByGuestId(guestId, &quot;CONFIRMED&quot;, null, &quot;CHECK_IN_ASC&quot;)</span>
+<span class="nc" id="L277">                .stream()</span>
+<span class="nc bnc" id="L278" title="All 2 branches missed.">                .filter(r -&gt; !r.getCheckIn().isBefore(java.time.LocalDate.now()))</span>
+<span class="nc" id="L279">                .findFirst().orElse(null);</span>
+    }
+
+    // ── Entity Fetcher ────────────────────────────────────────────────────────
+
+    @DgsEntityFetcher(name = &quot;Reservation&quot;)
+    public Reservation fetchReservation(Map&lt;String, Object&gt; values) {
+<span class="fc" id="L286">        return dataSource.findById((String) values.get(&quot;id&quot;)).orElse(null);</span>
+    }
+    @DgsEntityFetcher(name = &quot;GuestProfile&quot;)
+    public GuestProfile fetchGuestProfileReference(Map&lt;String, Object&gt; values) {
+<span class="nc" id="L290">        return new GuestProfile((String) values.get(&quot;id&quot;));</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

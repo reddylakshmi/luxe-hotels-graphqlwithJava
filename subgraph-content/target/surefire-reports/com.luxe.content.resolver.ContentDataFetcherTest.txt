@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.luxe.content.resolver.ContentDataFetcherTest
+-------------------------------------------------------------------------------
+Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.612 s -- in com.luxe.content.resolver.ContentDataFetcherTest

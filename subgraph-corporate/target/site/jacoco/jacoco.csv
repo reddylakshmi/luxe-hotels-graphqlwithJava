@@ -1,0 +1,17 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+Luxe Hotels - Corporate Subgraph,com.luxe.corporate.resolver,CorporateDataFetcher,204,56,17,1,37,11,18,7,9,7
+Luxe Hotels - Corporate Subgraph,com.luxe.corporate.config,CorporateGraphQLConfig,0,19,0,0,0,3,0,2,0,2
+Luxe Hotels - Corporate Subgraph,com.luxe.corporate.schema.types,TravelReport.DestinationSpend,0,15,0,0,0,1,0,1,0,1
+Luxe Hotels - Corporate Subgraph,com.luxe.corporate.schema.types,TravelReport.MonthlySpend,0,12,0,0,0,1,0,1,0,1
+Luxe Hotels - Corporate Subgraph,com.luxe.corporate.schema.types,CorporateContact,0,15,0,0,0,1,0,1,0,1
+Luxe Hotels - Corporate Subgraph,com.luxe.corporate.schema.types,TravelReport.BrandSpend,0,12,0,0,0,1,0,1,0,1
+Luxe Hotels - Corporate Subgraph,com.luxe.corporate.schema.types,TravelPolicy,15,164,1,21,4,38,5,24,4,14
+Luxe Hotels - Corporate Subgraph,com.luxe.corporate.schema.types,TravelReport,0,39,0,0,0,1,0,1,0,1
+Luxe Hotels - Corporate Subgraph,com.luxe.corporate.schema.types,TravelPolicy.RateCap,0,15,0,0,0,1,0,1,0,1
+Luxe Hotels - Corporate Subgraph,com.luxe.corporate.schema.types,CorporateTraveler,22,49,2,0,5,11,6,7,5,7
+Luxe Hotels - Corporate Subgraph,com.luxe.corporate.schema.types,NegotiatedRate,8,36,0,0,2,1,2,1,2,1
+Luxe Hotels - Corporate Subgraph,com.luxe.corporate.schema.types,TravelApproval,27,61,1,1,9,16,10,5,9,5
+Luxe Hotels - Corporate Subgraph,com.luxe.corporate.schema.types,TravelPolicy.ApprovalLevel,0,15,0,0,0,1,0,1,0,1
+Luxe Hotels - Corporate Subgraph,com.luxe.corporate.schema.types,CorporateAccount,38,107,1,1,11,25,11,14,10,14
+Luxe Hotels - Corporate Subgraph,com.luxe.corporate.schema.types,TravelApproval.PolicyException,0,12,0,0,0,1,0,1,0,1
+Luxe Hotels - Corporate Subgraph,com.luxe.corporate.datasource,CorporateMockDataSource,27,1267,4,42,1,196,4,41,0,22

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EventSpace.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Meetings Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.meetings.schema.types</a> &gt; <span class="el_source">EventSpace.java</span></div><h1>EventSpace.java</h1><pre class="source lang-java linenums">package com.luxe.meetings.schema.types;
+
+import com.luxe.common.pagination.HasId;
+import com.luxe.common.scalar.Money;
+import java.util.List;
+import java.util.Map;
+
+<span class="fc" id="L8">public record EventSpace(</span>
+        String id, String hotelId, String name, String description, String category,
+        List&lt;CapacityStyle&gt; capacityStyles, double areaSqFt, double areaSqMeters,
+        double ceilingHeightFt, boolean naturalLight, boolean blackoutCapable,
+        int rooms, boolean divisible,
+        TechnicalSpecs technicalSpecs, List&lt;AVEquipment&gt; avEquipment,
+        boolean cateringRequired, EventSpaceRateCard rateCard,
+        List&lt;String&gt; images, String floorPlanUrl
+) implements HasId {
+<span class="nc" id="L17">    @Override public String getId() { return id; }</span>
+<span class="nc" id="L18">    public Map&lt;String, Object&gt; getHotel() { return Map.of(&quot;id&quot;, hotelId); }</span>
+
+<span class="fc" id="L20">    public record CapacityStyle(String setup, int capacity) {}</span>
+
+<span class="fc" id="L22">    public record TechnicalSpecs(</span>
+            String power, int internetSpeedMbps, Integer riggingPoints,
+            Double loadInDoorsHeightFt, boolean freightElevator, String noiseRating
+    ) {}
+
+<span class="fc" id="L27">    public record AVEquipment(</span>
+            String category, String name, String model,
+            int quantity, boolean includedInRate, Money rentalCost
+    ) {}
+
+<span class="fc" id="L32">    public record EventSpaceRateCard(</span>
+            Money fullDay, Money halfDay, Money hourly,
+            Money setupFee, Money cleaningFee, Money minimumFAndBSpend, String currency
+    ) {}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

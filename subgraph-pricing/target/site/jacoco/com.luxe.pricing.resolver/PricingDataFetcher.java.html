@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PricingDataFetcher.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Pricing Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.pricing.resolver</a> &gt; <span class="el_source">PricingDataFetcher.java</span></div><h1>PricingDataFetcher.java</h1><pre class="source lang-java linenums">package com.luxe.pricing.resolver;
+
+import com.luxe.pricing.schema.types.RoomType;
+
+import com.luxe.pricing.schema.types.Hotel;
+
+import com.luxe.common.error.NotFoundError;
+import com.luxe.pricing.datasource.PricingDataSource;
+import com.luxe.pricing.schema.types.*;
+import com.netflix.graphql.dgs.*;
+import graphql.schema.DataFetchingEnvironment;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+
+@DgsComponent
+public class PricingDataFetcher {
+
+    private final PricingDataSource dataSource;
+
+<span class="fc" id="L22">    public PricingDataFetcher(PricingDataSource dataSource) {</span>
+<span class="fc" id="L23">        this.dataSource = dataSource;</span>
+<span class="fc" id="L24">    }</span>
+
+    // ── Queries ───────────────────────────────────────────────────────────────
+
+    @DgsQuery
+    public Object searchRates(@InputArgument Map&lt;String, Object&gt; input) {
+<span class="nc" id="L30">        String hotelId = (String) input.get(&quot;hotelId&quot;);</span>
+<span class="nc bnc" id="L31" title="All 2 branches missed.">        if (hotelId == null) return new com.luxe.common.error.ValidationError(</span>
+                &quot;MISSING_FIELD&quot;, &quot;hotelId is required&quot;,
+<span class="nc" id="L33">                List.of(new com.luxe.common.error.FieldError(&quot;hotelId&quot;, &quot;Required&quot;)));</span>
+
+<span class="nc" id="L35">        LocalDate checkIn  = LocalDate.parse((String) input.get(&quot;checkIn&quot;));</span>
+<span class="nc" id="L36">        LocalDate checkOut = LocalDate.parse((String) input.get(&quot;checkOut&quot;));</span>
+
+<span class="nc bnc" id="L38" title="All 2 branches missed.">        if (!checkIn.isBefore(checkOut)) {</span>
+<span class="nc" id="L39">            return new com.luxe.common.error.ValidationError(</span>
+                    &quot;INVALID_DATES&quot;, &quot;checkOut must be after checkIn&quot;,
+<span class="nc" id="L41">                    List.of(new com.luxe.common.error.FieldError(&quot;checkOut&quot;, &quot;Must be after checkIn&quot;)));</span>
+        }
+
+<span class="nc bnc" id="L44" title="All 2 branches missed.">        int adults   = input.containsKey(&quot;adults&quot;) ? ((Number) input.get(&quot;adults&quot;)).intValue() : 1;</span>
+<span class="nc bnc" id="L45" title="All 2 branches missed.">        int children = input.containsKey(&quot;children&quot;) ? ((Number) input.get(&quot;children&quot;)).intValue() : 0;</span>
+<span class="nc" id="L46">        String currency = (String) input.get(&quot;currency&quot;);</span>
+
+        @SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L49">        List&lt;String&gt; ratePlanCodes = (List&lt;String&gt;) input.get(&quot;ratePlanCodes&quot;);</span>
+        @SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L51">        List&lt;String&gt; roomTypeIds = (List&lt;String&gt;) input.get(&quot;roomTypeIds&quot;);</span>
+<span class="nc" id="L52">        String promoCode    = (String) input.get(&quot;promoCode&quot;);</span>
+<span class="nc" id="L53">        String corpCode     = (String) input.get(&quot;corporateCode&quot;);</span>
+
+<span class="nc" id="L55">        return dataSource.searchRates(hotelId, checkIn, checkOut, adults, children, currency,</span>
+                ratePlanCodes, roomTypeIds, promoCode, corpCode);
+    }
+
+    @DgsQuery
+    public Object validateRate(@InputArgument String rateToken) {
+<span class="fc" id="L61">        return dataSource.validateRate(rateToken)</span>
+<span class="pc" id="L62">                .&lt;Object&gt;map(r -&gt; r)</span>
+<span class="fc" id="L63">                .orElse(new com.luxe.common.error.RateExpiredError(&quot;Rate token is expired or invalid&quot;));</span>
+    }
+
+    @DgsQuery
+    public Object ratePlan(@InputArgument String id) {
+<span class="fc" id="L68">        return dataSource.findRatePlanById(id).orElse(null);</span>
+    }
+
+    @DgsQuery
+    public List&lt;Promotion&gt; promotions(@InputArgument Integer first, @InputArgument String after,
+                                       @InputArgument List&lt;String&gt; brandIds,
+                                       @InputArgument Boolean memberOnly) {
+<span class="pc bpc" id="L75" title="3 of 4 branches missed.">        String brandId = (brandIds != null &amp;&amp; !brandIds.isEmpty()) ? brandIds.get(0) : null;</span>
+<span class="fc" id="L76">        List&lt;Promotion&gt; all = dataSource.findPromotions(brandId, memberOnly);</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        int limit = first != null ? first : all.size();</span>
+<span class="fc" id="L78">        return all.stream().limit(limit).toList();</span>
+    }
+
+    @DgsQuery
+    public Object promotion(@InputArgument String code) {
+<span class="fc" id="L83">        return dataSource.findPromotionByCode(code).orElse(null);</span>
+    }
+
+    @DgsQuery(field = &quot;package&quot;)
+    public Object getPackage(@InputArgument String id) {
+<span class="fc" id="L88">        return dataSource.findPackageById(id).orElse(null);</span>
+    }
+
+    @DgsQuery
+    public List&lt;DateRateSummary&gt; rateCalendar(@InputArgument Map&lt;String, Object&gt; input) {
+<span class="nc" id="L93">        String hotelId   = (String) input.get(&quot;hotelId&quot;);</span>
+<span class="nc" id="L94">        LocalDate start  = LocalDate.parse((String) input.get(&quot;startDate&quot;));</span>
+<span class="nc" id="L95">        LocalDate end    = LocalDate.parse((String) input.get(&quot;endDate&quot;));</span>
+<span class="nc bnc" id="L96" title="All 2 branches missed.">        int adults       = input.containsKey(&quot;adults&quot;) ? ((Number) input.get(&quot;adults&quot;)).intValue() : 1;</span>
+<span class="nc" id="L97">        String currency  = (String) input.getOrDefault(&quot;currency&quot;, &quot;USD&quot;);</span>
+<span class="nc" id="L98">        return dataSource.getRateCalendar(hotelId, start, end, adults, currency);</span>
+    }
+
+    @DgsQuery
+    public GiftCardBalance giftCardBalance(@InputArgument String code) {
+        // Schema returns nullable GiftCardBalance (no union) — return null on miss.
+<span class="fc" id="L104">        return dataSource.findGiftCardBalance(code).orElse(null);</span>
+    }
+
+    @DgsQuery
+    public List&lt;RedemptionRate&gt; redemptionRates(@InputArgument Map&lt;String, Object&gt; input) {
+<span class="nc" id="L109">        String hotelId   = (String) input.get(&quot;hotelId&quot;);</span>
+<span class="nc" id="L110">        LocalDate checkIn  = LocalDate.parse((String) input.get(&quot;checkIn&quot;));</span>
+<span class="nc" id="L111">        LocalDate checkOut = LocalDate.parse((String) input.get(&quot;checkOut&quot;));</span>
+<span class="nc" id="L112">        String roomTypeId  = (String) input.get(&quot;roomTypeId&quot;);</span>
+<span class="nc" id="L113">        return dataSource.findRedemptionRates(hotelId, checkIn, checkOut, roomTypeId);</span>
+    }
+
+    // ── Hotel field resolvers ─────────────────────────────────────────────────
+
+    @DgsData(parentType = &quot;Hotel&quot;, field = &quot;rates&quot;)
+    public List&lt;Rate&gt; hotelRates(DataFetchingEnvironment dfe) {
+<span class="nc" id="L120">        Hotel source = dfe.getSource();</span>
+<span class="nc" id="L121">        String hotelId = source.getId();</span>
+<span class="nc" id="L122">        LocalDate checkIn  = LocalDate.parse((String) dfe.getArgument(&quot;checkIn&quot;));</span>
+<span class="nc" id="L123">        LocalDate checkOut = LocalDate.parse((String) dfe.getArgument(&quot;checkOut&quot;));</span>
+<span class="nc" id="L124">        int adults = dfe.getArgumentOrDefault(&quot;adults&quot;, 1);</span>
+<span class="nc" id="L125">        return dataSource.findRatesByHotelId(hotelId, checkIn, checkOut, adults);</span>
+    }
+
+    @DgsData(parentType = &quot;Hotel&quot;, field = &quot;availability&quot;)
+    public AvailabilityResult hotelAvailability(DataFetchingEnvironment dfe) {
+<span class="nc" id="L130">        Hotel source = dfe.getSource();</span>
+<span class="nc" id="L131">        String hotelId = source.getId();</span>
+<span class="nc" id="L132">        LocalDate checkIn  = LocalDate.parse((String) dfe.getArgument(&quot;checkIn&quot;));</span>
+<span class="nc" id="L133">        LocalDate checkOut = LocalDate.parse((String) dfe.getArgument(&quot;checkOut&quot;));</span>
+<span class="nc" id="L134">        int adults   = dfe.getArgumentOrDefault(&quot;adults&quot;, 1);</span>
+<span class="nc" id="L135">        int children = dfe.getArgumentOrDefault(&quot;children&quot;, 0);</span>
+<span class="nc" id="L136">        String currency = dfe.getArgumentOrDefault(&quot;currency&quot;, &quot;USD&quot;);</span>
+<span class="nc" id="L137">        return dataSource.searchRates(hotelId, checkIn, checkOut, adults, children, currency,</span>
+                null, null, null, null);
+    }
+
+    // ── RoomType field resolvers ──────────────────────────────────────────────
+
+    @DgsData(parentType = &quot;RoomType&quot;, field = &quot;rates&quot;)
+    public List&lt;Rate&gt; roomTypeRates(DataFetchingEnvironment dfe) {
+<span class="nc" id="L145">        RoomType source = dfe.getSource();</span>
+<span class="nc" id="L146">        String roomTypeId = source.getId();</span>
+<span class="nc" id="L147">        LocalDate checkIn  = LocalDate.parse((String) dfe.getArgument(&quot;checkIn&quot;));</span>
+<span class="nc" id="L148">        LocalDate checkOut = LocalDate.parse((String) dfe.getArgument(&quot;checkOut&quot;));</span>
+<span class="nc" id="L149">        int adults = dfe.getArgumentOrDefault(&quot;adults&quot;, 1);</span>
+<span class="nc" id="L150">        return dataSource.findRatesByRoomTypeId(roomTypeId, checkIn, checkOut, adults);</span>
+    }
+
+    @DgsData(parentType = &quot;RoomType&quot;, field = &quot;availability&quot;)
+    public Object roomTypeAvailability(DataFetchingEnvironment dfe) {
+<span class="nc" id="L155">        RoomType source = dfe.getSource();</span>
+<span class="nc" id="L156">        String roomTypeId = source.getId();</span>
+<span class="nc" id="L157">        LocalDate checkIn  = LocalDate.parse((String) dfe.getArgument(&quot;checkIn&quot;));</span>
+<span class="nc" id="L158">        LocalDate checkOut = LocalDate.parse((String) dfe.getArgument(&quot;checkOut&quot;));</span>
+<span class="nc" id="L159">        List&lt;Rate&gt; rates = dataSource.findRatesByRoomTypeId(roomTypeId, checkIn, checkOut, 1);</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">        if (rates.isEmpty()) return null;</span>
+<span class="nc" id="L161">        Rate lowest = rates.stream()</span>
+<span class="nc" id="L162">                .min(java.util.Comparator.comparingDouble(r -&gt; Double.parseDouble(r.getTotalRate().amount())))</span>
+<span class="nc" id="L163">                .orElse(null);</span>
+<span class="nc" id="L164">        int count = 1 + (int) (Math.abs(roomTypeId.hashCode()) % 5);</span>
+<span class="nc" id="L165">        return new RoomAvailability(roomTypeId, rates, lowest, count, null);</span>
+    }
+
+    // ── Entity Fetchers ───────────────────────────────────────────────────────
+
+    @DgsEntityFetcher(name = &quot;Rate&quot;)
+    public Rate fetchRate(Map&lt;String, Object&gt; values) {
+<span class="fc" id="L172">        return dataSource.findRateById((String) values.get(&quot;id&quot;)).orElse(null);</span>
+    }
+
+    @DgsEntityFetcher(name = &quot;RatePlan&quot;)
+    public RatePlan fetchRatePlan(Map&lt;String, Object&gt; values) {
+<span class="nc" id="L177">        return dataSource.findRatePlanById((String) values.get(&quot;id&quot;)).orElse(null);</span>
+    }
+
+    @DgsEntityFetcher(name = &quot;Promotion&quot;)
+    public Promotion fetchPromotion(Map&lt;String, Object&gt; values) {
+<span class="fc" id="L182">        return dataSource.findPromotionByCode((String) values.get(&quot;code&quot;)).orElse(null);</span>
+    }
+    @DgsEntityFetcher(name = &quot;Hotel&quot;)
+    public Hotel fetchHotelReference(Map&lt;String, Object&gt; values) {
+<span class="fc" id="L186">        return new Hotel((String) values.get(&quot;id&quot;));</span>
+    }
+
+    @DgsEntityFetcher(name = &quot;RoomType&quot;)
+    public RoomType fetchRoomTypeReference(Map&lt;String, Object&gt; values) {
+<span class="fc" id="L191">        return new RoomType((String) values.get(&quot;id&quot;));</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

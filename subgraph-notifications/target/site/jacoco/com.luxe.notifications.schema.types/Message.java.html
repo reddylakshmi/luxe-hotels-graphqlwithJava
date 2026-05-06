@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Message.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Notifications Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.notifications.schema.types</a> &gt; <span class="el_source">Message.java</span></div><h1>Message.java</h1><pre class="source lang-java linenums">package com.luxe.notifications.schema.types;
+
+import com.luxe.common.pagination.HasId;
+import java.time.OffsetDateTime;
+import java.util.List;
+
+public class Message implements HasId {
+    private final String id, threadId, sender, body;
+    private final List&lt;String&gt; attachmentUrls;
+    private final OffsetDateTime sentAt;
+    private OffsetDateTime readAt;
+
+    public Message(String id, String threadId, String sender, String body,
+<span class="fc" id="L14">                    List&lt;String&gt; attachmentUrls, OffsetDateTime sentAt, OffsetDateTime readAt) {</span>
+<span class="fc" id="L15">        this.id = id; this.threadId = threadId; this.sender = sender; this.body = body;</span>
+<span class="fc bfc" id="L16" title="All 2 branches covered.">        this.attachmentUrls = attachmentUrls != null ? attachmentUrls : List.of();</span>
+<span class="fc" id="L17">        this.sentAt = sentAt; this.readAt = readAt;</span>
+<span class="fc" id="L18">    }</span>
+
+<span class="fc" id="L20">    @Override public String getId() { return id; }</span>
+<span class="fc" id="L21">    public String getThreadId() { return threadId; }</span>
+<span class="fc" id="L22">    public String getSender() { return sender; }</span>
+<span class="fc" id="L23">    public String getBody() { return body; }</span>
+<span class="fc" id="L24">    public List&lt;String&gt; getAttachmentUrls() { return attachmentUrls; }</span>
+<span class="fc" id="L25">    public OffsetDateTime getSentAt() { return sentAt; }</span>
+<span class="nc" id="L26">    public OffsetDateTime getReadAt() { return readAt; }</span>
+<span class="nc" id="L27">    public void markRead() { this.readAt = OffsetDateTime.now(); }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

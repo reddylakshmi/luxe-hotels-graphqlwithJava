@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Reservation.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Reservations Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.reservations.schema.types</a> &gt; <span class="el_source">Reservation.java</span></div><h1>Reservation.java</h1><pre class="source lang-java linenums">package com.luxe.reservations.schema.types;
+
+import com.luxe.common.pagination.HasId;
+import com.luxe.common.scalar.Money;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+public class Reservation implements HasId {
+    private String id, confirmationNumber, guestId, hotelId, roomTypeId, rateId, source;
+    private String status;
+    private LocalDate checkIn, checkOut;
+    private int nights, adults, children;
+    private String currency;
+    private Money nightlyRate, totalAmount;
+
+    // Rich fields
+    private ReservationRoom room;
+    private ReservationRateBreakdown rateBreakdown;
+<span class="fc" id="L21">    private List&lt;ReservationAddOn&gt; addOns = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L22">    private List&lt;SpecialRequest&gt; specialRequests = new ArrayList&lt;&gt;();</span>
+    private PaymentSummary paymentSummary;
+    private Folio folio;
+    private ReservationLoyaltyContext loyaltyContext;
+    private DigitalKey digitalKey;
+    private RoomUpgradeRequest roomUpgradeRequest;
+    private ReservationCancellationPolicy cancellationPolicy;
+    private CancellationRecord cancellation;
+
+    private OffsetDateTime checkedInAt, checkedOutAt, createdAt, updatedAt, confirmationSentAt;
+
+    public Reservation(String id, String confirmationNumber, String guestId, String hotelId,
+                       String roomTypeId, String rateId, String roomNumber,
+                       LocalDate checkIn, LocalDate checkOut, int nights,
+                       int adults, int children, Money nightlyRate, Money totalAmount,
+                       String currency, String status, String specialRequestText,
+<span class="fc" id="L38">                       OffsetDateTime createdAt) {</span>
+<span class="fc" id="L39">        this.id = id; this.confirmationNumber = confirmationNumber;</span>
+<span class="fc" id="L40">        this.guestId = guestId; this.hotelId = hotelId; this.roomTypeId = roomTypeId;</span>
+<span class="fc" id="L41">        this.rateId = rateId; this.checkIn = checkIn; this.checkOut = checkOut;</span>
+<span class="fc" id="L42">        this.nights = nights; this.adults = adults; this.children = children;</span>
+<span class="fc" id="L43">        this.nightlyRate = nightlyRate; this.totalAmount = totalAmount; this.currency = currency;</span>
+<span class="fc" id="L44">        this.status = status; this.createdAt = createdAt; this.updatedAt = createdAt;</span>
+<span class="fc" id="L45">        this.source = &quot;WEB&quot;;</span>
+<span class="fc" id="L46">        this.confirmationSentAt = createdAt.plusMinutes(2);</span>
+
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        if (roomNumber != null) {</span>
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">            int floor = roomNumber.length() &gt;= 2 ? Integer.parseInt(roomNumber.substring(0, roomNumber.length() - 2)) : 1;</span>
+<span class="fc" id="L50">            this.room = new ReservationRoom(roomNumber, floor, null, null);</span>
+        }
+
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        if (specialRequestText != null) {</span>
+<span class="fc" id="L54">            this.specialRequests = List.of(new SpecialRequest(</span>
+                    &quot;sr-&quot; + id, &quot;OTHER&quot;, specialRequestText, &quot;ACKNOWLEDGED&quot;, null));
+        }
+
+<span class="fc" id="L58">        this.cancellationPolicy = new ReservationCancellationPolicy(</span>
+                &quot;FREE_CANCELLATION&quot;, &quot;Free cancellation up to 48 hours before check-in&quot;,
+<span class="fc" id="L60">                48, null, null);</span>
+
+<span class="fc" id="L62">        buildRateBreakdown();</span>
+<span class="fc" id="L63">    }</span>
+
+    private void buildRateBreakdown() {
+<span class="pc bpc" id="L66" title="2 of 4 branches missed.">        if (nightlyRate == null || totalAmount == null) return;</span>
+<span class="fc" id="L67">        double nightly = Double.parseDouble(nightlyRate.amount());</span>
+<span class="fc" id="L68">        double subtotal = Double.parseDouble(totalAmount.amount());</span>
+<span class="fc bfc" id="L69" title="All 4 branches covered.">        double taxRate = currency.equals(&quot;GBP&quot;) ? 0.20 : currency.equals(&quot;USD&quot;) ? 0.15 : 0.10;</span>
+<span class="fc" id="L70">        double taxes = subtotal * taxRate;</span>
+<span class="fc" id="L71">        double fees  = subtotal * 0.02;</span>
+
+<span class="fc" id="L73">        List&lt;ReservationRateBreakdown.NightlyRate&gt; nightlyRates = checkIn.datesUntil(checkOut)</span>
+<span class="fc" id="L74">                .map(d -&gt; new ReservationRateBreakdown.NightlyRate(d.toString(), nightlyRate))</span>
+<span class="fc" id="L75">                .collect(Collectors.toList());</span>
+
+<span class="fc" id="L77">        ReservationRateBreakdown.TaxBreakdown taxBreakdown = new ReservationRateBreakdown.TaxBreakdown(</span>
+<span class="fc" id="L78">                Money.of(subtotal, currency),</span>
+<span class="fc" id="L79">                Money.of(taxes, currency),</span>
+<span class="fc" id="L80">                Money.of(fees, currency),</span>
+<span class="fc" id="L81">                Money.of(taxes + fees, currency),</span>
+<span class="fc" id="L82">                List.of(</span>
+<span class="fc" id="L83">                        new ReservationRateBreakdown.TaxLineItem(&quot;Value Added Tax&quot;, Money.of(taxes, currency), &quot;TAX&quot;),</span>
+<span class="fc" id="L84">                        new ReservationRateBreakdown.TaxLineItem(&quot;Resort Fee&quot;, Money.of(fees, currency), &quot;FEE&quot;)</span>
+                ));
+
+<span class="fc" id="L87">        Money total = Money.of(subtotal + taxes + fees, currency);</span>
+<span class="fc" id="L88">        List&lt;ReservationRateBreakdown.BillingLineItem&gt; lineItems = List.of(</span>
+                new ReservationRateBreakdown.BillingLineItem(&quot;li-room-&quot; + id,
+<span class="fc" id="L90">                        checkIn.toString(), &quot;Room Charges (&quot; + nights + &quot; nights)&quot;,</span>
+<span class="fc" id="L91">                        Money.of(subtotal, currency), &quot;ROOM&quot;, nights));</span>
+
+<span class="fc" id="L93">        this.rateBreakdown = new ReservationRateBreakdown(currency, nightlyRates,</span>
+                totalAmount, null, null, taxBreakdown, null, null,
+                total, null, total, lineItems);
+<span class="fc" id="L96">    }</span>
+
+    // ── Getters ───────────────────────────────────────────────────────────────
+
+<span class="fc" id="L100">    @Override public String getId() { return id; }</span>
+<span class="fc" id="L101">    public String getConfirmationNumber() { return confirmationNumber; }</span>
+<span class="fc" id="L102">    public String getGuestId() { return guestId; }</span>
+<span class="fc" id="L103">    public String getHotelId() { return hotelId; }</span>
+<span class="nc" id="L104">    public String getRoomTypeId() { return roomTypeId; }</span>
+<span class="nc" id="L105">    public String getRateId() { return rateId; }</span>
+<span class="fc" id="L106">    public LocalDate getCheckIn() { return checkIn; }</span>
+<span class="fc" id="L107">    public LocalDate getCheckOut() { return checkOut; }</span>
+<span class="fc" id="L108">    public int getNights() { return nights; }</span>
+<span class="fc" id="L109">    public int getAdults() { return adults; }</span>
+<span class="nc" id="L110">    public int getChildren() { return children; }</span>
+<span class="fc" id="L111">    public String getCurrency() { return currency; }</span>
+<span class="fc" id="L112">    public Money getNightlyRate() { return nightlyRate; }</span>
+<span class="fc" id="L113">    public Money getTotalAmount() { return totalAmount; }</span>
+<span class="fc" id="L114">    public String getStatus() { return status; }</span>
+<span class="nc" id="L115">    public String getSource() { return source; }</span>
+
+    // Federation reference getters — return maps with just id for Apollo Router
+<span class="nc" id="L118">    public Map&lt;String, Object&gt; getHotel() { return Map.of(&quot;id&quot;, hotelId); }</span>
+<span class="nc" id="L119">    public Map&lt;String, Object&gt; getRoomType() { return Map.of(&quot;id&quot;, roomTypeId); }</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">    public Map&lt;String, Object&gt; getGuest() { return guestId != null ? Map.of(&quot;id&quot;, guestId) : null; }</span>
+
+<span class="nc" id="L122">    public GuestCount getGuestCount() { return new GuestCount(adults, children); }</span>
+<span class="fc" id="L123">    public ReservationRoom getRoom() { return room; }</span>
+<span class="nc" id="L124">    public ReservationRateBreakdown getRateBreakdown() { return rateBreakdown; }</span>
+<span class="nc" id="L125">    public List&lt;ReservationAddOn&gt; getAddOns() { return addOns; }</span>
+<span class="nc" id="L126">    public List&lt;SpecialRequest&gt; getSpecialRequests() { return specialRequests; }</span>
+<span class="fc" id="L127">    public PaymentSummary getPaymentSummary() { return paymentSummary; }</span>
+<span class="fc" id="L128">    public Folio getFolio() { return folio; }</span>
+<span class="nc" id="L129">    public ReservationLoyaltyContext getLoyaltyContext() { return loyaltyContext; }</span>
+<span class="fc" id="L130">    public DigitalKey getDigitalKey() { return digitalKey; }</span>
+<span class="fc" id="L131">    public RoomUpgradeRequest getRoomUpgradeRequest() { return roomUpgradeRequest; }</span>
+<span class="nc" id="L132">    public ReservationCancellationPolicy getCancellationPolicy() { return cancellationPolicy; }</span>
+<span class="fc" id="L133">    public CancellationRecord getCancellation() { return cancellation; }</span>
+
+    public boolean isIsRefundable() {
+<span class="nc bnc" id="L136" title="All 4 branches missed.">        return cancellationPolicy != null &amp;&amp; &quot;FREE_CANCELLATION&quot;.equals(cancellationPolicy.type())</span>
+<span class="nc bnc" id="L137" title="All 2 branches missed.">                &amp;&amp; !isCancellationDeadlinePassed();</span>
+    }
+
+    private boolean isCancellationDeadlinePassed() {
+<span class="nc bnc" id="L141" title="All 4 branches missed.">        if (cancellationPolicy == null || cancellationPolicy.deadlineHours() == null) return false;</span>
+<span class="nc" id="L142">        OffsetDateTime deadline = checkIn.atStartOfDay().atOffset(java.time.ZoneOffset.UTC)</span>
+<span class="nc" id="L143">                .minusHours(cancellationPolicy.deadlineHours());</span>
+<span class="nc" id="L144">        return OffsetDateTime.now().isAfter(deadline);</span>
+    }
+
+    public OffsetDateTime getCancellationDeadline() {
+<span class="nc bnc" id="L148" title="All 4 branches missed.">        if (cancellationPolicy == null || cancellationPolicy.deadlineHours() == null) return null;</span>
+<span class="nc" id="L149">        return checkIn.atStartOfDay().atOffset(java.time.ZoneOffset.UTC)</span>
+<span class="nc" id="L150">                .minusHours(cancellationPolicy.deadlineHours());</span>
+    }
+
+    public boolean isIsCanModify() {
+<span class="nc bnc" id="L154" title="All 4 branches missed.">        return &quot;CONFIRMED&quot;.equals(status) || &quot;MODIFIED&quot;.equals(status);</span>
+    }
+
+    public boolean isIsCanCheckInOnline() {
+<span class="nc bnc" id="L158" title="All 4 branches missed.">        if (!&quot;CONFIRMED&quot;.equals(status) &amp;&amp; !&quot;MODIFIED&quot;.equals(status)) return false;</span>
+<span class="nc" id="L159">        long daysUntilCheckIn = LocalDate.now().until(checkIn).getDays();</span>
+<span class="nc bnc" id="L160" title="All 4 branches missed.">        return daysUntilCheckIn &gt;= 0 &amp;&amp; daysUntilCheckIn &lt;= 3;</span>
+    }
+
+<span class="fc" id="L163">    public OffsetDateTime getCheckedInAt() { return checkedInAt; }</span>
+<span class="fc" id="L164">    public OffsetDateTime getCheckedOutAt() { return checkedOutAt; }</span>
+<span class="nc" id="L165">    public OffsetDateTime getCreatedAt() { return createdAt; }</span>
+<span class="fc" id="L166">    public OffsetDateTime getUpdatedAt() { return updatedAt; }</span>
+<span class="nc" id="L167">    public OffsetDateTime getConfirmationSentAt() { return confirmationSentAt; }</span>
+
+    // ── Setters ───────────────────────────────────────────────────────────────
+
+<span class="fc" id="L171">    public void setStatus(String status) { this.status = status; }</span>
+<span class="nc" id="L172">    public void setRoom(ReservationRoom room) { this.room = room; }</span>
+    public void setRoomNumber(String roomNumber) {
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        if (roomNumber == null) { this.room = null; return; }</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">        int floor = roomNumber.length() &gt;= 2 ? Integer.parseInt(roomNumber.substring(0, roomNumber.length() - 2)) : 1;</span>
+<span class="nc" id="L176">        this.room = new ReservationRoom(roomNumber, floor, null, null);</span>
+<span class="nc" id="L177">    }</span>
+<span class="fc" id="L178">    public void setPaymentSummary(PaymentSummary ps) { this.paymentSummary = ps; }</span>
+<span class="fc" id="L179">    public void setFolio(Folio f) { this.folio = f; }</span>
+<span class="fc" id="L180">    public void setLoyaltyContext(ReservationLoyaltyContext lc) { this.loyaltyContext = lc; }</span>
+<span class="fc" id="L181">    public void setDigitalKey(DigitalKey dk) { this.digitalKey = dk; }</span>
+<span class="fc" id="L182">    public void setRoomUpgradeRequest(RoomUpgradeRequest r) { this.roomUpgradeRequest = r; }</span>
+<span class="fc" id="L183">    public void setCancellation(CancellationRecord cr) { this.cancellation = cr; }</span>
+<span class="fc" id="L184">    public void setCheckedInAt(OffsetDateTime t) { this.checkedInAt = t; }</span>
+<span class="fc" id="L185">    public void setCheckedOutAt(OffsetDateTime t) { this.checkedOutAt = t; }</span>
+<span class="fc" id="L186">    public void setUpdatedAt(OffsetDateTime t) { this.updatedAt = t; }</span>
+<span class="fc" id="L187">    public void setCheckIn(LocalDate d) { this.checkIn = d; }</span>
+<span class="fc" id="L188">    public void setCheckOut(LocalDate d) { this.checkOut = d; }</span>
+<span class="fc" id="L189">    public void setNights(int n) { this.nights = n; }</span>
+<span class="fc" id="L190">    public void setAdults(int a) { this.adults = a; }</span>
+<span class="fc" id="L191">    public void setSource(String s) { this.source = s; }</span>
+<span class="nc" id="L192">    public void addSpecialRequest(SpecialRequest sr) { this.specialRequests = new ArrayList&lt;&gt;(specialRequests); specialRequests.add(sr); }</span>
+<span class="nc" id="L193">    public void addAddOn(ReservationAddOn addOn) { this.addOns = new ArrayList&lt;&gt;(addOns); addOns.add(addOn); }</span>
+<span class="fc" id="L194">    public void rebuildRateBreakdown() { buildRateBreakdown(); }</span>
+
+    // ── Inner value type ──────────────────────────────────────────────────────
+
+<span class="nc" id="L198">    public record GuestCount(int adults, int children) {}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

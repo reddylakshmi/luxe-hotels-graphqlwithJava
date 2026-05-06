@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SpaAppointment.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Reservations Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.reservations.schema.types</a> &gt; <span class="el_source">SpaAppointment.java</span></div><h1>SpaAppointment.java</h1><pre class="source lang-java linenums">package com.luxe.reservations.schema.types;
+
+import com.luxe.common.pagination.HasId;
+import com.luxe.common.scalar.Money;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+
+public class SpaAppointment implements HasId {
+    private final String id, reservationId, treatmentId, treatmentName;
+    private final String therapistName;
+    private final LocalDate date;
+    private final String time;
+    private final int durationMinutes;
+    private final Money price;
+    private String status;
+    private final String confirmationNumber;
+    private final OffsetDateTime createdAt;
+
+    public SpaAppointment(String id, String reservationId, String treatmentId,
+                           String treatmentName, String therapistName,
+                           LocalDate date, String time, int durationMinutes, Money price,
+<span class="fc" id="L22">                           String status, String confirmationNumber, OffsetDateTime createdAt) {</span>
+<span class="fc" id="L23">        this.id = id; this.reservationId = reservationId; this.treatmentId = treatmentId;</span>
+<span class="fc" id="L24">        this.treatmentName = treatmentName; this.therapistName = therapistName;</span>
+<span class="fc" id="L25">        this.date = date; this.time = time; this.durationMinutes = durationMinutes;</span>
+<span class="fc" id="L26">        this.price = price; this.status = status; this.confirmationNumber = confirmationNumber;</span>
+<span class="fc" id="L27">        this.createdAt = createdAt;</span>
+<span class="fc" id="L28">    }</span>
+
+<span class="nc" id="L30">    @Override public String getId() { return id; }</span>
+<span class="fc" id="L31">    public String getReservationId() { return reservationId; }</span>
+<span class="nc" id="L32">    public String getTreatmentId() { return treatmentId; }</span>
+<span class="nc" id="L33">    public String getTreatmentName() { return treatmentName; }</span>
+<span class="nc" id="L34">    public String getTherapistName() { return therapistName; }</span>
+<span class="fc" id="L35">    public LocalDate getDate() { return date; }</span>
+<span class="nc" id="L36">    public String getTime() { return time; }</span>
+<span class="nc" id="L37">    public int getDurationMinutes() { return durationMinutes; }</span>
+<span class="fc" id="L38">    public Money getPrice() { return price; }</span>
+<span class="fc" id="L39">    public String getStatus() { return status; }</span>
+<span class="nc" id="L40">    public String getConfirmationNumber() { return confirmationNumber; }</span>
+<span class="nc" id="L41">    public OffsetDateTime getCreatedAt() { return createdAt; }</span>
+<span class="nc" id="L42">    public void setStatus(String s) { this.status = s; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

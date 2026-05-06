@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ExperiencesDataFetcher.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Experiences Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.experiences.resolver</a> &gt; <span class="el_source">ExperiencesDataFetcher.java</span></div><h1>ExperiencesDataFetcher.java</h1><pre class="source lang-java linenums">package com.luxe.experiences.resolver;
+
+import com.luxe.experiences.schema.types.Hotel;
+
+import com.luxe.common.auth.AuthContext;
+import com.luxe.common.error.NotFoundError;
+import com.luxe.common.error.SlotUnavailableError;
+import com.luxe.common.error.ValidationError;
+import com.luxe.common.error.FieldError;
+import com.luxe.common.pagination.Connection;
+import com.luxe.experiences.datasource.ExperiencesDataSource;
+import com.luxe.experiences.schema.types.*;
+import com.netflix.graphql.dgs.*;
+import graphql.schema.DataFetchingEnvironment;
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@DgsComponent
+public class ExperiencesDataFetcher {
+
+    private final ExperiencesDataSource dataSource;
+
+<span class="fc" id="L28">    public ExperiencesDataFetcher(ExperiencesDataSource dataSource) {</span>
+<span class="fc" id="L29">        this.dataSource = dataSource;</span>
+<span class="fc" id="L30">    }</span>
+
+    private AuthContext getAuth(DataFetchingEnvironment dfe) {
+        try {
+<span class="nc" id="L34">            HttpServletRequest req = dfe.getGraphQlContext().get(HttpServletRequest.class);</span>
+<span class="nc bnc" id="L35" title="All 2 branches missed.">            if (req == null) return AuthContext.anonymous();</span>
+<span class="nc" id="L36">            AuthContext ctx = (AuthContext) req.getAttribute(&quot;authContext&quot;);</span>
+<span class="nc bnc" id="L37" title="All 2 branches missed.">            return ctx != null ? ctx : AuthContext.anonymous();</span>
+<span class="nc" id="L38">        } catch (Exception e) { return AuthContext.anonymous(); }</span>
+    }
+
+    // ── Queries ───────────────────────────────────────────────────────────────
+
+    @DgsQuery
+    public List&lt;Experience&gt; experiences(@InputArgument String hotelId,
+                                          @InputArgument String category,
+                                          @InputArgument String date) {
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">        LocalDate d = date != null ? LocalDate.parse(date) : null;</span>
+<span class="fc" id="L48">        return dataSource.findExperiences(hotelId, category, d);</span>
+    }
+
+    @DgsQuery
+    public Experience experience(@InputArgument String id) {
+<span class="nc" id="L53">        return dataSource.findExperienceById(id).orElse(null);</span>
+    }
+
+    @DgsQuery
+    public ExperienceAvailability experienceAvailability(@InputArgument String experienceId,
+                                                           @InputArgument String date,
+                                                           @InputArgument int partySize) {
+<span class="nc" id="L60">        return dataSource.availability(experienceId, LocalDate.parse(date), partySize);</span>
+    }
+
+    @DgsQuery
+    public List&lt;SpaTreatment&gt; spaTreatmentMenu(@InputArgument String hotelId) {
+<span class="fc" id="L65">        return dataSource.spaTreatments(hotelId);</span>
+    }
+
+    @DgsQuery
+    public RestaurantAvailability restaurantAvailability(@InputArgument String hotelId,
+                                                           @InputArgument String date,
+                                                           @InputArgument int partySize) {
+<span class="nc" id="L72">        return dataSource.restaurantAvailability(hotelId, LocalDate.parse(date), partySize);</span>
+    }
+
+    @DgsQuery
+    public GolfTeeTimeAvailability golfTeeTimeAvailability(@InputArgument String hotelId,
+                                                             @InputArgument String date,
+                                                             @InputArgument int players) {
+<span class="nc" id="L79">        return dataSource.golfAvailability(hotelId, LocalDate.parse(date), players);</span>
+    }
+
+    @DgsQuery
+    public Object myExperienceBookings(@InputArgument Integer first,
+                                         @InputArgument String after,
+                                         @InputArgument Boolean upcoming,
+                                         DataFetchingEnvironment dfe) {
+<span class="nc" id="L87">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L88">        auth.requireAuth();</span>
+<span class="nc" id="L89">        List&lt;ExperienceBooking&gt; all = dataSource.findBookingsByGuestId(auth.guestId(), upcoming);</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">        Connection&lt;ExperienceBooking&gt; conn = Connection.of(all, first != null ? first : 10, after);</span>
+<span class="nc" id="L91">        return Map.of(</span>
+<span class="nc" id="L92">                &quot;edges&quot;, conn.edges().stream()</span>
+<span class="nc" id="L93">                        .map(e -&gt; Map.of(&quot;node&quot;, e.node(), &quot;cursor&quot;, e.cursor())).toList(),</span>
+<span class="nc" id="L94">                &quot;pageInfo&quot;, pageInfo(conn),</span>
+<span class="nc" id="L95">                &quot;totalCount&quot;, conn.totalCount());</span>
+    }
+
+    // ── Mutations ─────────────────────────────────────────────────────────────
+
+    @DgsMutation
+    public Object bookExperience(@InputArgument Map&lt;String, Object&gt; input,
+                                   @InputArgument String idempotencyKey,
+                                   DataFetchingEnvironment dfe) {
+<span class="nc" id="L104">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L105">        auth.requireAuth();</span>
+<span class="nc" id="L106">        String experienceId = (String) input.get(&quot;experienceId&quot;);</span>
+<span class="nc" id="L107">        String slotToken = (String) input.get(&quot;slotToken&quot;);</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">        Integer participants = input.get(&quot;participants&quot;) != null</span>
+<span class="nc" id="L109">                ? ((Number) input.get(&quot;participants&quot;)).intValue() : null;</span>
+<span class="nc bnc" id="L110" title="All 8 branches missed.">        if (experienceId == null || slotToken == null || participants == null || participants &lt;= 0) {</span>
+<span class="nc" id="L111">            return new ValidationError(&quot;INVALID_INPUT&quot;,</span>
+                    &quot;experienceId, slotToken, and positive participants are required&quot;,
+<span class="nc" id="L113">                    List.of(new FieldError(&quot;participants&quot;, &quot;Must be &gt; 0&quot;)));</span>
+        }
+<span class="nc bnc" id="L115" title="All 2 branches missed.">        if (dataSource.findExperienceById(experienceId).isEmpty())</span>
+<span class="nc" id="L116">            return new NotFoundError(&quot;Experience&quot;, experienceId);</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        if (!dataSource.isSlotValid(slotToken))</span>
+<span class="nc" id="L118">            return new SlotUnavailableError(slotToken, List.of());</span>
+<span class="nc" id="L119">        return dataSource.bookExperience(auth.guestId(), experienceId, slotToken,</span>
+<span class="nc" id="L120">                participants, (String) input.get(&quot;specialRequests&quot;));</span>
+    }
+
+    @DgsMutation
+    public Object bookDining(@InputArgument Map&lt;String, Object&gt; input,
+                               @InputArgument String idempotencyKey,
+                               DataFetchingEnvironment dfe) {
+<span class="nc" id="L127">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L128">        auth.requireAuth();</span>
+<span class="nc" id="L129">        String slotToken = (String) input.get(&quot;slotToken&quot;);</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">        Integer partySize = input.get(&quot;partySize&quot;) != null</span>
+<span class="nc" id="L131">                ? ((Number) input.get(&quot;partySize&quot;)).intValue() : null;</span>
+<span class="nc" id="L132">        String restaurantId = (String) input.get(&quot;restaurantId&quot;);</span>
+<span class="nc bnc" id="L133" title="All 8 branches missed.">        if (restaurantId == null || slotToken == null || partySize == null || partySize &lt;= 0) {</span>
+<span class="nc" id="L134">            return new ValidationError(&quot;INVALID_INPUT&quot;,</span>
+                    &quot;restaurantId, slotToken, and positive partySize are required&quot;,
+<span class="nc" id="L136">                    List.of());</span>
+        }
+<span class="nc bnc" id="L138" title="All 2 branches missed.">        if (!dataSource.isSlotValid(slotToken))</span>
+<span class="nc" id="L139">            return new SlotUnavailableError(slotToken, List.of());</span>
+<span class="nc" id="L140">        return dataSource.bookDining(auth.guestId(), restaurantId, slotToken,</span>
+<span class="nc" id="L141">                partySize, (String) input.get(&quot;specialRequests&quot;));</span>
+    }
+
+    @DgsMutation
+    public Object bookGolfTeeTime(@InputArgument Map&lt;String, Object&gt; input,
+                                    @InputArgument String idempotencyKey,
+                                    DataFetchingEnvironment dfe) {
+<span class="nc" id="L148">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L149">        auth.requireAuth();</span>
+<span class="nc" id="L150">        String courseId = (String) input.get(&quot;courseId&quot;);</span>
+<span class="nc" id="L151">        String slotToken = (String) input.get(&quot;slotToken&quot;);</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">        Integer players = input.get(&quot;players&quot;) != null</span>
+<span class="nc" id="L153">                ? ((Number) input.get(&quot;players&quot;)).intValue() : null;</span>
+<span class="nc bnc" id="L154" title="All 8 branches missed.">        if (courseId == null || slotToken == null || players == null || players &lt;= 0) {</span>
+<span class="nc" id="L155">            return new ValidationError(&quot;INVALID_INPUT&quot;,</span>
+                    &quot;courseId, slotToken, and positive players are required&quot;,
+<span class="nc" id="L157">                    List.of());</span>
+        }
+<span class="nc bnc" id="L159" title="All 2 branches missed.">        if (!dataSource.isSlotValid(slotToken))</span>
+<span class="nc" id="L160">            return new SlotUnavailableError(slotToken, List.of());</span>
+<span class="nc" id="L161">        Boolean cart = (Boolean) input.get(&quot;cartRequested&quot;);</span>
+<span class="nc" id="L162">        return dataSource.bookGolf(auth.guestId(), courseId, slotToken, players, cart);</span>
+    }
+
+    @DgsMutation
+    public Object cancelExperienceBooking(@InputArgument String bookingId,
+                                            @InputArgument String reason,
+                                            DataFetchingEnvironment dfe) {
+<span class="nc" id="L169">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L170">        auth.requireAuth();</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">        if (dataSource.findBookingById(bookingId).isEmpty())</span>
+<span class="nc" id="L172">            return new NotFoundError(&quot;ExperienceBooking&quot;, bookingId);</span>
+<span class="nc" id="L173">        ExperienceBooking b = dataSource.cancel(bookingId, reason);</span>
+<span class="nc" id="L174">        Map&lt;String, Object&gt; result = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L175">        result.put(&quot;bookingId&quot;, b.getId());</span>
+<span class="nc" id="L176">        result.put(&quot;refundAmount&quot;, null);</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">        result.put(&quot;cancelledAt&quot;, b.getCancelledAt() != null ? b.getCancelledAt() : OffsetDateTime.now());</span>
+<span class="nc" id="L178">        result.put(&quot;message&quot;, &quot;Booking &quot; + b.getConfirmationCode() + &quot; cancelled&quot;);</span>
+<span class="nc" id="L179">        return result;</span>
+    }
+
+    // ── Federation field resolvers ────────────────────────────────────────────
+
+    @DgsData(parentType = &quot;Hotel&quot;, field = &quot;experiences&quot;)
+    public List&lt;Experience&gt; hotelExperiences(DataFetchingEnvironment dfe) {
+<span class="fc" id="L186">        Hotel hotel = dfe.getSource();</span>
+<span class="fc" id="L187">        String category = dfe.getArgument(&quot;category&quot;);</span>
+<span class="fc" id="L188">        return dataSource.findExperiences(hotel.getId(), category, null);</span>
+    }
+
+    @DgsData(parentType = &quot;Hotel&quot;, field = &quot;spaTreatments&quot;)
+    public List&lt;SpaTreatment&gt; hotelSpaTreatments(DataFetchingEnvironment dfe) {
+<span class="nc" id="L193">        Hotel hotel = dfe.getSource();</span>
+<span class="nc" id="L194">        return dataSource.spaTreatments(hotel.getId());</span>
+    }
+
+    @DgsEntityFetcher(name = &quot;Experience&quot;)
+    public Experience fetchExperience(Map&lt;String, Object&gt; values) {
+<span class="nc" id="L199">        return dataSource.findExperienceById((String) values.get(&quot;id&quot;)).orElse(null);</span>
+    }
+
+    @DgsEntityFetcher(name = &quot;ExperienceBooking&quot;)
+    public ExperienceBooking fetchBooking(Map&lt;String, Object&gt; values) {
+<span class="nc" id="L204">        return dataSource.findBookingById((String) values.get(&quot;id&quot;)).orElse(null);</span>
+    }
+
+    private Map&lt;String, Object&gt; pageInfo(Connection&lt;?&gt; conn) {
+<span class="nc" id="L208">        HashMap&lt;String, Object&gt; m = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L209">        m.put(&quot;hasNextPage&quot;, conn.pageInfo().hasNextPage());</span>
+<span class="nc" id="L210">        m.put(&quot;hasPreviousPage&quot;, conn.pageInfo().hasPreviousPage());</span>
+<span class="nc" id="L211">        m.put(&quot;startCursor&quot;, conn.pageInfo().startCursor());</span>
+<span class="nc" id="L212">        m.put(&quot;endCursor&quot;, conn.pageInfo().endCursor());</span>
+<span class="nc" id="L213">        return m;</span>
+    }
+    @DgsEntityFetcher(name = &quot;Hotel&quot;)
+    public Hotel fetchHotelReference(Map&lt;String, Object&gt; values) {
+<span class="fc" id="L217">        return new Hotel((String) values.get(&quot;id&quot;));</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

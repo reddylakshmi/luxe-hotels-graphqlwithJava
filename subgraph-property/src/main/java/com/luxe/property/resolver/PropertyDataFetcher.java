@@ -1,6 +1,7 @@
 package com.luxe.property.resolver;
 
 import com.luxe.common.auth.AuthContext;
+import com.luxe.common.error.NotFoundError;
 import com.luxe.property.datasource.PropertyDataSource;
 import com.luxe.property.schema.types.*;
 import com.netflix.graphql.dgs.*;
@@ -98,15 +99,12 @@ public class PropertyDataFetcher {
         Number rating = (Number) input.get("overallRating");
         String title = (String) input.get("title");
         String body = (String) input.get("body");
-        String stayDate = (String) input.get("stayDate");
+        // Date scalar deserializes to java.time.LocalDate; coerce to ISO string for the data source.
+        Object rawStayDate = input.get("stayDate");
+        String stayDate = rawStayDate != null ? rawStayDate.toString() : null;
 
-        if (hotelId == null || rating == null || body == null || stayDate == null) {
-            return Map.of("__typename","ValidationError","code","VALIDATION_ERROR",
-                    "message","Required fields missing","fieldErrors",List.of());
-        }
         if (dataSource.getHotelById(hotelId).isEmpty()) {
-            return Map.of("__typename","NotFoundError","code","HOTEL_NOT_FOUND",
-                    "message","Hotel not found: "+hotelId,"resourceType","Hotel");
+            return new NotFoundError("Hotel", hotelId);
         }
 
         @SuppressWarnings("unchecked")
@@ -121,8 +119,7 @@ public class PropertyDataFetcher {
     public Object markReviewHelpful(@InputArgument String reviewId) {
         return dataSource.markReviewHelpful(reviewId)
                 .<Object>map(r -> r)
-                .orElseGet(() -> Map.of("__typename","NotFoundError","code","REVIEW_NOT_FOUND",
-                        "message","Review not found: "+reviewId,"resourceType","Review"));
+                .orElseGet(() -> new NotFoundError("Review", reviewId));
     }
 
     // ── Parent-type field resolvers ────────────────────────────────────────────

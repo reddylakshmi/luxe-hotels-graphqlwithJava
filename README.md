@@ -293,6 +293,56 @@ that produce monetary values can return it.
 
 ---
 
+## Testing & coverage
+
+The project ships with ~200 unit + DGS integration tests across 25 test classes,
+covering common scalars/auth/pagination, every subgraph's mock data source, and
+real GraphQL execution through `DgsQueryExecutor` (including federation `_entities`
+resolution and auth gating).
+
+```bash
+mvn test                              # full suite (~21s test execution, ~40s with JaCoCo)
+mvn -pl common test                   # foundation only
+mvn -pl subgraph-property test        # one subgraph
+mvn -pl common,subgraph-loyalty -am test   # subgraph + its deps
+```
+
+JaCoCo is wired in the parent POM (`jacoco-maven-plugin` 0.8.12) and runs
+automatically during `mvn test`. Per-module HTML reports land at:
+
+```
+{module}/target/site/jacoco/index.html
+```
+
+Open one in a browser:
+
+```bash
+open subgraph-property/target/site/jacoco/index.html
+```
+
+Or grab a quick textual summary across modules:
+
+```bash
+for csv in */target/site/jacoco/jacoco.csv; do
+  module=${csv%/target*}
+  python3 -c "
+import csv, sys
+i_m=i_c=b_m=b_c=l_m=l_c=0
+with open('$csv') as f:
+    for row in csv.DictReader(f):
+        i_m += int(row['INSTRUCTION_MISSED']); i_c += int(row['INSTRUCTION_COVERED'])
+        b_m += int(row['BRANCH_MISSED']); b_c += int(row['BRANCH_COVERED'])
+        l_m += int(row['LINE_MISSED']); l_c += int(row['LINE_COVERED'])
+print(f'$module instr={100*i_c/(i_c+i_m):.1f}% branch={100*b_c/(b_c+b_m):.1f}% line={100*l_c/(l_c+l_m):.1f}%')"
+done
+```
+
+Excluded from coverage:
+- `*Application.class` — Spring Boot bootstrap, no logic
+- Federation reference stub classes (e.g. `subgraph-experiences` Hotel.class) — id-only POJOs
+
+---
+
 ## Federation patterns demonstrated
 
 - **Entity ownership** — each entity has a single owning subgraph (e.g. `Hotel` lives in `property`).

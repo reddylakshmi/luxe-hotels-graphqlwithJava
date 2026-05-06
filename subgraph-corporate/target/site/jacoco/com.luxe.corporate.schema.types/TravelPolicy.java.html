@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TravelPolicy.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Corporate Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.corporate.schema.types</a> &gt; <span class="el_source">TravelPolicy.java</span></div><h1>TravelPolicy.java</h1><pre class="source lang-java linenums">package com.luxe.corporate.schema.types;
+
+import com.luxe.common.pagination.HasId;
+import com.luxe.common.scalar.Money;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+public class TravelPolicy implements HasId {
+
+    private final String id, accountId;
+    private List&lt;RateCap&gt; rateCaps;
+    private Money maxNightlyRateUsd;
+    private Money requiresApprovalAboveUsd;
+    private List&lt;ApprovalLevel&gt; approvalChain;
+    private List&lt;String&gt; allowedRoomCategories;
+    private boolean advanceBookingRequired;
+    private Integer advanceBookingDays;
+    private boolean requiresBusinessJustification;
+    private List&lt;String&gt; blockedHotelIds;
+    private List&lt;String&gt; preferredHotelIds;
+    private Money perDiemMeals;
+    private OffsetDateTime updatedAt;
+
+    public TravelPolicy(String id, String accountId, List&lt;RateCap&gt; rateCaps,
+                         Money maxNightlyRateUsd, Money requiresApprovalAboveUsd,
+                         List&lt;ApprovalLevel&gt; approvalChain,
+                         List&lt;String&gt; allowedRoomCategories,
+                         boolean advanceBookingRequired, Integer advanceBookingDays,
+                         boolean requiresBusinessJustification,
+                         List&lt;String&gt; blockedHotelIds, List&lt;String&gt; preferredHotelIds,
+<span class="fc" id="L33">                         Money perDiemMeals) {</span>
+<span class="fc" id="L34">        this.id = id; this.accountId = accountId;</span>
+<span class="fc" id="L35">        this.rateCaps = new ArrayList&lt;&gt;(rateCaps);</span>
+<span class="fc" id="L36">        this.maxNightlyRateUsd = maxNightlyRateUsd;</span>
+<span class="fc" id="L37">        this.requiresApprovalAboveUsd = requiresApprovalAboveUsd;</span>
+<span class="fc" id="L38">        this.approvalChain = new ArrayList&lt;&gt;(approvalChain);</span>
+<span class="fc" id="L39">        this.allowedRoomCategories = new ArrayList&lt;&gt;(allowedRoomCategories);</span>
+<span class="fc" id="L40">        this.advanceBookingRequired = advanceBookingRequired;</span>
+<span class="fc" id="L41">        this.advanceBookingDays = advanceBookingDays;</span>
+<span class="fc" id="L42">        this.requiresBusinessJustification = requiresBusinessJustification;</span>
+<span class="fc" id="L43">        this.blockedHotelIds = new ArrayList&lt;&gt;(blockedHotelIds);</span>
+<span class="fc" id="L44">        this.preferredHotelIds = new ArrayList&lt;&gt;(preferredHotelIds);</span>
+<span class="fc" id="L45">        this.perDiemMeals = perDiemMeals;</span>
+<span class="fc" id="L46">        this.updatedAt = OffsetDateTime.now();</span>
+<span class="fc" id="L47">    }</span>
+
+<span class="fc" id="L49">    @Override public String getId() { return id; }</span>
+<span class="nc" id="L50">    public String getAccountId() { return accountId; }</span>
+<span class="fc" id="L51">    public List&lt;RateCap&gt; getRateCaps() { return rateCaps; }</span>
+<span class="fc" id="L52">    public Money getMaxNightlyRateUsd() { return maxNightlyRateUsd; }</span>
+<span class="nc" id="L53">    public Money getRequiresApprovalAboveUsd() { return requiresApprovalAboveUsd; }</span>
+<span class="fc" id="L54">    public List&lt;ApprovalLevel&gt; getApprovalChain() { return approvalChain; }</span>
+<span class="fc" id="L55">    public List&lt;String&gt; getAllowedRoomCategories() { return allowedRoomCategories; }</span>
+<span class="fc" id="L56">    public boolean isAdvanceBookingRequired() { return advanceBookingRequired; }</span>
+<span class="nc" id="L57">    public Integer getAdvanceBookingDays() { return advanceBookingDays; }</span>
+<span class="fc" id="L58">    public boolean isRequiresBusinessJustification() { return requiresBusinessJustification; }</span>
+<span class="fc" id="L59">    public Money getPerDiemMeals() { return perDiemMeals; }</span>
+<span class="nc" id="L60">    public OffsetDateTime getUpdatedAt() { return updatedAt; }</span>
+
+    public List&lt;Map&lt;String, Object&gt;&gt; getBlockedHotels() {
+<span class="fc" id="L63">        return blockedHotelIds.stream().&lt;Map&lt;String, Object&gt;&gt;map(id -&gt; Map.of(&quot;id&quot;, id)).toList();</span>
+    }
+    public List&lt;Map&lt;String, Object&gt;&gt; getPreferredHotels() {
+<span class="fc" id="L66">        return preferredHotelIds.stream().&lt;Map&lt;String, Object&gt;&gt;map(id -&gt; Map.of(&quot;id&quot;, id)).toList();</span>
+    }
+
+    public void apply(Money max, Money apprAbove, List&lt;RateCap&gt; caps,
+                       List&lt;ApprovalLevel&gt; chain, List&lt;String&gt; allowed,
+                       Boolean advReq, Integer advDays, Boolean reqJust,
+                       List&lt;String&gt; blocked, List&lt;String&gt; preferred, Money perDiem) {
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        if (max != null) this.maxNightlyRateUsd = max;</span>
+<span class="pc bpc" id="L74" title="1 of 2 branches missed.">        if (apprAbove != null) this.requiresApprovalAboveUsd = apprAbove;</span>
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        if (caps != null) this.rateCaps = caps;</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        if (chain != null) this.approvalChain = chain;</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        if (allowed != null) this.allowedRoomCategories = allowed;</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        if (advReq != null) this.advanceBookingRequired = advReq;</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        if (advDays != null) this.advanceBookingDays = advDays;</span>
+<span class="fc bfc" id="L80" title="All 2 branches covered.">        if (reqJust != null) this.requiresBusinessJustification = reqJust;</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">        if (blocked != null) this.blockedHotelIds = blocked;</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">        if (preferred != null) this.preferredHotelIds = preferred;</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        if (perDiem != null) this.perDiemMeals = perDiem;</span>
+<span class="fc" id="L84">        this.updatedAt = OffsetDateTime.now();</span>
+<span class="fc" id="L85">    }</span>
+
+<span class="fc" id="L87">    public record RateCap(String city, String countryCode, Money maxNightlyRate, String appliesToTier) {}</span>
+
+<span class="fc" id="L89">    public record ApprovalLevel(int level, Money threshold, String approverRole, String approverEmail) {}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

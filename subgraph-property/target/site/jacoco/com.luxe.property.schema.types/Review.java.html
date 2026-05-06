@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Review.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Property Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.property.schema.types</a> &gt; <span class="el_source">Review.java</span></div><h1>Review.java</h1><pre class="source lang-java linenums">package com.luxe.property.schema.types;
+
+import java.time.OffsetDateTime;
+
+public class Review {
+    private final String id, hotelId, guestName, stayDate, title, body, language;
+    private final double overallRating;
+    private final CategoryRatings categoryRatings;
+    private final boolean verified;
+    private int helpfulCount;
+    private final ReviewResponse response;
+
+    public Review(String id, String hotelId, String guestName, String stayDate,
+                  double overallRating, CategoryRatings categoryRatings, String title,
+                  String body, String language, boolean verified, int helpfulCount,
+<span class="fc" id="L16">                  ReviewResponse response) {</span>
+<span class="fc" id="L17">        this.id = id; this.hotelId = hotelId; this.guestName = guestName;</span>
+<span class="fc" id="L18">        this.stayDate = stayDate; this.overallRating = overallRating;</span>
+<span class="fc" id="L19">        this.categoryRatings = categoryRatings; this.title = title; this.body = body;</span>
+<span class="fc" id="L20">        this.language = language; this.verified = verified;</span>
+<span class="fc" id="L21">        this.helpfulCount = helpfulCount; this.response = response;</span>
+<span class="fc" id="L22">    }</span>
+
+<span class="fc" id="L24">    public String getId() { return id; }</span>
+<span class="fc" id="L25">    public String getHotelId() { return hotelId; }</span>
+<span class="nc" id="L26">    public String getGuestName() { return guestName; }</span>
+<span class="nc" id="L27">    public String getStayDate() { return stayDate; }</span>
+<span class="fc" id="L28">    public double getOverallRating() { return overallRating; }</span>
+<span class="nc" id="L29">    public CategoryRatings getCategoryRatings() { return categoryRatings; }</span>
+<span class="fc" id="L30">    public String getTitle() { return title; }</span>
+<span class="nc" id="L31">    public String getBody() { return body; }</span>
+<span class="nc" id="L32">    public String getLanguage() { return language; }</span>
+<span class="nc" id="L33">    public boolean isVerified() { return verified; }</span>
+<span class="nc" id="L34">    public int getHelpfulCount() { return helpfulCount; }</span>
+<span class="nc" id="L35">    public ReviewResponse getResponse() { return response; }</span>
+<span class="fc" id="L36">    public void incrementHelpful() { this.helpfulCount++; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

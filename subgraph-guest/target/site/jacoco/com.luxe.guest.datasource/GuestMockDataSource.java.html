@@ -1,0 +1,351 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>GuestMockDataSource.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Guest Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.guest.datasource</a> &gt; <span class="el_source">GuestMockDataSource.java</span></div><h1>GuestMockDataSource.java</h1><pre class="source lang-java linenums">package com.luxe.guest.datasource;
+
+import com.luxe.guest.schema.types.*;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Component
+public class GuestMockDataSource implements GuestDataSource {
+
+<span class="fc" id="L14">    private final Map&lt;String, GuestProfile&gt; guests = new LinkedHashMap&lt;&gt;();</span>
+
+<span class="fc" id="L16">    public GuestMockDataSource() {</span>
+<span class="fc" id="L17">        initData();</span>
+<span class="fc" id="L18">    }</span>
+
+    private void initData() {
+<span class="fc" id="L21">        add(profile(&quot;guest-001&quot;, &quot;sophia.chen@email.com&quot;, &quot;+1-415-555-0101&quot;,</span>
+                new GuestName(&quot;Ms&quot;, &quot;Sophia&quot;, null, &quot;Chen&quot;, null, null),
+                new GuestExternalIds(&quot;LUX0001234567&quot;, null, null, null),
+                &quot;Chinese&quot;, &quot;en&quot;, &quot;USD&quot;,
+<span class="fc" id="L25">                prefs(&quot;City view&quot;, &quot;High floor&quot;, &quot;King&quot;, &quot;Soft&quot;,</span>
+<span class="fc" id="L26">                        List.of(&quot;Vegetarian&quot;), List.of(), false, false, false, &quot;en&quot;),</span>
+<span class="fc" id="L27">                List.of(</span>
+<span class="fc" id="L28">                        address(&quot;home&quot;, &quot;123 Powell St&quot;, &quot;San Francisco&quot;, &quot;CA&quot;, &quot;94102&quot;, &quot;US&quot;, true),</span>
+<span class="fc" id="L29">                        address(&quot;work&quot;, &quot;1 Market St&quot;, &quot;San Francisco&quot;, &quot;CA&quot;, &quot;94105&quot;, &quot;US&quot;, false)</span>
+                ),
+<span class="fc" id="L31">                List.of(</span>
+<span class="fc" id="L32">                        pm(&quot;pm-001&quot;, &quot;CREDIT_CARD&quot;, &quot;Visa&quot;, &quot;4242&quot;, &quot;Sophia Chen&quot;, &quot;tok_001&quot;,</span>
+                                12, 2026, null, true),
+<span class="fc" id="L34">                        pm(&quot;pm-002&quot;, &quot;CREDIT_CARD&quot;, &quot;Amex&quot;, &quot;1234&quot;, &quot;Sophia Chen&quot;, &quot;tok_002&quot;,</span>
+                                6, 2027, null, false)
+                ),
+<span class="fc" id="L37">                List.of(</span>
+<span class="fc" id="L38">                        companion(&quot;tc-001&quot;, new GuestName(&quot;Mr&quot;, &quot;David&quot;, null, &quot;Chen&quot;, null, null),</span>
+<span class="fc" id="L39">                                &quot;spouse&quot;, &quot;david.chen@email.com&quot;, &quot;+1-415-555-0102&quot;, null, LocalDate.of(1983, 7, 20))</span>
+                ),
+<span class="fc" id="L41">                List.of(</span>
+<span class="fc" id="L42">                        new SavedHotel(&quot;sh-001&quot;, &quot;prop-paris-001&quot;, OffsetDateTime.now().minusDays(30)),</span>
+<span class="fc" id="L43">                        new SavedHotel(&quot;sh-002&quot;, &quot;prop-tokyo-001&quot;, OffsetDateTime.now().minusDays(15))</span>
+                ),
+                null,
+<span class="fc" id="L46">                LocalDate.of(1985, 3, 15), &quot;https://cdn.luxehotels.com/avatars/guest-001.jpg&quot;,</span>
+<span class="fc" id="L47">                OffsetDateTime.now().minusYears(3), OffsetDateTime.now().minusDays(10)));</span>
+
+<span class="fc" id="L49">        add(profile(&quot;guest-002&quot;, &quot;james.morrison@email.com&quot;, &quot;+44-20-7946-0958&quot;,</span>
+                new GuestName(&quot;Mr&quot;, &quot;James&quot;, null, &quot;Morrison&quot;, null, null),
+                new GuestExternalIds(&quot;LUX0002345678&quot;, null, null, null),
+                &quot;British&quot;, &quot;en&quot;, &quot;GBP&quot;,
+<span class="fc" id="L53">                prefs(null, &quot;Low floor&quot;, &quot;King&quot;, &quot;Firm&quot;,</span>
+<span class="fc" id="L54">                        List.of(), List.of(), false, false, false, &quot;en&quot;),</span>
+<span class="fc" id="L55">                List.of(address(&quot;home&quot;, &quot;14 Belgravia Sq&quot;, &quot;London&quot;, null, &quot;SW1X 8PZ&quot;, &quot;GB&quot;, true)),</span>
+<span class="fc" id="L56">                List.of(pm(&quot;pm-003&quot;, &quot;CREDIT_CARD&quot;, &quot;Mastercard&quot;, &quot;5678&quot;, &quot;James Morrison&quot;, &quot;tok_003&quot;,</span>
+                        3, 2025, null, true)),
+<span class="fc" id="L58">                List.of(</span>
+<span class="fc" id="L59">                        companion(&quot;tc-002&quot;, new GuestName(&quot;Mrs&quot;, &quot;Sarah&quot;, null, &quot;Morrison&quot;, null, null),</span>
+<span class="fc" id="L60">                                &quot;spouse&quot;, &quot;sarah.morrison@email.com&quot;, &quot;+44-20-7946-0959&quot;, null, LocalDate.of(1980, 4, 12)),</span>
+<span class="fc" id="L61">                        companion(&quot;tc-003&quot;, new GuestName(null, &quot;Oliver&quot;, null, &quot;Morrison&quot;, null, null),</span>
+<span class="fc" id="L62">                                &quot;child&quot;, null, null, null, LocalDate.of(2010, 8, 5))</span>
+                ),
+<span class="fc" id="L64">                List.of(</span>
+<span class="fc" id="L65">                        new SavedHotel(&quot;sh-003&quot;, &quot;prop-london-001&quot;, OffsetDateTime.now().minusDays(60))</span>
+                ),
+                null,
+<span class="fc" id="L68">                LocalDate.of(1978, 11, 22), null,</span>
+<span class="fc" id="L69">                OffsetDateTime.now().minusYears(5), OffsetDateTime.now().minusDays(3)));</span>
+
+<span class="fc" id="L71">        add(profile(&quot;guest-003&quot;, &quot;yuki.tanaka@email.com&quot;, &quot;+81-3-5555-0123&quot;,</span>
+                new GuestName(&quot;Ms&quot;, &quot;Yuki&quot;, null, &quot;Tanaka&quot;, null, null),
+                new GuestExternalIds(null, null, null, null),
+                &quot;Japanese&quot;, &quot;ja&quot;, &quot;JPY&quot;,
+<span class="fc" id="L75">                prefs(null, null, &quot;Twin&quot;, &quot;Medium&quot;,</span>
+<span class="fc" id="L76">                        List.of(&quot;No shellfish&quot;), List.of(&quot;Shellfish&quot;), false, false, false, &quot;ja&quot;),</span>
+<span class="fc" id="L77">                List.of(address(&quot;home&quot;, &quot;2-3-4 Shibuya&quot;, &quot;Tokyo&quot;, null, &quot;150-0002&quot;, &quot;JP&quot;, true)),</span>
+<span class="fc" id="L78">                List.of(pm(&quot;pm-004&quot;, &quot;CREDIT_CARD&quot;, &quot;JCB&quot;, &quot;9012&quot;, &quot;Yuki Tanaka&quot;, &quot;tok_004&quot;,</span>
+                        9, 2026, null, true)),
+<span class="fc" id="L80">                List.of(),</span>
+<span class="fc" id="L81">                List.of(new SavedHotel(&quot;sh-004&quot;, &quot;prop-tokyo-001&quot;, OffsetDateTime.now().minusDays(5))),</span>
+                null,
+<span class="fc" id="L83">                LocalDate.of(1990, 7, 8), null,</span>
+<span class="fc" id="L84">                OffsetDateTime.now().minusMonths(8), OffsetDateTime.now().minusDays(1)));</span>
+
+<span class="fc" id="L86">        add(profile(&quot;guest-004&quot;, &quot;fatima.al-rashid@email.com&quot;, &quot;+971-50-555-0199&quot;,</span>
+                new GuestName(&quot;Ms&quot;, &quot;Fatima&quot;, null, &quot;Al-Rashid&quot;, null, null),
+                new GuestExternalIds(&quot;LUX0003456789&quot;, null, null, null),
+                &quot;Emirati&quot;, &quot;ar&quot;, &quot;AED&quot;,
+<span class="fc" id="L90">                prefs(&quot;Sea view&quot;, &quot;High floor&quot;, &quot;King&quot;, &quot;Soft&quot;,</span>
+<span class="fc" id="L91">                        List.of(), List.of(&quot;Pork&quot;), false, true, false, &quot;ar&quot;),</span>
+<span class="fc" id="L92">                List.of(address(&quot;home&quot;, &quot;Palm Jumeirah, Villa 42&quot;, &quot;Dubai&quot;, null, &quot;00000&quot;, &quot;AE&quot;, true)),</span>
+<span class="fc" id="L93">                List.of(</span>
+<span class="fc" id="L94">                        pm(&quot;pm-005&quot;, &quot;CREDIT_CARD&quot;, &quot;Visa&quot;, &quot;3456&quot;, &quot;Fatima Al-Rashid&quot;, &quot;tok_005&quot;,</span>
+                                11, 2027, null, true)
+                ),
+<span class="fc" id="L97">                List.of(),</span>
+<span class="fc" id="L98">                List.of(</span>
+<span class="fc" id="L99">                        new SavedHotel(&quot;sh-005&quot;, &quot;prop-dubai-001&quot;, OffsetDateTime.now().minusDays(20)),</span>
+<span class="fc" id="L100">                        new SavedHotel(&quot;sh-006&quot;, &quot;prop-paris-001&quot;, OffsetDateTime.now().minusDays(45))</span>
+                ),
+                new GuestCorporateProfile(&quot;Emirates Group&quot;, &quot;CORP-EG-001&quot;, &quot;FAR-8821&quot;, &quot;CC-VIP&quot;),
+<span class="fc" id="L103">                LocalDate.of(1982, 4, 30), null,</span>
+<span class="fc" id="L104">                OffsetDateTime.now().minusYears(2), OffsetDateTime.now().minusDays(5)));</span>
+
+<span class="fc" id="L106">        add(profile(&quot;guest-005&quot;, &quot;marco.ferrari@email.com&quot;, &quot;+39-02-5555-0188&quot;,</span>
+                new GuestName(&quot;Mr&quot;, &quot;Marco&quot;, null, &quot;Ferrari&quot;, null, null),
+                new GuestExternalIds(&quot;LUX0004567890&quot;, null, null, null),
+                &quot;Italian&quot;, &quot;it&quot;, &quot;EUR&quot;,
+<span class="fc" id="L110">                prefs(null, &quot;Mid floor&quot;, &quot;King&quot;, &quot;Soft&quot;,</span>
+<span class="fc" id="L111">                        List.of(&quot;Gluten-free&quot;), List.of(&quot;Gluten&quot;), false, false, false, &quot;it&quot;),</span>
+<span class="fc" id="L112">                List.of(address(&quot;home&quot;, &quot;Via della Spiga 42&quot;, &quot;Milan&quot;, null, &quot;20121&quot;, &quot;IT&quot;, true)),</span>
+<span class="fc" id="L113">                List.of(pm(&quot;pm-006&quot;, &quot;CREDIT_CARD&quot;, &quot;Visa&quot;, &quot;7890&quot;, &quot;Marco Ferrari&quot;, &quot;tok_006&quot;,</span>
+                        5, 2026, null, true)),
+<span class="fc" id="L115">                List.of(companion(&quot;tc-004&quot;, new GuestName(&quot;Ms&quot;, &quot;Lucia&quot;, null, &quot;Ferrari&quot;, null, null),</span>
+<span class="fc" id="L116">                        &quot;spouse&quot;, &quot;lucia.ferrari@email.com&quot;, &quot;+39-02-5555-0189&quot;, null, LocalDate.of(1977, 6, 14))),</span>
+<span class="fc" id="L117">                List.of(</span>
+<span class="fc" id="L118">                        new SavedHotel(&quot;sh-007&quot;, &quot;prop-paris-001&quot;, OffsetDateTime.now().minusDays(90)),</span>
+<span class="fc" id="L119">                        new SavedHotel(&quot;sh-008&quot;, &quot;prop-dubai-001&quot;, OffsetDateTime.now().minusDays(30))</span>
+                ),
+                new GuestCorporateProfile(&quot;Ferrari Luxury Brands&quot;, &quot;CORP-FLB-001&quot;, &quot;MF-001&quot;, &quot;EXEC&quot;),
+<span class="fc" id="L122">                LocalDate.of(1975, 9, 12), null,</span>
+<span class="fc" id="L123">                OffsetDateTime.now().minusYears(7), OffsetDateTime.now().minusDays(2)));</span>
+
+<span class="fc" id="L125">        add(profile(&quot;guest-006&quot;, &quot;diana.okonkwo@email.com&quot;, &quot;+234-81-5550-1234&quot;,</span>
+                new GuestName(&quot;Dr&quot;, &quot;Diana&quot;, null, &quot;Okonkwo&quot;, null, null),
+                new GuestExternalIds(null, null, null, null),
+                &quot;Nigerian&quot;, &quot;en&quot;, &quot;USD&quot;,
+<span class="fc" id="L129">                prefs(null, &quot;High floor&quot;, &quot;King&quot;, null,</span>
+<span class="fc" id="L130">                        List.of(), List.of(), false, false, false, &quot;en&quot;),</span>
+<span class="fc" id="L131">                List.of(address(&quot;home&quot;, &quot;3 Bourdillon Rd&quot;, &quot;Lagos&quot;, null, &quot;101233&quot;, &quot;NG&quot;, true)),</span>
+<span class="fc" id="L132">                List.of(pm(&quot;pm-007&quot;, &quot;CREDIT_CARD&quot;, &quot;Mastercard&quot;, &quot;2468&quot;, &quot;Diana Okonkwo&quot;, &quot;tok_007&quot;,</span>
+                        8, 2028, null, true)),
+<span class="fc" id="L134">                List.of(),</span>
+<span class="fc" id="L135">                List.of(),</span>
+                null,
+<span class="fc" id="L137">                LocalDate.of(1993, 1, 25), null,</span>
+<span class="fc" id="L138">                OffsetDateTime.now().minusMonths(4), OffsetDateTime.now().minusDays(15)));</span>
+<span class="fc" id="L139">    }</span>
+
+    private GuestProfile profile(String id, String email, String phone,
+                                  GuestName name, GuestExternalIds externalIds,
+                                  String nationality, String lang, String currency,
+                                  GuestPreferences prefs,
+                                  List&lt;GuestAddress&gt; addresses, List&lt;PaymentMethod&gt; paymentMethods,
+                                  List&lt;TravelCompanion&gt; companions, List&lt;SavedHotel&gt; savedHotels,
+                                  GuestCorporateProfile corporate,
+                                  LocalDate dob, String avatarUrl,
+                                  OffsetDateTime memberSince, OffsetDateTime updatedAt) {
+<span class="fc" id="L150">        return new GuestProfile(id, email, phone, nationality, avatarUrl,</span>
+                lang, currency, dob, name, externalIds, prefs,
+                new ArrayList&lt;&gt;(addresses),
+                new ArrayList&lt;&gt;(paymentMethods),
+                new ArrayList&lt;&gt;(companions),
+                new ArrayList&lt;&gt;(savedHotels),
+                corporate, memberSince, updatedAt);
+    }
+
+    private GuestPreferences prefs(String view, String floor, String bedType, String pillow,
+                                    List&lt;String&gt; restrictions, List&lt;String&gt; allergies,
+                                    Boolean kosher, Boolean halal, Boolean vegan, String lang) {
+<span class="fc" id="L162">        return new GuestPreferences(</span>
+<span class="fc" id="L163">                new GuestPreferences.RoomPreferences(List.of(), view, floor, false, false, false, false),</span>
+                new GuestPreferences.BedPreferences(bedType, null),
+                new GuestPreferences.PillowPreferences(pillow, null),
+                new GuestPreferences.DietaryPreferences(restrictions, allergies, kosher, halal, vegan),
+<span class="fc" id="L167">                new GuestPreferences.AccessibilityNeeds(false, false, false),</span>
+<span class="fc" id="L168">                new GuestPreferences.TransportPreferences(null, List.of()),</span>
+                new GuestPreferences.CommunicationPreferences(lang, &quot;EMAIL&quot;, true, false)
+        );
+    }
+
+    private GuestAddress address(String type, String line1, String city, String state,
+                                  String postal, String country, boolean isPrimary) {
+<span class="fc" id="L175">        String id = &quot;addr-&quot; + type + &quot;-&quot; + UUID.randomUUID().toString().substring(0, 6);</span>
+<span class="fc" id="L176">        return new GuestAddress(id, type, line1, null, city, state, postal, country, isPrimary);</span>
+    }
+
+    private PaymentMethod pm(String id, String type, String brand, String lastFour,
+                              String holder, String token, int month, int year,
+                              GuestAddress billing, boolean isDefault) {
+<span class="fc" id="L182">        return new PaymentMethod(id, type, brand, lastFour, holder, token, month, year,</span>
+<span class="fc" id="L183">                billing, isDefault, OffsetDateTime.now().minusMonths(6));</span>
+    }
+
+    private TravelCompanion companion(String id, GuestName name, String relationship,
+                                       String email, String phone, String loyaltyNumber,
+                                       LocalDate dob) {
+<span class="fc" id="L189">        return new TravelCompanion(id, name, relationship, email, phone, loyaltyNumber,</span>
+<span class="fc" id="L190">                dob, OffsetDateTime.now().minusMonths(3));</span>
+    }
+
+<span class="fc" id="L193">    private void add(GuestProfile g) { guests.put(g.getId(), g); }</span>
+
+    @Override
+    public Optional&lt;GuestProfile&gt; findById(String id) {
+<span class="fc" id="L197">        return Optional.ofNullable(guests.get(id));</span>
+    }
+
+    @Override
+    public Optional&lt;GuestProfile&gt; findByEmail(String email) {
+<span class="fc" id="L202">        return guests.values().stream()</span>
+<span class="fc" id="L203">                .filter(g -&gt; g.getEmail().equalsIgnoreCase(email))</span>
+<span class="fc" id="L204">                .findFirst();</span>
+    }
+
+    @Override
+<span class="fc" id="L208">    public List&lt;GuestProfile&gt; findAll() { return new ArrayList&lt;&gt;(guests.values()); }</span>
+
+    @Override
+    public List&lt;GuestProfile&gt; findByFilter(String email, String status, String loyaltyNumber) {
+<span class="fc" id="L212">        return guests.values().stream()</span>
+<span class="fc bfc" id="L213" title="All 4 branches covered.">                .filter(g -&gt; email == null || g.getEmail().contains(email))</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">                .filter(g -&gt; loyaltyNumber == null ||</span>
+<span class="pc bnc" id="L215" title="All 4 branches missed.">                        (g.getExternalIds() != null &amp;&amp; loyaltyNumber.equals(g.getExternalIds().loyaltyNumber())))</span>
+<span class="fc" id="L216">                .collect(Collectors.toList());</span>
+    }
+
+    @Override
+    public AuthPayload signIn(String email, String password) {
+<span class="fc" id="L221">        GuestProfile guest = findByEmail(email)</span>
+<span class="fc" id="L222">                .orElseThrow(() -&gt; new RuntimeException(&quot;Invalid credentials&quot;));</span>
+<span class="fc" id="L223">        String token = &quot;mock-jwt-&quot; + guest.getId() + &quot;-GUEST&quot;;</span>
+<span class="fc" id="L224">        return new AuthPayload(token, &quot;mock-refresh-&quot; + guest.getId(), 3600, &quot;Bearer&quot;, guest, false);</span>
+    }
+
+    @Override
+    public AuthPayload signUp(String email, String password, String firstName, String lastName, String phone) {
+<span class="fc bfc" id="L229" title="All 2 branches covered.">        if (existsByEmail(email)) throw new RuntimeException(&quot;Email already registered&quot;);</span>
+<span class="fc" id="L230">        String id = &quot;guest-&quot; + UUID.randomUUID().toString().substring(0, 8);</span>
+<span class="fc" id="L231">        GuestProfile g = new GuestProfile(id, email, phone, null, null, &quot;en&quot;, &quot;USD&quot;,</span>
+                null, new GuestName(null, firstName, null, lastName, null, null),
+                new GuestExternalIds(null, null, null, null),
+<span class="fc" id="L234">                GuestPreferences.defaults(),</span>
+                new ArrayList&lt;&gt;(), new ArrayList&lt;&gt;(), new ArrayList&lt;&gt;(), new ArrayList&lt;&gt;(),
+<span class="fc" id="L236">                null, OffsetDateTime.now(), OffsetDateTime.now());</span>
+<span class="fc" id="L237">        guests.put(id, g);</span>
+<span class="fc" id="L238">        String token = &quot;mock-jwt-&quot; + id + &quot;-GUEST&quot;;</span>
+<span class="fc" id="L239">        return new AuthPayload(token, &quot;mock-refresh-&quot; + id, 3600, &quot;Bearer&quot;, g, true);</span>
+    }
+
+    @Override
+    public GuestProfile update(String id, Map&lt;String, Object&gt; fields) {
+<span class="fc" id="L244">        return guests.get(id);</span>
+    }
+
+    @Override
+    public GuestProfile updatePreferences(String id, GuestPreferences preferences) {
+<span class="fc" id="L249">        GuestProfile g = guests.get(id);</span>
+<span class="fc bfc" id="L250" title="All 2 branches covered.">        if (g == null) return null;</span>
+<span class="fc" id="L251">        g.setPreferences(preferences);</span>
+<span class="fc" id="L252">        return g;</span>
+    }
+
+    @Override
+    public GuestProfile addPaymentMethod(String guestId, Map&lt;String, Object&gt; input) {
+<span class="fc" id="L257">        GuestProfile g = guests.get(guestId);</span>
+<span class="fc bfc" id="L258" title="All 2 branches covered.">        if (g == null) return null;</span>
+<span class="fc" id="L259">        String id = &quot;pm-&quot; + UUID.randomUUID().toString().substring(0, 8);</span>
+<span class="fc" id="L260">        boolean isDefault = Boolean.TRUE.equals(input.get(&quot;setAsDefault&quot;));</span>
+<span class="fc bfc" id="L261" title="All 2 branches covered.">        if (isDefault) g.clearDefaultPaymentMethods();</span>
+<span class="fc" id="L262">        PaymentMethod pm = new PaymentMethod(id,</span>
+<span class="fc" id="L263">                (String) input.getOrDefault(&quot;type&quot;, &quot;CREDIT_CARD&quot;),</span>
+<span class="fc" id="L264">                (String) input.getOrDefault(&quot;brand&quot;, &quot;Unknown&quot;),</span>
+<span class="fc" id="L265">                (String) input.getOrDefault(&quot;lastFour&quot;, &quot;0000&quot;),</span>
+<span class="fc" id="L266">                (String) input.getOrDefault(&quot;holderName&quot;, &quot;&quot;),</span>
+<span class="fc" id="L267">                (String) input.getOrDefault(&quot;pspToken&quot;, &quot;tok_&quot; + id),</span>
+<span class="fc" id="L268">                ((Number) input.getOrDefault(&quot;expiryMonth&quot;, 12)).intValue(),</span>
+<span class="fc" id="L269">                ((Number) input.getOrDefault(&quot;expiryYear&quot;, 2030)).intValue(),</span>
+<span class="fc" id="L270">                null, isDefault, OffsetDateTime.now());</span>
+<span class="fc" id="L271">        g.addPaymentMethodToList(pm);</span>
+<span class="fc" id="L272">        return g;</span>
+    }
+
+    @Override
+    public GuestProfile removePaymentMethod(String guestId, String paymentMethodId) {
+<span class="fc" id="L277">        GuestProfile g = guests.get(guestId);</span>
+<span class="fc bfc" id="L278" title="All 2 branches covered.">        if (g == null) return null;</span>
+<span class="fc" id="L279">        g.removePaymentMethodFromList(paymentMethodId);</span>
+<span class="fc" id="L280">        return g;</span>
+    }
+
+    @Override
+    public GuestProfile setDefaultPaymentMethod(String guestId, String paymentMethodId) {
+<span class="fc" id="L285">        GuestProfile g = guests.get(guestId);</span>
+<span class="fc bfc" id="L286" title="All 2 branches covered.">        if (g == null) return null;</span>
+<span class="fc" id="L287">        g.clearDefaultPaymentMethods();</span>
+<span class="fc" id="L288">        g.getPaymentMethods().stream()</span>
+<span class="fc" id="L289">                .filter(pm -&gt; pm.getId().equals(paymentMethodId))</span>
+<span class="fc" id="L290">                .findFirst()</span>
+<span class="fc" id="L291">                .ifPresent(pm -&gt; pm.setDefault(true));</span>
+<span class="fc" id="L292">        return g;</span>
+    }
+
+    @Override
+    public GuestProfile saveHotel(String guestId, String hotelId) {
+<span class="fc" id="L297">        GuestProfile g = guests.get(guestId);</span>
+<span class="fc bfc" id="L298" title="All 2 branches covered.">        if (g == null) return null;</span>
+<span class="fc" id="L299">        boolean alreadySaved = g.getSavedHotels().stream().anyMatch(h -&gt; h.hotelId().equals(hotelId));</span>
+<span class="fc bfc" id="L300" title="All 2 branches covered.">        if (!alreadySaved) {</span>
+<span class="fc" id="L301">            String id = &quot;sh-&quot; + UUID.randomUUID().toString().substring(0, 8);</span>
+<span class="fc" id="L302">            g.addSavedHotelToList(new SavedHotel(id, hotelId, OffsetDateTime.now()));</span>
+        }
+<span class="fc" id="L304">        return g;</span>
+    }
+
+    @Override
+    public GuestProfile unsaveHotel(String guestId, String hotelId) {
+<span class="fc" id="L309">        GuestProfile g = guests.get(guestId);</span>
+<span class="fc bfc" id="L310" title="All 2 branches covered.">        if (g == null) return null;</span>
+<span class="fc" id="L311">        g.removeSavedHotelFromList(hotelId);</span>
+<span class="fc" id="L312">        return g;</span>
+    }
+
+    @Override
+    public GuestProfile addTravelCompanion(String guestId, Map&lt;String, Object&gt; input) {
+<span class="fc" id="L317">        GuestProfile g = guests.get(guestId);</span>
+<span class="fc bfc" id="L318" title="All 2 branches covered.">        if (g == null) return null;</span>
+<span class="fc" id="L319">        String id = &quot;tc-&quot; + UUID.randomUUID().toString().substring(0, 8);</span>
+        @SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L321">        Map&lt;String, Object&gt; nameInput = (Map&lt;String, Object&gt;) input.get(&quot;name&quot;);</span>
+<span class="fc bfc" id="L322" title="All 2 branches covered.">        GuestName name = nameInput != null</span>
+<span class="fc" id="L323">                ? new GuestName(</span>
+<span class="fc" id="L324">                        (String) nameInput.get(&quot;title&quot;),</span>
+<span class="fc" id="L325">                        (String) nameInput.get(&quot;firstName&quot;),</span>
+<span class="fc" id="L326">                        (String) nameInput.get(&quot;middleName&quot;),</span>
+<span class="fc" id="L327">                        (String) nameInput.get(&quot;lastName&quot;),</span>
+<span class="fc" id="L328">                        (String) nameInput.get(&quot;preferredName&quot;),</span>
+<span class="fc" id="L329">                        (String) nameInput.get(&quot;suffix&quot;))</span>
+<span class="fc" id="L330">                : new GuestName(null, &quot;Unknown&quot;, null, &quot;&quot;, null, null);</span>
+<span class="fc" id="L331">        String dobStr = (String) input.get(&quot;dateOfBirth&quot;);</span>
+<span class="fc bfc" id="L332" title="All 2 branches covered.">        LocalDate dob = dobStr != null ? LocalDate.parse(dobStr) : null;</span>
+<span class="fc" id="L333">        TravelCompanion tc = new TravelCompanion(id, name, (String) input.get(&quot;relationship&quot;),</span>
+<span class="fc" id="L334">                (String) input.get(&quot;email&quot;), (String) input.get(&quot;phone&quot;),</span>
+<span class="fc" id="L335">                (String) input.get(&quot;loyaltyNumber&quot;), dob, OffsetDateTime.now());</span>
+<span class="fc" id="L336">        g.addTravelCompanionToList(tc);</span>
+<span class="fc" id="L337">        return g;</span>
+    }
+
+    @Override
+    public GuestProfile removeTravelCompanion(String guestId, String companionId) {
+<span class="fc" id="L342">        GuestProfile g = guests.get(guestId);</span>
+<span class="fc bfc" id="L343" title="All 2 branches covered.">        if (g == null) return null;</span>
+<span class="fc" id="L344">        g.removeTravelCompanionFromList(companionId);</span>
+<span class="fc" id="L345">        return g;</span>
+    }
+
+    @Override
+<span class="fc" id="L349">    public boolean existsByEmail(String email) { return findByEmail(email).isPresent(); }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

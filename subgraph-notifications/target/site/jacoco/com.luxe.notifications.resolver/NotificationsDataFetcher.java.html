@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NotificationsDataFetcher.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Notifications Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.notifications.resolver</a> &gt; <span class="el_source">NotificationsDataFetcher.java</span></div><h1>NotificationsDataFetcher.java</h1><pre class="source lang-java linenums">package com.luxe.notifications.resolver;
+
+import com.luxe.notifications.schema.types.GuestProfile;
+
+import com.luxe.common.auth.AuthContext;
+import com.luxe.common.error.NotFoundError;
+import com.luxe.common.error.ValidationError;
+import com.luxe.common.error.FieldError;
+import com.luxe.common.pagination.Connection;
+import com.luxe.notifications.datasource.NotificationsDataSource;
+import com.luxe.notifications.schema.types.*;
+import com.netflix.graphql.dgs.*;
+import graphql.schema.DataFetchingEnvironment;
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@DgsComponent
+public class NotificationsDataFetcher {
+
+    private final NotificationsDataSource dataSource;
+
+<span class="fc" id="L25">    public NotificationsDataFetcher(NotificationsDataSource dataSource) {</span>
+<span class="fc" id="L26">        this.dataSource = dataSource;</span>
+<span class="fc" id="L27">    }</span>
+
+    private AuthContext getAuth(DataFetchingEnvironment dfe) {
+        try {
+<span class="fc" id="L31">            HttpServletRequest req = dfe.getGraphQlContext().get(HttpServletRequest.class);</span>
+<span class="pc bpc" id="L32" title="1 of 2 branches missed.">            if (req == null) return AuthContext.anonymous();</span>
+<span class="nc" id="L33">            AuthContext ctx = (AuthContext) req.getAttribute(&quot;authContext&quot;);</span>
+<span class="nc bnc" id="L34" title="All 2 branches missed.">            return ctx != null ? ctx : AuthContext.anonymous();</span>
+<span class="nc" id="L35">        } catch (Exception e) { return AuthContext.anonymous(); }</span>
+    }
+
+    // ── Queries ───────────────────────────────────────────────────────────────
+
+    @DgsQuery
+    public Object myNotifications(@InputArgument Integer first, @InputArgument String after,
+                                    @InputArgument Map&lt;String, Object&gt; filter,
+                                    DataFetchingEnvironment dfe) {
+<span class="fc" id="L44">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L45">        auth.requireAuth();</span>
+<span class="nc" id="L46">        List&lt;Notification&gt; all = dataSource.findByGuestId(auth.guestId(), filter);</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">        Connection&lt;Notification&gt; conn = Connection.of(all, first != null ? first : 20, after);</span>
+<span class="nc" id="L48">        Map&lt;String, Object&gt; result = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L49">        result.put(&quot;edges&quot;, conn.edges().stream()</span>
+<span class="nc" id="L50">                .map(e -&gt; Map.of(&quot;node&quot;, e.node(), &quot;cursor&quot;, e.cursor())).toList());</span>
+<span class="nc" id="L51">        result.put(&quot;pageInfo&quot;, pageInfo(conn));</span>
+<span class="nc" id="L52">        result.put(&quot;totalCount&quot;, conn.totalCount());</span>
+<span class="nc" id="L53">        result.put(&quot;unreadCount&quot;, dataSource.countUnread(auth.guestId()));</span>
+<span class="nc" id="L54">        return result;</span>
+    }
+
+    @DgsQuery
+    public Notification notification(@InputArgument String id) {
+<span class="fc" id="L59">        return dataSource.findById(id).orElse(null);</span>
+    }
+
+    @DgsQuery
+    public int unreadCount(DataFetchingEnvironment dfe) {
+<span class="fc" id="L64">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L65">        auth.requireAuth();</span>
+<span class="nc" id="L66">        return dataSource.countUnread(auth.guestId());</span>
+    }
+
+    @DgsQuery
+    public NotificationPreferences notificationPreferences(DataFetchingEnvironment dfe) {
+<span class="fc" id="L71">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L72">        auth.requireAuth();</span>
+<span class="nc" id="L73">        return dataSource.findOrCreatePreferences(auth.guestId());</span>
+    }
+
+    @DgsQuery
+    public List&lt;MessageThread&gt; myMessageThreads(@InputArgument Integer first,
+                                                  @InputArgument String status,
+                                                  DataFetchingEnvironment dfe) {
+<span class="fc" id="L80">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L81">        auth.requireAuth();</span>
+<span class="nc" id="L82">        List&lt;MessageThread&gt; all = dataSource.findThreads(auth.guestId(), status);</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        return first != null ? all.stream().limit(first).toList() : all;</span>
+    }
+
+    @DgsQuery
+    public MessageThread messageThread(@InputArgument String id) {
+<span class="fc" id="L88">        return dataSource.findThread(id).orElse(null);</span>
+    }
+
+    @DgsQuery
+    public List&lt;PushDevice&gt; myDevices(DataFetchingEnvironment dfe) {
+<span class="fc" id="L93">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L94">        auth.requireAuth();</span>
+<span class="nc" id="L95">        return dataSource.findDevices(auth.guestId());</span>
+    }
+
+    // ── Mutations ─────────────────────────────────────────────────────────────
+
+    @DgsMutation
+    public PushDevice registerPushDevice(@InputArgument Map&lt;String, Object&gt; input,
+                                           DataFetchingEnvironment dfe) {
+<span class="fc" id="L103">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L104">        auth.requireAuth();</span>
+<span class="nc" id="L105">        return dataSource.registerDevice(auth.guestId(),</span>
+<span class="nc" id="L106">                (String) input.get(&quot;platform&quot;),</span>
+<span class="nc" id="L107">                (String) input.get(&quot;pushToken&quot;),</span>
+<span class="nc" id="L108">                (String) input.get(&quot;appVersion&quot;),</span>
+<span class="nc" id="L109">                (String) input.get(&quot;deviceModel&quot;));</span>
+    }
+
+    @DgsMutation
+    public boolean removePushDevice(@InputArgument String deviceId,
+                                      DataFetchingEnvironment dfe) {
+<span class="nc" id="L115">        getAuth(dfe).requireAuth();</span>
+<span class="nc" id="L116">        return dataSource.removeDevice(deviceId);</span>
+    }
+
+    @DgsMutation
+    public NotificationPreferences updateNotificationPreferences(@InputArgument Map&lt;String, Object&gt; input,
+                                                                    DataFetchingEnvironment dfe) {
+<span class="fc" id="L122">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L123">        auth.requireAuth();</span>
+<span class="nc" id="L124">        return dataSource.updatePreferences(auth.guestId(), input);</span>
+    }
+
+    @DgsMutation
+    public Notification markNotificationRead(@InputArgument String id,
+                                               DataFetchingEnvironment dfe) {
+<span class="nc" id="L130">        getAuth(dfe).requireAuth();</span>
+<span class="nc" id="L131">        return dataSource.markRead(id).orElse(null);</span>
+    }
+
+    @DgsMutation
+    public int markAllRead(DataFetchingEnvironment dfe) {
+<span class="fc" id="L136">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L137">        auth.requireAuth();</span>
+<span class="nc" id="L138">        return dataSource.markAllRead(auth.guestId());</span>
+    }
+
+    @DgsMutation
+    public Object sendMessage(@InputArgument Map&lt;String, Object&gt; input,
+                                DataFetchingEnvironment dfe) {
+<span class="fc" id="L144">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L145">        auth.requireAuth();</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">        if (input.get(&quot;body&quot;) == null) {</span>
+<span class="nc" id="L147">            return new ValidationError(&quot;INVALID_INPUT&quot;, &quot;Message body is required&quot;,</span>
+<span class="nc" id="L148">                    List.of(new FieldError(&quot;body&quot;, &quot;Required&quot;)));</span>
+        }
+<span class="nc" id="L150">        Message m = dataSource.sendMessage(auth.guestId(), input);</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">        if (m == null) return new NotFoundError(&quot;MessageThread&quot;,</span>
+<span class="nc" id="L152">                String.valueOf(input.get(&quot;threadId&quot;)));</span>
+<span class="nc" id="L153">        return m;</span>
+    }
+
+    @DgsMutation
+    public MessageThread markThreadResolved(@InputArgument String threadId,
+                                              DataFetchingEnvironment dfe) {
+<span class="nc" id="L159">        getAuth(dfe).requireAuth();</span>
+<span class="nc" id="L160">        return dataSource.markThreadResolved(threadId);</span>
+    }
+
+    // ── MessageThread.messages with first arg ─────────────────────────────────
+
+    @DgsData(parentType = &quot;MessageThread&quot;, field = &quot;messages&quot;)
+    public List&lt;Message&gt; threadMessages(DataFetchingEnvironment dfe) {
+<span class="fc" id="L167">        MessageThread t = dfe.getSource();</span>
+<span class="fc" id="L168">        Integer first = dfe.getArgument(&quot;first&quot;);</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">        return first == null ? t.getMessages()</span>
+<span class="fc" id="L170">                : t.getMessages().stream().limit(first).toList();</span>
+    }
+
+    // ── GuestProfile.notifications federation ─────────────────────────────────
+
+    @DgsData(parentType = &quot;GuestProfile&quot;, field = &quot;notifications&quot;)
+    public List&lt;Notification&gt; guestNotifications(DataFetchingEnvironment dfe) {
+<span class="nc" id="L177">        GuestProfile guest = dfe.getSource();</span>
+<span class="nc" id="L178">        Integer first = dfe.getArgument(&quot;first&quot;);</span>
+<span class="nc" id="L179">        List&lt;Notification&gt; all = dataSource.findByGuestId(guest.getId(), null);</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">        return first == null ? all : all.stream().limit(first).toList();</span>
+    }
+
+    @DgsData(parentType = &quot;GuestProfile&quot;, field = &quot;unreadNotificationsCount&quot;)
+    public int guestUnread(DataFetchingEnvironment dfe) {
+<span class="nc" id="L185">        GuestProfile guest = dfe.getSource();</span>
+<span class="nc" id="L186">        return dataSource.countUnread(guest.getId());</span>
+    }
+
+    @DgsEntityFetcher(name = &quot;Notification&quot;)
+    public Notification fetchNotification(Map&lt;String, Object&gt; values) {
+<span class="fc" id="L191">        return dataSource.findById((String) values.get(&quot;id&quot;)).orElse(null);</span>
+    }
+
+    @DgsEntityFetcher(name = &quot;MessageThread&quot;)
+    public MessageThread fetchThread(Map&lt;String, Object&gt; values) {
+<span class="fc" id="L196">        return dataSource.findThread((String) values.get(&quot;id&quot;)).orElse(null);</span>
+    }
+
+    private Map&lt;String, Object&gt; pageInfo(Connection&lt;?&gt; conn) {
+<span class="nc" id="L200">        HashMap&lt;String, Object&gt; m = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L201">        m.put(&quot;hasNextPage&quot;, conn.pageInfo().hasNextPage());</span>
+<span class="nc" id="L202">        m.put(&quot;hasPreviousPage&quot;, conn.pageInfo().hasPreviousPage());</span>
+<span class="nc" id="L203">        m.put(&quot;startCursor&quot;, conn.pageInfo().startCursor());</span>
+<span class="nc" id="L204">        m.put(&quot;endCursor&quot;, conn.pageInfo().endCursor());</span>
+<span class="nc" id="L205">        return m;</span>
+    }
+    @DgsEntityFetcher(name = &quot;GuestProfile&quot;)
+    public GuestProfile fetchGuestProfileReference(Map&lt;String, Object&gt; values) {
+<span class="nc" id="L209">        return new GuestProfile((String) values.get(&quot;id&quot;));</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

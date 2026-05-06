@@ -99,10 +99,9 @@ public class PricingDataFetcher {
     }
 
     @DgsQuery
-    public Object giftCardBalance(@InputArgument String code) {
-        return dataSource.findGiftCardBalance(code)
-                .<Object>map(b -> b)
-                .orElse(new NotFoundError("GiftCard", code));
+    public GiftCardBalance giftCardBalance(@InputArgument String code) {
+        // Schema returns nullable GiftCardBalance (no union) — return null on miss.
+        return dataSource.findGiftCardBalance(code).orElse(null);
     }
 
     @DgsQuery

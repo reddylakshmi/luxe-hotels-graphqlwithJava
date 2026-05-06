@@ -1,0 +1,26 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.config,ReservationsGraphQLConfig,0,19,0,0,0,5,0,2,0,2
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.schema.types,ReservationRateBreakdown,0,39,0,0,0,1,0,1,0,1
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.schema.types,ReservationAddOn,30,0,0,0,1,0,1,0,1,0
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.schema.types,CancellationRecord,0,21,0,0,0,1,0,1,0,1
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.schema.types,Folio.FolioLineItem,0,21,0,0,0,1,0,1,0,1
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.schema.types,Reservation,232,402,35,11,35,80,43,44,24,40
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.schema.types,DiningReservation,28,45,0,0,9,9,9,4,9,4
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.schema.types,CheckInEligibility,0,21,0,0,0,1,0,1,0,1
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.schema.types,ReservationRoom,0,15,0,0,0,1,0,1,0,1
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.schema.types,DigitalKey,15,31,0,0,5,6,5,3,5,3
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.schema.types,SpecialRequest,0,18,0,0,0,1,0,1,0,1
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.schema.types,SpaAppointment,28,51,0,0,9,11,9,5,9,5
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.schema.types,PaymentSummary,0,27,0,0,0,1,0,1,0,1
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.schema.types,ReservationLoyaltyContext,0,21,0,0,0,1,0,1,0,1
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.schema.types,ReservationRateBreakdown.BillingLineItem,0,21,0,0,0,1,0,1,0,1
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.schema.types,ReservationRateBreakdown.NightlyRate,0,9,0,0,0,1,0,1,0,1
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.schema.types,Reservation.GuestCount,9,0,0,0,1,0,1,0,1,0
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.schema.types,ReservationCancellationPolicy,0,18,0,0,0,1,0,1,0,1
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.schema.types,TransportationBooking,28,51,0,0,9,11,9,5,9,5
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.schema.types,Folio,24,27,0,0,8,5,8,1,8,1
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.schema.types,ReservationRateBreakdown.TaxLineItem,0,12,0,0,0,1,0,1,0,1
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.schema.types,RoomUpgradeRequest,19,30,0,0,6,7,6,3,6,3
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.schema.types,ReservationRateBreakdown.TaxBreakdown,0,18,0,0,0,1,0,1,0,1
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.resolver,ReservationDataFetcher,625,44,53,1,109,9,48,6,21,6
+Luxe Hotels - Reservations Subgraph,com.luxe.reservations.datasource,ReservationMockDataSource,45,1809,32,69,4,296,29,64,0,41

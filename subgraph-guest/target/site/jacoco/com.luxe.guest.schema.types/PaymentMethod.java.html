@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PaymentMethod.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Guest Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.guest.schema.types</a> &gt; <span class="el_source">PaymentMethod.java</span></div><h1>PaymentMethod.java</h1><pre class="source lang-java linenums">package com.luxe.guest.schema.types;
+
+import com.luxe.common.pagination.HasId;
+import java.time.OffsetDateTime;
+import java.time.YearMonth;
+
+public class PaymentMethod implements HasId {
+    private final String id, type, brand, lastFour, holderName, pspToken;
+    private final int expiryMonth, expiryYear;
+    private final GuestAddress billingAddress;
+    private boolean isDefault;
+    private final OffsetDateTime addedAt;
+
+    public PaymentMethod(String id, String type, String brand, String lastFour, String holderName,
+                         String pspToken, int expiryMonth, int expiryYear,
+<span class="fc" id="L16">                         GuestAddress billingAddress, boolean isDefault, OffsetDateTime addedAt) {</span>
+<span class="fc" id="L17">        this.id = id; this.type = type; this.brand = brand; this.lastFour = lastFour;</span>
+<span class="fc" id="L18">        this.holderName = holderName; this.pspToken = pspToken;</span>
+<span class="fc" id="L19">        this.expiryMonth = expiryMonth; this.expiryYear = expiryYear;</span>
+<span class="fc" id="L20">        this.billingAddress = billingAddress; this.isDefault = isDefault; this.addedAt = addedAt;</span>
+<span class="fc" id="L21">    }</span>
+
+<span class="fc" id="L23">    @Override public String getId() { return id; }</span>
+<span class="nc" id="L24">    public String getType() { return type; }</span>
+<span class="fc" id="L25">    public String getBrand() { return brand; }</span>
+<span class="fc" id="L26">    public String getLastFour() { return lastFour; }</span>
+<span class="nc" id="L27">    public String getHolderName() { return holderName; }</span>
+<span class="nc" id="L28">    public String getPspToken() { return pspToken; }</span>
+<span class="nc" id="L29">    public int getExpiryMonth() { return expiryMonth; }</span>
+<span class="nc" id="L30">    public int getExpiryYear() { return expiryYear; }</span>
+<span class="nc" id="L31">    public GuestAddress getBillingAddress() { return billingAddress; }</span>
+<span class="fc" id="L32">    public boolean isIsDefault() { return isDefault; }</span>
+    public boolean isIsExpired() {
+<span class="nc" id="L34">        YearMonth expiry = YearMonth.of(expiryYear, expiryMonth);</span>
+<span class="nc" id="L35">        return expiry.isBefore(YearMonth.now());</span>
+    }
+<span class="nc" id="L37">    public OffsetDateTime getAddedAt() { return addedAt; }</span>
+<span class="fc" id="L38">    public void setDefault(boolean d) { this.isDefault = d; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

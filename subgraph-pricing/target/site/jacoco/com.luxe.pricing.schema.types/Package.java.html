@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Package.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Pricing Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.pricing.schema.types</a> &gt; <span class="el_source">Package.java</span></div><h1>Package.java</h1><pre class="source lang-java linenums">package com.luxe.pricing.schema.types;
+
+import com.luxe.common.pagination.HasId;
+import java.time.LocalDate;
+import java.util.List;
+
+public class Package implements HasId {
+    private final String id, code, name, description, hotelId;
+    private final List&lt;String&gt; includes;
+    private final double priceModifier;
+    private final LocalDate validFrom, validTo;
+    private final boolean active;
+
+    public Package(String id, String code, String name, String description, String hotelId,
+                   List&lt;String&gt; includes, double priceModifier,
+<span class="fc" id="L16">                   LocalDate validFrom, LocalDate validTo, boolean active) {</span>
+<span class="fc" id="L17">        this.id = id; this.code = code; this.name = name; this.description = description;</span>
+<span class="fc" id="L18">        this.hotelId = hotelId; this.includes = includes; this.priceModifier = priceModifier;</span>
+<span class="fc" id="L19">        this.validFrom = validFrom; this.validTo = validTo; this.active = active;</span>
+<span class="fc" id="L20">    }</span>
+
+<span class="nc" id="L22">    @Override public String getId() { return id; }</span>
+<span class="nc" id="L23">    public String getCode() { return code; }</span>
+<span class="nc" id="L24">    public String getName() { return name; }</span>
+<span class="nc" id="L25">    public String getDescription() { return description; }</span>
+<span class="nc" id="L26">    public String getHotelId() { return hotelId; }</span>
+<span class="nc" id="L27">    public List&lt;String&gt; getIncludes() { return includes; }</span>
+<span class="nc" id="L28">    public double getPriceModifier() { return priceModifier; }</span>
+<span class="nc" id="L29">    public LocalDate getValidFrom() { return validFrom; }</span>
+<span class="nc" id="L30">    public LocalDate getValidTo() { return validTo; }</span>
+<span class="nc" id="L31">    public boolean isActive() { return active; }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

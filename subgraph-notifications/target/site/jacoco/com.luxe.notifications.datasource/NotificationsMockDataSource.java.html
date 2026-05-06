@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NotificationsMockDataSource.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Notifications Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.notifications.datasource</a> &gt; <span class="el_source">NotificationsMockDataSource.java</span></div><h1>NotificationsMockDataSource.java</h1><pre class="source lang-java linenums">package com.luxe.notifications.datasource;
+
+import com.luxe.notifications.schema.types.*;
+import com.luxe.notifications.schema.types.NotificationPreferences.*;
+import org.springframework.stereotype.Component;
+
+import java.time.OffsetDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Component
+public class NotificationsMockDataSource implements NotificationsDataSource {
+
+<span class="fc" id="L14">    private final Map&lt;String, Notification&gt; notifications = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L15">    private final Map&lt;String, NotificationPreferences&gt; preferences = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L16">    private final Map&lt;String, PushDevice&gt; devices = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L17">    private final Map&lt;String, MessageThread&gt; threads = new LinkedHashMap&lt;&gt;();</span>
+
+<span class="fc" id="L19">    public NotificationsMockDataSource() {</span>
+<span class="fc" id="L20">        initNotifications();</span>
+<span class="fc" id="L21">        initPreferences();</span>
+<span class="fc" id="L22">        initDevices();</span>
+<span class="fc" id="L23">        initThreads();</span>
+<span class="fc" id="L24">    }</span>
+
+    private void initNotifications() {
+<span class="fc" id="L27">        OffsetDateTime now = OffsetDateTime.now();</span>
+<span class="fc" id="L28">        addNotification(&quot;ntf-001&quot;, &quot;guest-001&quot;, &quot;RESERVATION_CONFIRMED&quot;, &quot;EMAIL&quot;,</span>
+                &quot;NORMAL&quot;, &quot;DELIVERED&quot;, &quot;RESERVATIONS&quot;,
+                &quot;Your Paris reservation is confirmed&quot;,
+                &quot;We look forward to welcoming you to Le Grand Luxe Paris on May 16.&quot;,
+                &quot;View Reservation&quot;, &quot;https://luxehotels.example/r/res-001&quot;,
+                null, &quot;res-001&quot;,
+<span class="fc" id="L34">                Map.of(&quot;hotelId&quot;, &quot;prop-paris-001&quot;),</span>
+<span class="fc" id="L35">                now.minusDays(28), null, now.plusDays(60));</span>
+<span class="fc" id="L36">        addNotification(&quot;ntf-002&quot;, &quot;guest-001&quot;, &quot;CHECK_IN_REMINDER&quot;, &quot;PUSH&quot;,</span>
+                &quot;NORMAL&quot;, &quot;READ&quot;, &quot;PRE_STAY&quot;,
+                &quot;Online check-in is open&quot;,
+                &quot;You can complete check-in for your Paris stay starting tomorrow.&quot;,
+                &quot;Check-in&quot;, &quot;https://luxehotels.example/r/res-001/checkin&quot;,
+                null, &quot;res-001&quot;,
+<span class="fc" id="L42">                Map.of(&quot;hotelId&quot;, &quot;prop-paris-001&quot;),</span>
+<span class="fc" id="L43">                now.minusDays(2), now.minusHours(20), now.plusDays(2));</span>
+<span class="fc" id="L44">        addNotification(&quot;ntf-003&quot;, &quot;guest-002&quot;, &quot;LOYALTY_TIER_UPGRADE&quot;, &quot;EMAIL&quot;,</span>
+                &quot;HIGH&quot;, &quot;DELIVERED&quot;, &quot;LOYALTY&quot;,
+                &quot;Welcome to Platinum&quot;,
+                &quot;Congratulations — you've earned Platinum status. Enjoy suite upgrades and lounge access.&quot;,
+                &quot;View Benefits&quot;, &quot;https://luxehotels.example/loyalty/platinum&quot;,
+                null, null,
+<span class="fc" id="L50">                Map.of(&quot;newTier&quot;, &quot;PLATINUM&quot;),</span>
+<span class="fc" id="L51">                now.minusDays(1), null, now.plusDays(30));</span>
+<span class="fc" id="L52">        addNotification(&quot;ntf-004&quot;, &quot;guest-004&quot;, &quot;FEEDBACK_REQUEST&quot;, &quot;EMAIL&quot;,</span>
+                &quot;LOW&quot;, &quot;DELIVERED&quot;, &quot;POST_STAY&quot;,
+                &quot;How was your stay?&quot;,
+                &quot;Thank you for choosing The Manhattan Pinnacle. Your feedback helps us improve.&quot;,
+                &quot;Share Feedback&quot;, &quot;https://luxehotels.example/feedback/res-005&quot;,
+                null, &quot;res-005&quot;,
+<span class="fc" id="L58">                Map.of(),</span>
+<span class="fc" id="L59">                now.minusDays(5), null, now.plusDays(14));</span>
+<span class="fc" id="L60">        addNotification(&quot;ntf-005&quot;, &quot;guest-001&quot;, &quot;PROMOTION_OFFER&quot;, &quot;PUSH&quot;,</span>
+                &quot;LOW&quot;, &quot;PENDING&quot;, &quot;MARKETING&quot;,
+                &quot;Spring Suite Awakening — 25% off&quot;,
+                &quot;Treat yourself to a long European weekend with 25% off all suites.&quot;,
+                &quot;View Offer&quot;, &quot;https://luxehotels.example/offers/spring-suites&quot;,
+                null, null,
+<span class="fc" id="L66">                Map.of(&quot;promoCode&quot;, &quot;SPRING25&quot;),</span>
+<span class="fc" id="L67">                now.minusHours(4), null, now.plusDays(50));</span>
+<span class="fc" id="L68">    }</span>
+
+    private void addNotification(String id, String guestId, String type, String channel,
+                                   String priority, String status, String category,
+                                   String title, String body, String actionLabel, String actionUrl,
+                                   String imageUrl, String reservationId,
+                                   Map&lt;String, String&gt; metadata,
+                                   OffsetDateTime sentAt, OffsetDateTime readAt,
+                                   OffsetDateTime expiresAt) {
+<span class="fc" id="L77">        notifications.put(id, new Notification(id, guestId, type, channel, priority,</span>
+                status, category, title, body,
+                actionLabel, actionUrl, imageUrl, reservationId,
+                metadata, sentAt, readAt, expiresAt));
+<span class="fc" id="L81">    }</span>
+
+    private void initPreferences() {
+<span class="fc" id="L84">        ChannelSetting email = new ChannelSetting(&quot;EMAIL&quot;, true, null, null);</span>
+<span class="fc" id="L85">        ChannelSetting sms   = new ChannelSetting(&quot;SMS&quot;, true,</span>
+                new QuietHours(&quot;22:00&quot;, &quot;08:00&quot;, &quot;Europe/Paris&quot;), null);
+<span class="fc" id="L87">        ChannelSetting push  = new ChannelSetting(&quot;PUSH&quot;, true,</span>
+                new QuietHours(&quot;23:00&quot;, &quot;07:30&quot;, &quot;Europe/Paris&quot;), null);
+<span class="fc" id="L89">        ChannelSetting inApp = new ChannelSetting(&quot;IN_APP&quot;, true, null, null);</span>
+<span class="fc" id="L90">        ChannelSetting wapp  = new ChannelSetting(&quot;WHATSAPP&quot;, false, null, null);</span>
+
+<span class="fc" id="L92">        List&lt;CategoryPreference&gt; cats = List.of(</span>
+<span class="fc" id="L93">                new CategoryPreference(&quot;RESERVATIONS&quot;,  List.of(&quot;EMAIL&quot;, &quot;PUSH&quot;, &quot;IN_APP&quot;)),</span>
+<span class="fc" id="L94">                new CategoryPreference(&quot;LOYALTY&quot;,        List.of(&quot;EMAIL&quot;, &quot;IN_APP&quot;)),</span>
+<span class="fc" id="L95">                new CategoryPreference(&quot;MARKETING&quot;,      List.of(&quot;EMAIL&quot;)),</span>
+<span class="fc" id="L96">                new CategoryPreference(&quot;PRE_STAY&quot;,       List.of(&quot;EMAIL&quot;, &quot;PUSH&quot;)),</span>
+<span class="fc" id="L97">                new CategoryPreference(&quot;ON_PROPERTY&quot;,    List.of(&quot;PUSH&quot;, &quot;IN_APP&quot;)),</span>
+<span class="fc" id="L98">                new CategoryPreference(&quot;POST_STAY&quot;,      List.of(&quot;EMAIL&quot;)),</span>
+<span class="fc" id="L99">                new CategoryPreference(&quot;CONCIERGE&quot;,      List.of(&quot;PUSH&quot;, &quot;IN_APP&quot;, &quot;WHATSAPP&quot;)));</span>
+<span class="fc" id="L100">        preferences.put(&quot;guest-001&quot;, new NotificationPreferences(</span>
+                &quot;pref-guest-001&quot;, &quot;guest-001&quot;,
+<span class="fc" id="L102">                List.of(email, sms, push, inApp, wapp), cats, &quot;en&quot;, &quot;Europe/Paris&quot;));</span>
+<span class="fc" id="L103">        preferences.put(&quot;guest-002&quot;, new NotificationPreferences(</span>
+                &quot;pref-guest-002&quot;, &quot;guest-002&quot;,
+<span class="fc" id="L105">                List.of(email, sms, push, inApp, wapp), cats, &quot;en&quot;, &quot;Europe/London&quot;));</span>
+<span class="fc" id="L106">        preferences.put(&quot;guest-004&quot;, new NotificationPreferences(</span>
+                &quot;pref-guest-004&quot;, &quot;guest-004&quot;,
+<span class="fc" id="L108">                List.of(email, sms, push, inApp, wapp), cats, &quot;en&quot;, &quot;America/New_York&quot;));</span>
+<span class="fc" id="L109">    }</span>
+
+    private void initDevices() {
+<span class="fc" id="L112">        OffsetDateTime now = OffsetDateTime.now();</span>
+<span class="fc" id="L113">        devices.put(&quot;dev-001&quot;, new PushDevice(&quot;dev-001&quot;, &quot;guest-001&quot;, &quot;IOS&quot;,</span>
+                &quot;12.4.0&quot;, &quot;iPhone 15 Pro&quot;, &quot;ios-token-ABC123&quot;,
+<span class="fc" id="L115">                now.minusDays(180), now.minusHours(3), true));</span>
+<span class="fc" id="L116">        devices.put(&quot;dev-002&quot;, new PushDevice(&quot;dev-002&quot;, &quot;guest-001&quot;, &quot;WEB&quot;,</span>
+                &quot;1.0.0&quot;, &quot;Chrome 134 / macOS&quot;, &quot;web-token-XYZ789&quot;,
+<span class="fc" id="L118">                now.minusDays(45), now.minusDays(2), true));</span>
+<span class="fc" id="L119">        devices.put(&quot;dev-003&quot;, new PushDevice(&quot;dev-003&quot;, &quot;guest-002&quot;, &quot;ANDROID&quot;,</span>
+                &quot;12.3.0&quot;, &quot;Pixel 9&quot;, &quot;android-token-PQR456&quot;,
+<span class="fc" id="L121">                now.minusDays(90), now.minusHours(8), true));</span>
+<span class="fc" id="L122">    }</span>
+
+    private void initThreads() {
+<span class="fc" id="L125">        OffsetDateTime now = OffsetDateTime.now();</span>
+<span class="fc" id="L126">        MessageThread t1 = new MessageThread(&quot;thr-001&quot;, &quot;guest-001&quot;,</span>
+                &quot;Anniversary celebration request&quot;,
+                &quot;PENDING_AGENT&quot;, &quot;prop-tokyo-001&quot;, &quot;res-003&quot;, &quot;Hiroshi T.&quot;,
+<span class="fc" id="L129">                now.minusHours(6));</span>
+<span class="fc" id="L130">        t1.addMessage(new Message(&quot;msg-001&quot;, &quot;thr-001&quot;, &quot;GUEST&quot;,</span>
+                &quot;Hi — celebrating our 10th anniversary in Tokyo. Could you arrange a surprise?&quot;,
+<span class="fc" id="L132">                List.of(), now.minusHours(8), now.minusHours(7)));</span>
+<span class="fc" id="L133">        t1.addMessage(new Message(&quot;msg-002&quot;, &quot;thr-001&quot;, &quot;AGENT&quot;,</span>
+                &quot;Wonderful — I have a few special touches in mind. May I confirm your arrival flight?&quot;,
+<span class="fc" id="L135">                List.of(), now.minusHours(6), null));</span>
+<span class="fc" id="L136">        threads.put(t1.getId(), t1);</span>
+
+<span class="fc" id="L138">        MessageThread t2 = new MessageThread(&quot;thr-002&quot;, &quot;guest-002&quot;,</span>
+                &quot;Late-night dining options&quot;,
+                &quot;RESOLVED&quot;, &quot;prop-london-001&quot;, &quot;res-002&quot;, &quot;Eleanor M.&quot;,
+<span class="fc" id="L141">                now.minusDays(1));</span>
+<span class="fc" id="L142">        t2.addMessage(new Message(&quot;msg-003&quot;, &quot;thr-002&quot;, &quot;GUEST&quot;,</span>
+                &quot;What's open after 23:00 inside the hotel?&quot;,
+<span class="fc" id="L144">                List.of(), now.minusDays(1).minusMinutes(30), now.minusDays(1).minusMinutes(20)));</span>
+<span class="fc" id="L145">        t2.addMessage(new Message(&quot;msg-004&quot;, &quot;thr-002&quot;, &quot;AGENT&quot;,</span>
+                &quot;Mayfair House Bar serves until 01:00; in-room dining is 24/7.&quot;,
+<span class="fc" id="L147">                List.of(), now.minusDays(1), now.minusDays(1).plusMinutes(15)));</span>
+<span class="fc" id="L148">        threads.put(t2.getId(), t2);</span>
+<span class="fc" id="L149">    }</span>
+
+    // ── Notifications ─────────────────────────────────────────────────────────
+
+    @Override
+    public List&lt;Notification&gt; findByGuestId(String guestId, Map&lt;String, Object&gt; filter) {
+<span class="fc bfc" id="L155" title="All 2 branches covered.">        String type = filter == null ? null : (String) filter.get(&quot;type&quot;);</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">        String category = filter == null ? null : (String) filter.get(&quot;category&quot;);</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">        String status = filter == null ? null : (String) filter.get(&quot;status&quot;);</span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">        Boolean unreadOnly = filter == null ? null : (Boolean) filter.get(&quot;unreadOnly&quot;);</span>
+<span class="fc" id="L159">        return notifications.values().stream()</span>
+<span class="fc" id="L160">                .filter(n -&gt; n.getGuestId().equals(guestId))</span>
+<span class="fc bfc" id="L161" title="All 4 branches covered.">                .filter(n -&gt; type == null || n.getType().equals(type))</span>
+<span class="fc bfc" id="L162" title="All 4 branches covered.">                .filter(n -&gt; category == null || n.getCategory().equals(category))</span>
+<span class="fc bfc" id="L163" title="All 4 branches covered.">                .filter(n -&gt; status == null || n.getStatus().equals(status))</span>
+<span class="fc bfc" id="L164" title="All 6 branches covered.">                .filter(n -&gt; unreadOnly == null || !unreadOnly || !&quot;READ&quot;.equals(n.getStatus()))</span>
+<span class="fc" id="L165">                .sorted(Comparator.comparing(Notification::getSentAt).reversed())</span>
+<span class="fc" id="L166">                .collect(Collectors.toList());</span>
+    }
+
+    @Override public Optional&lt;Notification&gt; findById(String id) {
+<span class="fc" id="L170">        return Optional.ofNullable(notifications.get(id));</span>
+    }
+
+    @Override
+    public int countUnread(String guestId) {
+<span class="fc" id="L175">        return (int) notifications.values().stream()</span>
+<span class="fc" id="L176">                .filter(n -&gt; n.getGuestId().equals(guestId))</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">                .filter(n -&gt; !&quot;READ&quot;.equals(n.getStatus()))</span>
+<span class="fc" id="L178">                .count();</span>
+    }
+
+    @Override
+    public Optional&lt;Notification&gt; markRead(String id) {
+<span class="fc" id="L183">        Notification n = notifications.get(id);</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">        if (n == null) return Optional.empty();</span>
+<span class="fc" id="L185">        n.markRead();</span>
+<span class="fc" id="L186">        return Optional.of(n);</span>
+    }
+
+    @Override
+    public int markAllRead(String guestId) {
+<span class="fc" id="L191">        int count = 0;</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">        for (Notification n : notifications.values()) {</span>
+<span class="fc bfc" id="L193" title="All 4 branches covered.">            if (n.getGuestId().equals(guestId) &amp;&amp; !&quot;READ&quot;.equals(n.getStatus())) {</span>
+<span class="fc" id="L194">                n.markRead();</span>
+<span class="fc" id="L195">                count++;</span>
+            }
+<span class="fc" id="L197">        }</span>
+<span class="fc" id="L198">        return count;</span>
+    }
+
+    @Override
+    public Notification send(String guestId, String type, String channel, String priority,
+                              String category, String title, String body,
+                              String actionLabel, String actionUrl, String reservationId,
+                              Map&lt;String, String&gt; metadata) {
+<span class="fc" id="L206">        String id = &quot;ntf-&quot; + UUID.randomUUID().toString().substring(0, 8);</span>
+<span class="fc" id="L207">        Notification n = new Notification(id, guestId, type, channel,</span>
+<span class="fc bfc" id="L208" title="All 2 branches covered.">                priority != null ? priority : &quot;NORMAL&quot;,</span>
+                &quot;DELIVERED&quot;, category, title, body, actionLabel, actionUrl,
+<span class="fc" id="L210">                null, reservationId, metadata, OffsetDateTime.now(), null,</span>
+<span class="fc" id="L211">                OffsetDateTime.now().plusDays(30));</span>
+<span class="fc" id="L212">        notifications.put(id, n);</span>
+<span class="fc" id="L213">        return n;</span>
+    }
+
+    // ── Preferences ───────────────────────────────────────────────────────────
+
+    @Override
+    public NotificationPreferences findOrCreatePreferences(String guestId) {
+<span class="fc" id="L220">        return preferences.computeIfAbsent(guestId, gid -&gt; {</span>
+<span class="fc" id="L221">            ChannelSetting email = new ChannelSetting(&quot;EMAIL&quot;, true, null, null);</span>
+<span class="fc" id="L222">            ChannelSetting push  = new ChannelSetting(&quot;PUSH&quot;,  true, null, null);</span>
+<span class="fc" id="L223">            ChannelSetting inApp = new ChannelSetting(&quot;IN_APP&quot;, true, null, null);</span>
+<span class="fc" id="L224">            return new NotificationPreferences(</span>
+                    &quot;pref-&quot; + gid, gid,
+<span class="fc" id="L226">                    List.of(email, push, inApp),</span>
+<span class="fc" id="L227">                    List.of(new CategoryPreference(&quot;RESERVATIONS&quot;, List.of(&quot;EMAIL&quot;, &quot;PUSH&quot;))),</span>
+                    &quot;en&quot;, &quot;UTC&quot;);
+        });
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    public NotificationPreferences updatePreferences(String guestId, Map&lt;String, Object&gt; input) {
+<span class="fc" id="L235">        NotificationPreferences p = findOrCreatePreferences(guestId);</span>
+<span class="fc" id="L236">        List&lt;Map&lt;String, Object&gt;&gt; channelsRaw =</span>
+<span class="fc" id="L237">                (List&lt;Map&lt;String, Object&gt;&gt;) input.get(&quot;channelSettings&quot;);</span>
+<span class="fc bfc" id="L238" title="All 2 branches covered.">        List&lt;ChannelSetting&gt; channels = channelsRaw == null ? null</span>
+<span class="fc" id="L239">                : channelsRaw.stream().map(m -&gt; {</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">                    QuietHours qh = m.get(&quot;quietHoursStart&quot;) != null</span>
+<span class="fc" id="L241">                            ? new QuietHours((String) m.get(&quot;quietHoursStart&quot;),</span>
+<span class="fc" id="L242">                                    (String) m.get(&quot;quietHoursEnd&quot;),</span>
+<span class="fc" id="L243">                                    (String) m.getOrDefault(&quot;quietHoursTimezone&quot;, &quot;UTC&quot;))</span>
+<span class="fc" id="L244">                            : null;</span>
+<span class="fc" id="L245">                    return new ChannelSetting((String) m.get(&quot;channel&quot;),</span>
+<span class="fc" id="L246">                            Boolean.TRUE.equals(m.get(&quot;enabled&quot;)),</span>
+                            qh,
+<span class="fc" id="L248">                            (String) m.get(&quot;preferredAddress&quot;));</span>
+<span class="fc" id="L249">                }).toList();</span>
+<span class="fc" id="L250">        List&lt;Map&lt;String, Object&gt;&gt; catsRaw =</span>
+<span class="fc" id="L251">                (List&lt;Map&lt;String, Object&gt;&gt;) input.get(&quot;categoryPreferences&quot;);</span>
+<span class="fc bfc" id="L252" title="All 2 branches covered.">        List&lt;CategoryPreference&gt; cats = catsRaw == null ? null</span>
+<span class="fc" id="L253">                : catsRaw.stream().map(m -&gt; new CategoryPreference(</span>
+<span class="fc" id="L254">                        (String) m.get(&quot;category&quot;),</span>
+<span class="fc" id="L255">                        (List&lt;String&gt;) m.get(&quot;enabledChannels&quot;))).toList();</span>
+<span class="fc" id="L256">        p.apply((String) input.get(&quot;language&quot;), (String) input.get(&quot;timezone&quot;), channels, cats);</span>
+<span class="fc" id="L257">        return p;</span>
+    }
+
+    // ── Devices ───────────────────────────────────────────────────────────────
+
+    @Override
+    public PushDevice registerDevice(String guestId, String platform, String pushToken,
+                                       String appVersion, String deviceModel) {
+<span class="fc" id="L265">        String id = &quot;dev-&quot; + UUID.randomUUID().toString().substring(0, 8);</span>
+<span class="fc" id="L266">        PushDevice d = new PushDevice(id, guestId, platform, appVersion, deviceModel,</span>
+<span class="fc" id="L267">                pushToken, OffsetDateTime.now(), OffsetDateTime.now(), true);</span>
+<span class="fc" id="L268">        devices.put(id, d);</span>
+<span class="fc" id="L269">        return d;</span>
+    }
+
+    @Override public boolean removeDevice(String deviceId) {
+<span class="fc" id="L273">        PushDevice d = devices.get(deviceId);</span>
+<span class="fc bfc" id="L274" title="All 2 branches covered.">        if (d == null) return false;</span>
+<span class="fc" id="L275">        d.deactivate();</span>
+<span class="fc" id="L276">        return true;</span>
+    }
+
+    @Override
+    public List&lt;PushDevice&gt; findDevices(String guestId) {
+<span class="fc" id="L281">        return devices.values().stream()</span>
+<span class="fc bfc" id="L282" title="All 4 branches covered.">                .filter(d -&gt; d.getGuestId().equals(guestId) &amp;&amp; d.isActive())</span>
+<span class="fc" id="L283">                .collect(Collectors.toList());</span>
+    }
+
+    // ── Message threads ───────────────────────────────────────────────────────
+
+    @Override
+    public List&lt;MessageThread&gt; findThreads(String guestId, String status) {
+<span class="fc" id="L290">        return threads.values().stream()</span>
+<span class="fc" id="L291">                .filter(t -&gt; t.getGuestId().equals(guestId))</span>
+<span class="fc bfc" id="L292" title="All 4 branches covered.">                .filter(t -&gt; status == null || t.getStatus().equals(status))</span>
+<span class="fc" id="L293">                .sorted(Comparator.comparing(MessageThread::getLastMessageAt).reversed())</span>
+<span class="fc" id="L294">                .collect(Collectors.toList());</span>
+    }
+
+    @Override public Optional&lt;MessageThread&gt; findThread(String id) {
+<span class="fc" id="L298">        return Optional.ofNullable(threads.get(id));</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    public Message sendMessage(String guestId, Map&lt;String, Object&gt; input) {
+<span class="fc" id="L304">        String threadId = (String) input.get(&quot;threadId&quot;);</span>
+        MessageThread thread;
+<span class="fc bfc" id="L306" title="All 2 branches covered.">        if (threadId != null) {</span>
+<span class="fc" id="L307">            thread = threads.get(threadId);</span>
+<span class="fc bfc" id="L308" title="All 2 branches covered.">            if (thread == null) return null;</span>
+        } else {
+<span class="fc" id="L310">            String newId = &quot;thr-&quot; + UUID.randomUUID().toString().substring(0, 8);</span>
+<span class="fc" id="L311">            String subject = (String) input.getOrDefault(&quot;subject&quot;, &quot;New conversation&quot;);</span>
+<span class="fc" id="L312">            thread = new MessageThread(newId, guestId, subject, &quot;PENDING_AGENT&quot;,</span>
+<span class="fc" id="L313">                    (String) input.get(&quot;hotelId&quot;),</span>
+<span class="fc" id="L314">                    (String) input.get(&quot;reservationId&quot;),</span>
+<span class="fc" id="L315">                    null, OffsetDateTime.now());</span>
+<span class="fc" id="L316">            threads.put(newId, thread);</span>
+        }
+<span class="fc" id="L318">        String mid = &quot;msg-&quot; + UUID.randomUUID().toString().substring(0, 8);</span>
+<span class="fc" id="L319">        List&lt;String&gt; attachments = (List&lt;String&gt;) input.get(&quot;attachmentUrls&quot;);</span>
+<span class="fc" id="L320">        Message m = new Message(mid, thread.getId(), &quot;GUEST&quot;,</span>
+<span class="fc" id="L321">                (String) input.get(&quot;body&quot;), attachments, OffsetDateTime.now(), null);</span>
+<span class="fc" id="L322">        thread.addMessage(m);</span>
+<span class="pc bpc" id="L323" title="1 of 4 branches missed.">        if (&quot;RESOLVED&quot;.equals(thread.getStatus()) || &quot;CLOSED&quot;.equals(thread.getStatus())) {</span>
+<span class="fc" id="L324">            thread.setStatus(&quot;PENDING_AGENT&quot;);</span>
+        }
+<span class="fc" id="L326">        return m;</span>
+    }
+
+    @Override
+    public MessageThread markThreadResolved(String threadId) {
+<span class="fc" id="L331">        MessageThread t = threads.get(threadId);</span>
+<span class="fc bfc" id="L332" title="All 2 branches covered.">        if (t == null) return null;</span>
+<span class="fc" id="L333">        t.setStatus(&quot;RESOLVED&quot;);</span>
+<span class="fc" id="L334">        return t;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

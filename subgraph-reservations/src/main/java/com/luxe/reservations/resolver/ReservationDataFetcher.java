@@ -37,18 +37,16 @@ public class ReservationDataFetcher {
     // ── Queries ───────────────────────────────────────────────────────────────
 
     @DgsQuery
-    public Object reservation(@InputArgument String id, DataFetchingEnvironment dfe) {
+    public Reservation reservation(@InputArgument String id, DataFetchingEnvironment dfe) {
         getAuth(dfe).requireAuth();
-        return dataSource.findById(id).<Object>map(r -> r)
-                .orElse(new NotFoundError("Reservation", id));
+        // Schema returns nullable Reservation, not a union — return null when missing.
+        return dataSource.findById(id).orElse(null);
     }
 
     @DgsQuery
-    public Object reservationByConfirmationNumber(@InputArgument String confirmationNumber,
-                                                   @InputArgument String guestLastName) {
-        return dataSource.findByConfirmationNumber(confirmationNumber, guestLastName)
-                .<Object>map(r -> r)
-                .orElse(new NotFoundError("Reservation", confirmationNumber));
+    public Reservation reservationByConfirmationNumber(@InputArgument String confirmationNumber,
+                                                        @InputArgument String guestLastName) {
+        return dataSource.findByConfirmationNumber(confirmationNumber, guestLastName).orElse(null);
     }
 
     @DgsQuery

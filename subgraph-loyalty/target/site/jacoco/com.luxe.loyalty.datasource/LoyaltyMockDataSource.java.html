@@ -1,0 +1,460 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LoyaltyMockDataSource.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Loyalty Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.loyalty.datasource</a> &gt; <span class="el_source">LoyaltyMockDataSource.java</span></div><h1>LoyaltyMockDataSource.java</h1><pre class="source lang-java linenums">package com.luxe.loyalty.datasource;
+
+import com.luxe.common.scalar.Money;
+import com.luxe.loyalty.schema.types.*;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Component
+public class LoyaltyMockDataSource implements LoyaltyDataSource {
+
+<span class="fc" id="L15">    private final Map&lt;String, LoyaltyAccount&gt; byId       = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L16">    private final Map&lt;String, LoyaltyAccount&gt; byGuestId  = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L17">    private final Map&lt;String, LoyaltyAccount&gt; byNumber   = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L18">    private final List&lt;PointsTransaction&gt;     transactions = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L19">    private final Map&lt;String, LoyaltyPartner&gt; partners    = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L20">    private final Map&lt;String, Challenge&gt;      challenges  = new LinkedHashMap&lt;&gt;();</span>
+
+<span class="fc" id="L22">    public LoyaltyMockDataSource() {</span>
+<span class="fc" id="L23">        initPartners();</span>
+<span class="fc" id="L24">        initChallenges();</span>
+<span class="fc" id="L25">        initAccounts();</span>
+<span class="fc" id="L26">        initTransactions();</span>
+<span class="fc" id="L27">        initCertificates();</span>
+<span class="fc" id="L28">        initLinkedPartners();</span>
+<span class="fc" id="L29">    }</span>
+
+    // ── Seed: Partners ───────────────────────────────────────────────────────
+
+    private void initPartners() {
+<span class="fc" id="L34">        addPartner(&quot;ptr-001&quot;, &quot;SkyLuxe Airlines&quot;,         &quot;AIRLINE&quot;,</span>
+                &quot;Transfer points to SkyLuxe miles at a 2:1 ratio&quot;,
+<span class="fc" id="L36">                0.5, 1000, 500000, 1000, true);</span>
+<span class="fc" id="L37">        addPartner(&quot;ptr-002&quot;, &quot;Pacific Wings&quot;,            &quot;AIRLINE&quot;,</span>
+                &quot;Convert points to Pacific Wings miles&quot;,
+<span class="fc" id="L39">                0.4, 2000, 200000, 1000, true);</span>
+<span class="fc" id="L40">        addPartner(&quot;ptr-003&quot;, &quot;Stellar Drive&quot;,            &quot;CAR_RENTAL&quot;,</span>
+                &quot;Earn elite status and free upgrades with Stellar Drive&quot;,
+                1.0, 500, null,    500, true);
+<span class="fc" id="L43">        addPartner(&quot;ptr-004&quot;, &quot;Coastal Cruises&quot;,          &quot;CRUISE&quot;,</span>
+                &quot;Apply points toward cabin upgrades on Coastal Cruises&quot;,
+<span class="fc" id="L45">                0.6, 5000, 100000, 1000, true);</span>
+<span class="fc" id="L46">        addPartner(&quot;ptr-005&quot;, &quot;Maison Gourmet&quot;,           &quot;DINING&quot;,</span>
+                &quot;Convert points to Maison Gourmet dining credits&quot;,
+<span class="fc" id="L48">                1.2, 1000, 50000,  500, true);</span>
+<span class="fc" id="L49">        addPartner(&quot;ptr-006&quot;, &quot;Atlas Card Rewards&quot;,       &quot;FINANCIAL&quot;,</span>
+                &quot;Link your Atlas Premium card for double points on every stay&quot;,
+                1.0, 0,    null,   1, true);
+<span class="fc" id="L52">    }</span>
+
+    private void addPartner(String id, String name, String cat, String desc,
+                            double ratio, int min, Integer max, int inc, boolean active) {
+<span class="fc" id="L56">        partners.put(id, new LoyaltyPartner(id, name, cat, desc, null, ratio, min, max, inc, active));</span>
+<span class="fc" id="L57">    }</span>
+
+    // ── Seed: Challenges ─────────────────────────────────────────────────────
+
+    private void initChallenges() {
+<span class="fc" id="L62">        LocalDate today = LocalDate.now();</span>
+<span class="fc" id="L63">        challenges.put(&quot;chl-001&quot;, new Challenge(&quot;chl-001&quot;,</span>
+                &quot;Triple Continent Tour&quot;,
+                &quot;Stay at Luxe properties on three different continents in 90 days&quot;,
+<span class="fc" id="L66">                &quot;ACTIVE&quot;, today.minusDays(15), today.plusDays(75),</span>
+<span class="fc" id="L67">                new Challenge.ChallengeReward(15000, 0, null,</span>
+                        &quot;Earn 15,000 bonus points after qualifying&quot;),
+                null, false));
+<span class="fc" id="L70">        challenges.put(&quot;chl-002&quot;, new Challenge(&quot;chl-002&quot;,</span>
+                &quot;Four Stays, One Suite&quot;,
+                &quot;Complete 4 paid stays for a complimentary Suite Night certificate&quot;,
+<span class="fc" id="L73">                &quot;ACTIVE&quot;, today.minusDays(30), today.plusDays(60),</span>
+<span class="fc" id="L74">                new Challenge.ChallengeReward(0, 1, &quot;SUITE_NIGHT&quot;,</span>
+                        &quot;One Suite Night certificate&quot;),
+                null, false));
+<span class="fc" id="L77">        challenges.put(&quot;chl-003&quot;, new Challenge(&quot;chl-003&quot;,</span>
+                &quot;Spring Break Bonus&quot;,
+                &quot;Earn 2x points on stays between March 1 and April 30&quot;,
+<span class="fc" id="L80">                &quot;ACTIVE&quot;, today.minusDays(10), today.plusDays(50),</span>
+                new Challenge.ChallengeReward(null, null, null,
+                        &quot;2x points on qualifying stays&quot;),
+                null, true));
+<span class="fc" id="L84">        challenges.put(&quot;chl-004&quot;, new Challenge(&quot;chl-004&quot;,</span>
+                &quot;Five-Star Foodie&quot;,
+                &quot;Dine at three Luxe restaurants during one stay&quot;,
+<span class="fc" id="L87">                &quot;UPCOMING&quot;, today.plusDays(20), today.plusDays(80),</span>
+<span class="fc" id="L88">                new Challenge.ChallengeReward(5000, 0, &quot;DINING_CREDIT&quot;,</span>
+                        &quot;5,000 bonus points + dining credit certificate&quot;),
+                null, false));
+<span class="fc" id="L91">    }</span>
+
+    // ── Seed: Accounts ───────────────────────────────────────────────────────
+
+    private void initAccounts() {
+<span class="fc" id="L96">        addAccount(&quot;lac-001&quot;, &quot;LUX0001234567&quot;, &quot;guest-001&quot;, &quot;GOLD&quot;, &quot;ACTIVE&quot;,</span>
+                87500, 2400, 5000, 210000, 95,
+<span class="fc" id="L98">                LocalDate.of(2021, 3, 1), &quot;REF-AVA-2021&quot;,</span>
+                28, 38400, &quot;USD&quot;);
+<span class="fc" id="L100">        addAccount(&quot;lac-002&quot;, &quot;LUX0002345678&quot;, &quot;guest-002&quot;, &quot;PLATINUM&quot;, &quot;ACTIVE&quot;,</span>
+                42300, 1800, 0, 98000, 52,
+<span class="fc" id="L102">                LocalDate.of(2019, 6, 15), &quot;REF-LIAM-2019&quot;,</span>
+                52, 71250, &quot;USD&quot;);
+<span class="fc" id="L104">        addAccount(&quot;lac-003&quot;, &quot;LUX0003456789&quot;, &quot;guest-004&quot;, &quot;AMBASSADOR&quot;, &quot;ACTIVE&quot;,</span>
+                215000, 0, 12000, 580000, 175,
+<span class="fc" id="L106">                LocalDate.of(2017, 1, 10), &quot;REF-NORA-2017&quot;,</span>
+                118, 312000, &quot;USD&quot;);
+<span class="fc" id="L108">        addAccount(&quot;lac-004&quot;, &quot;LUX0004567890&quot;, &quot;guest-005&quot;, &quot;SILVER&quot;, &quot;ACTIVE&quot;,</span>
+                18700, 600, 0, 45000, 28,
+<span class="fc" id="L110">                LocalDate.of(2022, 9, 20), &quot;REF-SOFIA-2022&quot;,</span>
+                14, 9800, &quot;USD&quot;);
+<span class="fc" id="L112">        addAccount(&quot;lac-005&quot;, &quot;LUX0005678901&quot;, &quot;guest-007&quot;, &quot;TITANIUM&quot;, &quot;ACTIVE&quot;,</span>
+                132000, 4200, 8500, 305000, 130,
+<span class="fc" id="L114">                LocalDate.of(2018, 11, 5), &quot;REF-ETHAN-2018&quot;,</span>
+                72, 188500, &quot;USD&quot;);
+<span class="fc" id="L116">    }</span>
+
+    private void addAccount(String id, String number, String guestId, String tier, String status,
+                            int avail, int pending, int expSoon, int lifetimePts, int lifetimeNights,
+                            LocalDate since, String referralCode,
+                            int qualNights, double qualSpend, String currency) {
+<span class="fc" id="L122">        LoyaltyAccount a = new LoyaltyAccount(id, number, guestId, tier, status,</span>
+                avail, pending, expSoon, lifetimePts, lifetimeNights,
+                since, referralCode, qualNights, qualSpend, currency);
+<span class="fc" id="L125">        byId.put(id, a);</span>
+<span class="fc" id="L126">        byGuestId.put(guestId, a);</span>
+<span class="fc" id="L127">        byNumber.put(number, a);</span>
+<span class="fc" id="L128">    }</span>
+
+    // ── Seed: Transactions ───────────────────────────────────────────────────
+
+    private void initTransactions() {
+<span class="fc" id="L133">        OffsetDateTime now = OffsetDateTime.now();</span>
+<span class="fc" id="L134">        addTx(&quot;tx-001&quot;, &quot;lac-001&quot;, &quot;EARN_STAY&quot;,   5200,  5200,  &quot;Stay at Le Grand Luxe Paris (res-101)&quot;, &quot;res-101&quot;, null, now.minusDays(90));</span>
+<span class="fc" id="L135">        addTx(&quot;tx-002&quot;, &quot;lac-001&quot;, &quot;EARN_BONUS&quot;,  1000,  6200,  &quot;Welcome bonus&quot;,                        null,      null, now.minusDays(89));</span>
+<span class="fc" id="L136">        addTx(&quot;tx-003&quot;, &quot;lac-001&quot;, &quot;EARN_STAY&quot;,   7500, 13700,  &quot;Stay at Atlantis The Palm Dubai&quot;,      &quot;res-102&quot;, null, now.minusDays(60));</span>
+<span class="fc" id="L137">        addTx(&quot;tx-004&quot;, &quot;lac-001&quot;, &quot;REDEEM&quot;,     -8000,  5700,  &quot;Redeemed: Room category upgrade&quot;,      null,      null, now.minusDays(45));</span>
+<span class="fc" id="L138">        addTx(&quot;tx-005&quot;, &quot;lac-001&quot;, &quot;EARN_STAY&quot;,  12000, 17700,  &quot;Stay at The Manhattan Pinnacle&quot;,       &quot;res-103&quot;, null, now.minusDays(30));</span>
+
+<span class="fc" id="L140">        addTx(&quot;tx-101&quot;, &quot;lac-002&quot;, &quot;EARN_STAY&quot;,   4800,  4800,  &quot;Stay at Mayfair Grand London&quot;,         &quot;res-201&quot;, null, now.minusDays(120));</span>
+<span class="fc" id="L141">        addTx(&quot;tx-102&quot;, &quot;lac-002&quot;, &quot;EARN_STAY&quot;,   6300, 11100,  &quot;Stay at Sakura Imperial Tokyo&quot;,        &quot;res-202&quot;, null, now.minusDays(75));</span>
+<span class="fc" id="L142">        addTx(&quot;tx-103&quot;, &quot;lac-002&quot;, &quot;EARN_TRANSFER&quot;, 5000, 16100,&quot;Transfer in from spouse account&quot;,      null,      null, now.minusDays(60));</span>
+<span class="fc" id="L143">        addTx(&quot;tx-104&quot;, &quot;lac-002&quot;, &quot;REDEEM&quot;,     -5000, 11100,  &quot;Redeemed: $100 dining credit&quot;,         null,      null, now.minusDays(50));</span>
+
+<span class="fc" id="L145">        addTx(&quot;tx-201&quot;, &quot;lac-003&quot;, &quot;EARN_STAY&quot;,  22000, 22000,  &quot;Stay at Atlantis Royal Villa Dubai&quot;,   &quot;res-301&quot;, null, now.minusDays(200));</span>
+<span class="fc" id="L146">        addTx(&quot;tx-202&quot;, &quot;lac-003&quot;, &quot;EARN_BONUS&quot;, 25000, 47000,  &quot;Ambassador status bonus&quot;,              null,      null, now.minusDays(199));</span>
+<span class="fc" id="L147">        addTx(&quot;tx-203&quot;, &quot;lac-003&quot;, &quot;REDEEM&quot;,   -25000, 22000,   &quot;Redeemed: Free night certificate&quot;,     null,      null, now.minusDays(100));</span>
+<span class="fc" id="L148">        addTx(&quot;tx-204&quot;, &quot;lac-003&quot;, &quot;EARN_STAY&quot;, 18500, 40500,   &quot;Stay at Le Grand Luxe Paris (Pres Suite)&quot;, &quot;res-302&quot;, null, now.minusDays(30));</span>
+<span class="fc" id="L149">        addTx(&quot;tx-205&quot;, &quot;lac-003&quot;, &quot;EARN_PARTNER&quot;, 3500, 44000, &quot;Partner: Stellar Drive elite week&quot;,    null,      &quot;ptr-003&quot;, now.minusDays(20));</span>
+
+<span class="fc" id="L151">        addTx(&quot;tx-301&quot;, &quot;lac-005&quot;, &quot;EARN_STAY&quot;,  9800,  9800,   &quot;Stay at The Manhattan Pinnacle&quot;,        &quot;res-401&quot;, null, now.minusDays(150));</span>
+<span class="fc" id="L152">        addTx(&quot;tx-302&quot;, &quot;lac-005&quot;, &quot;EARN_STAY&quot;, 11200, 21000,   &quot;Stay at Mayfair Grand London&quot;,          &quot;res-402&quot;, null, now.minusDays(100));</span>
+<span class="fc" id="L153">        addTx(&quot;tx-303&quot;, &quot;lac-005&quot;, &quot;REDEEM&quot;,  -10000, 11000,    &quot;Redeemed: Late checkout certificate&quot;,  null,      null, now.minusDays(80));</span>
+<span class="fc" id="L154">    }</span>
+
+    private void addTx(String id, String accountId, String type, int points, int after,
+                       String desc, String resId, String partnerId, OffsetDateTime when) {
+<span class="fc bfc" id="L158" title="All 2 branches covered.">        OffsetDateTime expires = type.startsWith(&quot;EARN&quot;) ? when.plusYears(2) : null;</span>
+<span class="fc" id="L159">        transactions.add(new PointsTransaction(id, accountId, type, points, after,</span>
+                desc, resId, partnerId, when, expires));
+<span class="fc" id="L161">    }</span>
+
+    // ── Seed: Certificates ───────────────────────────────────────────────────
+
+    private void initCertificates() {
+<span class="fc" id="L166">        OffsetDateTime now = OffsetDateTime.now();</span>
+<span class="fc" id="L167">        byId.get(&quot;lac-001&quot;).addCertificate(new Certificate(</span>
+                &quot;cert-001&quot;, &quot;FREE_NIGHT&quot;, &quot;Free Night Award (35,000 pts)&quot;,
+                &quot;One complimentary night at participating Luxe properties&quot;,
+<span class="fc" id="L170">                &quot;ACTIVE&quot;, now.minusDays(40), now.plusDays(320),</span>
+<span class="fc" id="L171">                null, null, List.of(), List.of(&quot;Up to category 5 properties&quot;, &quot;Standard rooms only&quot;)));</span>
+
+<span class="fc" id="L173">        byId.get(&quot;lac-002&quot;).addCertificate(new Certificate(</span>
+                &quot;cert-002&quot;, &quot;SUITE_NIGHT&quot;, &quot;Suite Night Certificate&quot;,
+                &quot;Upgrade to a suite on a paid night, subject to availability&quot;,
+<span class="fc" id="L176">                &quot;ACTIVE&quot;, now.minusDays(60), now.plusDays(305),</span>
+<span class="fc" id="L177">                null, null, List.of(), List.of(&quot;Subject to suite availability at check-in&quot;)));</span>
+
+<span class="fc" id="L179">        byId.get(&quot;lac-003&quot;).addCertificate(new Certificate(</span>
+                &quot;cert-003&quot;, &quot;FREE_NIGHT&quot;, &quot;Free Night Award (60,000 pts)&quot;,
+                &quot;One complimentary night at any Luxe property&quot;,
+<span class="fc" id="L182">                &quot;ACTIVE&quot;, now.minusDays(15), now.plusDays(350),</span>
+<span class="fc" id="L183">                null, null, List.of(), List.of(&quot;Subject to standard cancellation policy&quot;)));</span>
+<span class="fc" id="L184">        byId.get(&quot;lac-003&quot;).addCertificate(new Certificate(</span>
+                &quot;cert-004&quot;, &quot;DINING_CREDIT&quot;, &quot;Ambassador Dining Credit ($500)&quot;,
+                &quot;Annual dining credit, valid at signature restaurants&quot;,
+<span class="fc" id="L187">                &quot;REDEEMED&quot;, now.minusDays(120), now.plusDays(245),</span>
+<span class="fc" id="L188">                now.minusDays(40), &quot;res-302&quot;, List.of(), List.of()));</span>
+
+<span class="fc" id="L190">        byId.get(&quot;lac-005&quot;).addCertificate(new Certificate(</span>
+                &quot;cert-005&quot;, &quot;BREAKFAST&quot;, &quot;Daily Breakfast Certificate&quot;,
+                &quot;Complimentary daily breakfast for two&quot;,
+<span class="fc" id="L193">                &quot;ACTIVE&quot;, now.minusDays(10), now.plusDays(355),</span>
+<span class="fc" id="L194">                null, null, List.of(), List.of()));</span>
+<span class="fc" id="L195">    }</span>
+
+    // ── Seed: Linked partners ────────────────────────────────────────────────
+
+    private void initLinkedPartners() {
+<span class="fc" id="L200">        OffsetDateTime now = OffsetDateTime.now();</span>
+<span class="fc" id="L201">        byId.get(&quot;lac-002&quot;).addLinkedPartner(new LinkedPartnerAccount(</span>
+<span class="fc" id="L202">                &quot;lpa-001&quot;, partners.get(&quot;ptr-001&quot;), &quot;SK-83472918&quot;,</span>
+<span class="fc" id="L203">                now.minusDays(180), now.minusDays(15), &quot;ACTIVE&quot;));</span>
+<span class="fc" id="L204">        byId.get(&quot;lac-003&quot;).addLinkedPartner(new LinkedPartnerAccount(</span>
+<span class="fc" id="L205">                &quot;lpa-002&quot;, partners.get(&quot;ptr-001&quot;), &quot;SK-91002384&quot;,</span>
+<span class="fc" id="L206">                now.minusDays(400), now.minusDays(3), &quot;ACTIVE&quot;));</span>
+<span class="fc" id="L207">        byId.get(&quot;lac-003&quot;).addLinkedPartner(new LinkedPartnerAccount(</span>
+<span class="fc" id="L208">                &quot;lpa-003&quot;, partners.get(&quot;ptr-006&quot;), &quot;ATLAS-7821-1029&quot;,</span>
+<span class="fc" id="L209">                now.minusDays(220), now.minusDays(1), &quot;ACTIVE&quot;));</span>
+<span class="fc" id="L210">        byId.get(&quot;lac-005&quot;).addLinkedPartner(new LinkedPartnerAccount(</span>
+<span class="fc" id="L211">                &quot;lpa-004&quot;, partners.get(&quot;ptr-003&quot;), &quot;STELLAR-44918&quot;,</span>
+<span class="fc" id="L212">                now.minusDays(60), now.minusDays(7), &quot;ACTIVE&quot;));</span>
+<span class="fc" id="L213">    }</span>
+
+    // ── Account lookups ──────────────────────────────────────────────────────
+
+<span class="fc" id="L217">    @Override public Optional&lt;LoyaltyAccount&gt; findByGuestId(String guestId)         { return Optional.ofNullable(byGuestId.get(guestId)); }</span>
+<span class="fc" id="L218">    @Override public Optional&lt;LoyaltyAccount&gt; findByLoyaltyNumber(String number)    { return Optional.ofNullable(byNumber.get(number)); }</span>
+<span class="fc" id="L219">    @Override public Optional&lt;LoyaltyAccount&gt; findById(String id)                   { return Optional.ofNullable(byId.get(id)); }</span>
+
+    @Override
+    public LoyaltyAccount enroll(String guestId, String referralCode, Boolean marketingOptIn) {
+<span class="fc" id="L223">        String number = &quot;LUX&quot; + String.format(&quot;%010d&quot;, new Random().nextInt(999_999_999));</span>
+<span class="fc" id="L224">        String id = &quot;lac-&quot; + UUID.randomUUID().toString().substring(0, 8);</span>
+<span class="fc" id="L225">        String ref = &quot;REF-&quot; + UUID.randomUUID().toString().substring(0, 6).toUpperCase();</span>
+<span class="fc" id="L226">        LoyaltyAccount a = new LoyaltyAccount(id, number, guestId, &quot;MEMBER&quot;, &quot;ACTIVE&quot;,</span>
+<span class="fc" id="L227">                0, 0, 0, 0, 0, LocalDate.now(), ref, 0, 0.0, &quot;USD&quot;);</span>
+<span class="fc" id="L228">        byId.put(id, a);</span>
+<span class="fc" id="L229">        byGuestId.put(guestId, a);</span>
+<span class="fc" id="L230">        byNumber.put(number, a);</span>
+<span class="fc" id="L231">        return a;</span>
+    }
+
+    // ── Transactions ─────────────────────────────────────────────────────────
+
+    @Override
+    public List&lt;PointsTransaction&gt; findTransactions(String accountId, Map&lt;String, Object&gt; filter, String sortBy) {
+<span class="fc bfc" id="L238" title="All 2 branches covered.">        String type      = filter != null ? (String) filter.get(&quot;type&quot;) : null;</span>
+<span class="fc bfc" id="L239" title="All 2 branches covered.">        String fromDate  = filter != null ? (String) filter.get(&quot;fromDate&quot;) : null;</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">        String toDate    = filter != null ? (String) filter.get(&quot;toDate&quot;)   : null;</span>
+<span class="fc bfc" id="L241" title="All 2 branches covered.">        String resId     = filter != null ? (String) filter.get(&quot;reservationId&quot;) : null;</span>
+<span class="fc" id="L242">        return transactions.stream()</span>
+<span class="fc" id="L243">                .filter(t -&gt; t.accountId().equals(accountId))</span>
+<span class="fc bfc" id="L244" title="All 4 branches covered.">                .filter(t -&gt; type == null || t.type().equals(type))</span>
+<span class="fc bfc" id="L245" title="All 4 branches covered.">                .filter(t -&gt; resId == null || resId.equals(t.reservationId()))</span>
+<span class="pc bpc" id="L246" title="3 of 4 branches missed.">                .filter(t -&gt; fromDate == null || !t.transactionDate().toLocalDate().isBefore(LocalDate.parse(fromDate)))</span>
+<span class="pc bpc" id="L247" title="3 of 4 branches missed.">                .filter(t -&gt; toDate   == null || !t.transactionDate().toLocalDate().isAfter(LocalDate.parse(toDate)))</span>
+<span class="fc" id="L248">                .sorted(transactionComparator(sortBy))</span>
+<span class="fc" id="L249">                .collect(Collectors.toList());</span>
+    }
+
+    private Comparator&lt;PointsTransaction&gt; transactionComparator(String sortBy) {
+<span class="fc bfc" id="L253" title="All 2 branches covered.">        if (sortBy == null) sortBy = &quot;DATE_DESC&quot;;</span>
+<span class="pc bpc" id="L254" title="1 of 4 branches missed.">        return switch (sortBy) {</span>
+<span class="fc" id="L255">            case &quot;DATE_ASC&quot;     -&gt; Comparator.comparing(PointsTransaction::transactionDate);</span>
+<span class="fc" id="L256">            case &quot;POINTS_DESC&quot;  -&gt; Comparator.comparingInt(PointsTransaction::points).reversed();</span>
+<span class="nc" id="L257">            case &quot;POINTS_ASC&quot;   -&gt; Comparator.comparingInt(PointsTransaction::points);</span>
+<span class="fc" id="L258">            default             -&gt; Comparator.comparing(PointsTransaction::transactionDate).reversed();</span>
+        };
+    }
+
+    @Override
+    public List&lt;Certificate&gt; findCertificates(String accountId, String status) {
+<span class="fc" id="L264">        LoyaltyAccount a = byId.get(accountId);</span>
+<span class="fc bfc" id="L265" title="All 2 branches covered.">        if (a == null) return List.of();</span>
+<span class="fc" id="L266">        return a.getCertificatesRaw().stream()</span>
+<span class="pc bpc" id="L267" title="2 of 4 branches missed.">                .filter(c -&gt; status == null || status.equals(c.getStatus()))</span>
+<span class="fc" id="L268">                .collect(Collectors.toList());</span>
+    }
+
+    // ── Mutations ────────────────────────────────────────────────────────────
+
+    @Override
+    public PointsTransaction transferPoints(String fromNumber, String toNumber, int points, String message) {
+<span class="fc" id="L275">        LoyaltyAccount from = byNumber.get(fromNumber);</span>
+<span class="fc" id="L276">        LoyaltyAccount to   = byNumber.get(toNumber);</span>
+<span class="fc bfc" id="L277" title="All 4 branches covered.">        if (from == null || to == null) return null;</span>
+<span class="fc bfc" id="L278" title="All 2 branches covered.">        if (from.getPointsAvailable() &lt; points) return null;</span>
+<span class="fc" id="L279">        from.deductAvailable(points);</span>
+<span class="fc" id="L280">        to.addAvailable(points);</span>
+<span class="fc" id="L281">        recordTx(from.getId(), &quot;GIFT_OUT&quot;, -points, from.getPointsAvailable(),</span>
+<span class="pc bpc" id="L282" title="1 of 2 branches missed.">                &quot;Transfer to &quot; + toNumber + (message != null ? &quot; — &quot; + message : &quot;&quot;), null, null);</span>
+<span class="fc" id="L283">        return recordTx(to.getId(), &quot;GIFT_IN&quot;, points, to.getPointsAvailable(),</span>
+<span class="pc bpc" id="L284" title="1 of 2 branches missed.">                &quot;Transfer from &quot; + fromNumber + (message != null ? &quot; — &quot; + message : &quot;&quot;), null, null);</span>
+    }
+
+    @Override
+    public PointsTransaction transferToAirline(String accountId, String partnerId,
+                                                String partnerAccountNumber, int points) {
+<span class="fc" id="L290">        LoyaltyAccount a = byId.get(accountId);</span>
+<span class="fc" id="L291">        LoyaltyPartner p = partners.get(partnerId);</span>
+<span class="fc bfc" id="L292" title="All 4 branches covered.">        if (a == null || p == null) return null;</span>
+<span class="pc bpc" id="L293" title="1 of 2 branches missed.">        if (a.getPointsAvailable() &lt; points) return null;</span>
+<span class="fc" id="L294">        a.deductAvailable(points);</span>
+<span class="fc" id="L295">        return recordTx(a.getId(), &quot;REDEEM_TRANSFER&quot;, -points, a.getPointsAvailable(),</span>
+<span class="fc" id="L296">                &quot;Transfer to &quot; + p.name() + &quot; account &quot; + partnerAccountNumber,</span>
+                null, partnerId);
+    }
+
+    @Override
+    public LinkedPartnerAccount linkPartnerAccount(String accountId, String partnerId,
+                                                    String partnerAccountNumber, String lastName) {
+<span class="fc" id="L303">        LoyaltyAccount a = byId.get(accountId);</span>
+<span class="fc" id="L304">        LoyaltyPartner p = partners.get(partnerId);</span>
+<span class="pc bpc" id="L305" title="1 of 4 branches missed.">        if (a == null || p == null) return null;</span>
+<span class="fc" id="L306">        LinkedPartnerAccount link = new LinkedPartnerAccount(</span>
+<span class="fc" id="L307">                &quot;lpa-&quot; + UUID.randomUUID().toString().substring(0, 8),</span>
+<span class="fc" id="L308">                p, partnerAccountNumber, OffsetDateTime.now(), OffsetDateTime.now(), &quot;ACTIVE&quot;);</span>
+<span class="fc" id="L309">        a.addLinkedPartner(link);</span>
+<span class="fc" id="L310">        return link;</span>
+    }
+
+    @Override
+    public Challenge registerForChallenge(String accountId, String challengeId) {
+<span class="fc" id="L315">        Challenge c = challenges.get(challengeId);</span>
+<span class="fc bfc" id="L316" title="All 2 branches covered.">        if (c == null) return null;</span>
+<span class="fc" id="L317">        c.setRegistered(true);</span>
+<span class="pc bpc" id="L318" title="1 of 2 branches missed.">        if (c.getProgress() == null) {</span>
+<span class="fc" id="L319">            c.setProgress(Challenge.ChallengeProgress.of(0, 4));</span>
+        }
+<span class="fc" id="L321">        return c;</span>
+    }
+
+    @Override
+    public Certificate redeemCertificate(String accountId, String certificateId, String reservationId) {
+<span class="fc" id="L326">        LoyaltyAccount a = byId.get(accountId);</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">        if (a == null) return null;</span>
+<span class="fc" id="L328">        Certificate cert = a.getCertificatesRaw().stream()</span>
+<span class="fc" id="L329">                .filter(c -&gt; c.getId().equals(certificateId))</span>
+<span class="fc" id="L330">                .findFirst().orElse(null);</span>
+<span class="fc bfc" id="L331" title="All 2 branches covered.">        if (cert == null) return null;</span>
+<span class="fc bfc" id="L332" title="All 2 branches covered.">        if (!&quot;ACTIVE&quot;.equals(cert.getStatus())) return null;</span>
+<span class="fc" id="L333">        cert.redeem(reservationId);</span>
+<span class="fc" id="L334">        recordTx(a.getId(), &quot;REDEEM_CERTIFICATE&quot;, 0, a.getPointsAvailable(),</span>
+<span class="fc" id="L335">                &quot;Redeemed certificate: &quot; + cert.getName(), reservationId, null);</span>
+<span class="fc" id="L336">        return cert;</span>
+    }
+
+    @Override
+    public PointsTransaction buyPoints(String accountId, int points, String paymentMethodId) {
+<span class="fc" id="L341">        LoyaltyAccount a = byId.get(accountId);</span>
+<span class="fc bfc" id="L342" title="All 2 branches covered.">        if (a == null) return null;</span>
+<span class="fc" id="L343">        a.addAvailable(points);</span>
+<span class="fc" id="L344">        a.addLifetime(points);</span>
+<span class="fc" id="L345">        return recordTx(a.getId(), &quot;EARN_PURCHASE&quot;, points, a.getPointsAvailable(),</span>
+                &quot;Purchased &quot; + points + &quot; points&quot;, null, null);
+    }
+
+    @Override
+    public PointsTransaction giftPoints(String fromNumber, String toNumber, int points, String message) {
+<span class="fc" id="L351">        return transferPoints(fromNumber, toNumber, points, message);</span>
+    }
+
+    @Override
+    public LoyaltyAccount extendPointsExpiry(String accountId) {
+<span class="fc" id="L356">        LoyaltyAccount a = byId.get(accountId);</span>
+<span class="fc bfc" id="L357" title="All 2 branches covered.">        if (a == null) return null;</span>
+<span class="fc" id="L358">        a.extendExpiry();</span>
+<span class="fc" id="L359">        return a;</span>
+    }
+
+    private PointsTransaction recordTx(String accountId, String type, int points, int balanceAfter,
+                                        String desc, String resId, String partnerId) {
+<span class="fc" id="L364">        OffsetDateTime now = OffsetDateTime.now();</span>
+<span class="fc bfc" id="L365" title="All 2 branches covered.">        OffsetDateTime expires = type.startsWith(&quot;EARN&quot;) ? now.plusYears(2) : null;</span>
+<span class="fc" id="L366">        PointsTransaction tx = new PointsTransaction(</span>
+<span class="fc" id="L367">                &quot;tx-&quot; + UUID.randomUUID().toString().substring(0, 8),</span>
+                accountId, type, points, balanceAfter, desc, resId, partnerId, now, expires);
+<span class="fc" id="L369">        transactions.add(tx);</span>
+<span class="fc" id="L370">        return tx;</span>
+    }
+
+    // ── Partners / challenges / benefits / valuation ─────────────────────────
+
+    @Override
+    public List&lt;LoyaltyPartner&gt; findPartners(List&lt;String&gt; categories) {
+<span class="fc" id="L377">        return partners.values().stream()</span>
+<span class="fc bfc" id="L378" title="All 4 branches covered.">                .filter(p -&gt; categories == null || categories.isEmpty()</span>
+<span class="fc bfc" id="L379" title="All 2 branches covered.">                        || categories.contains(p.category()))</span>
+<span class="fc" id="L380">                .collect(Collectors.toList());</span>
+    }
+
+    @Override public Optional&lt;LoyaltyPartner&gt; findPartnerById(String id) {
+<span class="fc" id="L384">        return Optional.ofNullable(partners.get(id));</span>
+    }
+
+    @Override
+    public List&lt;Challenge&gt; findAvailableChallenges() {
+<span class="fc" id="L389">        return challenges.values().stream()</span>
+<span class="pc bpc" id="L390" title="1 of 4 branches missed.">                .filter(c -&gt; &quot;ACTIVE&quot;.equals(c.getStatus()) || &quot;UPCOMING&quot;.equals(c.getStatus()))</span>
+<span class="fc" id="L391">                .collect(Collectors.toList());</span>
+    }
+
+    @Override public Optional&lt;Challenge&gt; findChallengeById(String id) {
+<span class="fc" id="L395">        return Optional.ofNullable(challenges.get(id));</span>
+    }
+
+    @Override
+    public List&lt;LoyaltyBenefit&gt; benefitsForTier(String tier) {
+<span class="pc bpc" id="L400" title="4 of 7 branches missed.">        return switch (tier) {</span>
+<span class="nc" id="L401">            case &quot;MEMBER&quot; -&gt; List.of(</span>
+<span class="nc" id="L402">                    benefit(&quot;MEMBER_RATES&quot;,   &quot;Member rates&quot;,            &quot;Exclusive member-only nightly rates&quot;,         &quot;POINTS&quot;,  &quot;MEMBER&quot;),</span>
+<span class="nc" id="L403">                    benefit(&quot;MEMBER_POINTS&quot;,  &quot;Earn points&quot;,             &quot;Earn 10 points per dollar on qualifying spend&quot;,&quot;POINTS&quot;, &quot;MEMBER&quot;));</span>
+<span class="nc" id="L404">            case &quot;SILVER&quot; -&gt; List.of(</span>
+<span class="nc" id="L405">                    benefit(&quot;SILVER_LATE&quot;,    &quot;Late check-out (1 PM)&quot;,   &quot;Guaranteed late check-out subject to availability&quot;,&quot;CHECKOUT&quot;,&quot;SILVER&quot;),</span>
+<span class="nc" id="L406">                    benefit(&quot;SILVER_UPG&quot;,     &quot;Room upgrade&quot;,            &quot;Complimentary upgrade when available&quot;,        &quot;ROOM&quot;,    &quot;SILVER&quot;),</span>
+<span class="nc" id="L407">                    benefit(&quot;SILVER_BONUS&quot;,   &quot;25% point bonus&quot;,         &quot;Earn 25% bonus points on every stay&quot;,         &quot;POINTS&quot;,  &quot;SILVER&quot;));</span>
+<span class="fc" id="L408">            case &quot;GOLD&quot; -&gt; List.of(</span>
+<span class="fc" id="L409">                    benefit(&quot;GOLD_UPG&quot;,       &quot;Confirmed upgrade&quot;,       &quot;Confirmed upgrade up to junior suite&quot;,        &quot;ROOM&quot;,    &quot;GOLD&quot;),</span>
+<span class="fc" id="L410">                    benefit(&quot;GOLD_LATE&quot;,      &quot;Late check-out (2 PM)&quot;,   &quot;Guaranteed late check-out&quot;,                   &quot;CHECKOUT&quot;,&quot;GOLD&quot;),</span>
+<span class="fc" id="L411">                    benefit(&quot;GOLD_BONUS&quot;,     &quot;50% point bonus&quot;,         &quot;Earn 50% bonus points on every stay&quot;,         &quot;POINTS&quot;,  &quot;GOLD&quot;),</span>
+<span class="fc" id="L412">                    benefit(&quot;GOLD_INTERNET&quot;, &quot;Premium WiFi&quot;,            &quot;Complimentary premium internet&quot;,              &quot;INTERNET&quot;,&quot;GOLD&quot;));</span>
+<span class="nc" id="L413">            case &quot;PLATINUM&quot; -&gt; List.of(</span>
+<span class="nc" id="L414">                    benefit(&quot;PLAT_SUITE&quot;,     &quot;Suite upgrade&quot;,           &quot;Suite upgrade when available&quot;,                &quot;ROOM&quot;,    &quot;PLATINUM&quot;),</span>
+<span class="nc" id="L415">                    benefit(&quot;PLAT_BREAK&quot;,     &quot;Daily breakfast&quot;,         &quot;Complimentary breakfast for two&quot;,             &quot;DINING&quot;,  &quot;PLATINUM&quot;),</span>
+<span class="nc" id="L416">                    benefit(&quot;PLAT_LOUNGE&quot;,    &quot;Lounge access&quot;,           &quot;Executive lounge access&quot;,                     &quot;LOUNGE&quot;,  &quot;PLATINUM&quot;),</span>
+<span class="nc" id="L417">                    benefit(&quot;PLAT_BONUS&quot;,     &quot;75% point bonus&quot;,         &quot;Earn 75% bonus points on every stay&quot;,         &quot;POINTS&quot;,  &quot;PLATINUM&quot;),</span>
+<span class="nc" id="L418">                    benefit(&quot;PLAT_LATE&quot;,      &quot;Late check-out (4 PM)&quot;,   &quot;Guaranteed late check-out&quot;,                   &quot;CHECKOUT&quot;,&quot;PLATINUM&quot;));</span>
+<span class="nc" id="L419">            case &quot;TITANIUM&quot; -&gt; List.of(</span>
+<span class="nc" id="L420">                    benefit(&quot;TIT_SUITE&quot;,      &quot;Confirmed suite upgrade&quot;, &quot;Confirmed suite upgrade subject to inventory&quot;,&quot;ROOM&quot;,    &quot;TITANIUM&quot;),</span>
+<span class="nc" id="L421">                    benefit(&quot;TIT_AMB&quot;,        &quot;Personal Ambassador&quot;,     &quot;Dedicated Ambassador concierge&quot;,              &quot;CONCIERGE&quot;,&quot;TITANIUM&quot;),</span>
+<span class="nc" id="L422">                    benefit(&quot;TIT_BREAK&quot;,      &quot;Daily breakfast&quot;,         &quot;Complimentary breakfast for two&quot;,             &quot;DINING&quot;,  &quot;TITANIUM&quot;),</span>
+<span class="nc" id="L423">                    benefit(&quot;TIT_LOUNGE&quot;,     &quot;Lounge access&quot;,           &quot;Premier lounge access for member + 1&quot;,        &quot;LOUNGE&quot;,  &quot;TITANIUM&quot;),</span>
+<span class="nc" id="L424">                    benefit(&quot;TIT_BONUS&quot;,     &quot;100% point bonus&quot;,        &quot;Earn 100% bonus points on every stay&quot;,        &quot;POINTS&quot;,  &quot;TITANIUM&quot;),</span>
+<span class="nc" id="L425">                    benefit(&quot;TIT_CERT&quot;,       &quot;Annual free night&quot;,       &quot;Annual free night certificate&quot;,               &quot;CERTIFICATE&quot;,&quot;TITANIUM&quot;));</span>
+<span class="fc" id="L426">            case &quot;AMBASSADOR&quot; -&gt; List.of(</span>
+<span class="fc" id="L427">                    benefit(&quot;AMB_AMB&quot;,        &quot;Ambassador team&quot;,         &quot;Dedicated Ambassador team available 24/7&quot;,    &quot;CONCIERGE&quot;,&quot;AMBASSADOR&quot;),</span>
+<span class="fc" id="L428">                    benefit(&quot;AMB_SUITE&quot;,      &quot;Guaranteed suite&quot;,        &quot;Guaranteed suite at every stay&quot;,              &quot;ROOM&quot;,    &quot;AMBASSADOR&quot;),</span>
+<span class="fc" id="L429">                    benefit(&quot;AMB_TRANSPORT&quot;, &quot;Airport transfers&quot;,        &quot;Complimentary private airport transfers&quot;,     &quot;TRANSPORT&quot;,&quot;AMBASSADOR&quot;),</span>
+<span class="fc" id="L430">                    benefit(&quot;AMB_LOUNGE&quot;,     &quot;Diamond lounges&quot;,         &quot;Access to exclusive Diamond lounges&quot;,         &quot;LOUNGE&quot;,  &quot;AMBASSADOR&quot;),</span>
+<span class="fc" id="L431">                    benefit(&quot;AMB_BONUS&quot;,      &quot;125% point bonus&quot;,        &quot;Earn 125% bonus points on every stay&quot;,        &quot;POINTS&quot;,  &quot;AMBASSADOR&quot;),</span>
+<span class="fc" id="L432">                    benefit(&quot;AMB_CERTS&quot;,      &quot;Two free nights&quot;,         &quot;Two annual free night certificates&quot;,          &quot;CERTIFICATE&quot;,&quot;AMBASSADOR&quot;));</span>
+<span class="fc" id="L433">            default -&gt; List.of();</span>
+        };
+    }
+
+    private LoyaltyBenefit benefit(String code, String name, String desc, String cat, String tier) {
+<span class="fc" id="L438">        return new LoyaltyBenefit(code, name, desc, cat, tier);</span>
+    }
+
+    @Override
+    public PointsValuation valuePoints(int points, String currency) {
+<span class="fc" id="L443">        double cents = 0.7;</span>
+<span class="fc" id="L444">        double rate = cents / 100.0;</span>
+<span class="fc" id="L445">        Money cash = Money.of(points * rate, currency);</span>
+<span class="fc" id="L446">        Money per1k = Money.of(1000 * rate, currency);</span>
+<span class="fc" id="L447">        return new PointsValuation(points, currency, cash, per1k,</span>
+                &quot;Free night certificates often deliver 2-3x base value vs cash&quot;,
+<span class="fc" id="L449">                List.of(</span>
+                        new PointsValuation.PointsRedemptionExample(
+<span class="fc" id="L451">                                &quot;Free Night (Category 5)&quot;, 35000, Money.of(450, currency)),</span>
+                        new PointsValuation.PointsRedemptionExample(
+<span class="fc" id="L453">                                &quot;Suite Night Award&quot;,       60000, Money.of(900, currency)),</span>
+                        new PointsValuation.PointsRedemptionExample(
+<span class="fc" id="L455">                                &quot;Spa Treatment&quot;,           12000, Money.of(280, currency)),</span>
+                        new PointsValuation.PointsRedemptionExample(
+<span class="fc" id="L457">                                &quot;$100 Dining Credit&quot;,       5000, Money.of(100, currency))));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CorporateDataFetcher.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Corporate Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.corporate.resolver</a> &gt; <span class="el_source">CorporateDataFetcher.java</span></div><h1>CorporateDataFetcher.java</h1><pre class="source lang-java linenums">package com.luxe.corporate.resolver;
+
+import com.luxe.corporate.schema.types.GuestProfile;
+
+import com.luxe.common.auth.AuthContext;
+import com.luxe.common.auth.AuthRole;
+import com.luxe.common.error.AlreadyEnrolledError;
+import com.luxe.common.error.NotFoundError;
+import com.luxe.common.error.ValidationError;
+import com.luxe.common.error.FieldError;
+import com.luxe.corporate.datasource.CorporateDataSource;
+import com.luxe.corporate.schema.types.*;
+import com.netflix.graphql.dgs.*;
+import graphql.schema.DataFetchingEnvironment;
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.List;
+import java.util.Map;
+
+@DgsComponent
+public class CorporateDataFetcher {
+
+    private final CorporateDataSource dataSource;
+
+<span class="fc" id="L25">    public CorporateDataFetcher(CorporateDataSource dataSource) {</span>
+<span class="fc" id="L26">        this.dataSource = dataSource;</span>
+<span class="fc" id="L27">    }</span>
+
+    private AuthContext getAuth(DataFetchingEnvironment dfe) {
+        try {
+<span class="fc" id="L31">            HttpServletRequest req = dfe.getGraphQlContext().get(HttpServletRequest.class);</span>
+<span class="pc bpc" id="L32" title="1 of 2 branches missed.">            if (req == null) return AuthContext.anonymous();</span>
+<span class="nc" id="L33">            AuthContext ctx = (AuthContext) req.getAttribute(&quot;authContext&quot;);</span>
+<span class="nc bnc" id="L34" title="All 2 branches missed.">            return ctx != null ? ctx : AuthContext.anonymous();</span>
+<span class="nc" id="L35">        } catch (Exception e) { return AuthContext.anonymous(); }</span>
+    }
+
+    // ── Queries ───────────────────────────────────────────────────────────────
+
+    @DgsQuery
+    public CorporateAccount myCorporateAccount(DataFetchingEnvironment dfe) {
+<span class="fc" id="L42">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L43">        auth.requireAuth();</span>
+<span class="nc" id="L44">        return dataSource.findByGuestId(auth.guestId()).orElse(null);</span>
+    }
+
+    @DgsQuery
+    public CorporateAccount corporateAccount(@InputArgument String id,
+                                               DataFetchingEnvironment dfe) {
+<span class="nc" id="L50">        getAuth(dfe).requireRole(AuthRole.PROPERTY_STAFF);</span>
+<span class="nc" id="L51">        return dataSource.findById(id).orElse(null);</span>
+    }
+
+    @DgsQuery
+    public TravelReport travelReport(@InputArgument String accountId,
+                                       @InputArgument String period,
+                                       DataFetchingEnvironment dfe) {
+<span class="nc" id="L58">        getAuth(dfe).requireAuth();</span>
+<span class="nc" id="L59">        return dataSource.report(accountId, period);</span>
+    }
+
+    @DgsQuery
+    public List&lt;TravelApproval&gt; pendingApprovals(@InputArgument String accountId,
+                                                   DataFetchingEnvironment dfe) {
+<span class="nc" id="L65">        getAuth(dfe).requireAuth();</span>
+<span class="nc" id="L66">        return dataSource.pendingApprovals(accountId);</span>
+    }
+
+    @DgsQuery
+    public TravelPolicy travelPolicy(@InputArgument String accountId,
+                                       DataFetchingEnvironment dfe) {
+<span class="nc" id="L72">        getAuth(dfe).requireAuth();</span>
+<span class="nc" id="L73">        return dataSource.findPolicy(accountId).orElse(null);</span>
+    }
+
+    @DgsQuery
+    public List&lt;NegotiatedRate&gt; negotiatedRates(@InputArgument String accountId,
+                                                  @InputArgument String propertyId,
+                                                  DataFetchingEnvironment dfe) {
+<span class="nc" id="L80">        getAuth(dfe).requireAuth();</span>
+<span class="nc" id="L81">        return dataSource.findRates(accountId, propertyId);</span>
+    }
+
+    // ── Mutations ─────────────────────────────────────────────────────────────
+
+    @DgsMutation
+    public Object enrollCorporate(@InputArgument Map&lt;String, Object&gt; input,
+                                    DataFetchingEnvironment dfe) {
+<span class="nc" id="L89">        getAuth(dfe).requireAuth();</span>
+<span class="nc bnc" id="L90" title="All 4 branches missed.">        if (input.get(&quot;companyName&quot;) == null || input.get(&quot;primaryContact&quot;) == null) {</span>
+<span class="nc" id="L91">            return new ValidationError(&quot;INVALID_INPUT&quot;,</span>
+                    &quot;companyName and primaryContact are required&quot;,
+<span class="nc" id="L93">                    List.of(new FieldError(&quot;companyName&quot;, &quot;Required&quot;)));</span>
+        }
+<span class="nc" id="L95">        return dataSource.enroll(input);</span>
+    }
+
+    @DgsMutation
+    public Object updateTravelPolicy(@InputArgument String accountId,
+                                       @InputArgument Map&lt;String, Object&gt; input,
+                                       DataFetchingEnvironment dfe) {
+<span class="nc" id="L102">        getAuth(dfe).requireAuth();</span>
+<span class="nc bnc" id="L103" title="All 2 branches missed.">        if (dataSource.findById(accountId).isEmpty())</span>
+<span class="nc" id="L104">            return new NotFoundError(&quot;CorporateAccount&quot;, accountId);</span>
+<span class="nc" id="L105">        return dataSource.updatePolicy(accountId, input);</span>
+    }
+
+    @DgsMutation
+    public Object addCorporateTraveler(@InputArgument Map&lt;String, Object&gt; input,
+                                         DataFetchingEnvironment dfe) {
+<span class="nc" id="L111">        getAuth(dfe).requireAuth();</span>
+<span class="nc bnc" id="L112" title="All 4 branches missed.">        if (input.get(&quot;accountId&quot;) == null || input.get(&quot;guestId&quot;) == null) {</span>
+<span class="nc" id="L113">            return new ValidationError(&quot;INVALID_INPUT&quot;,</span>
+                    &quot;accountId and guestId are required&quot;,
+<span class="nc" id="L115">                    List.of(new FieldError(&quot;accountId&quot;, &quot;Required&quot;)));</span>
+        }
+<span class="nc" id="L117">        var t = dataSource.addTraveler(input);</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">        return t != null ? t : new NotFoundError(&quot;CorporateAccount&quot;,</span>
+<span class="nc" id="L119">                String.valueOf(input.get(&quot;accountId&quot;)));</span>
+    }
+
+    @DgsMutation
+    public boolean removeCorporateTraveler(@InputArgument String travelerId,
+                                             DataFetchingEnvironment dfe) {
+<span class="nc" id="L125">        getAuth(dfe).requireAuth();</span>
+<span class="nc" id="L126">        return dataSource.removeTraveler(travelerId);</span>
+    }
+
+    @DgsMutation
+    public Object reviewTravelApproval(@InputArgument String approvalId,
+                                         @InputArgument String decision,
+                                         @InputArgument String notes,
+                                         DataFetchingEnvironment dfe) {
+<span class="fc" id="L134">        AuthContext auth = getAuth(dfe);</span>
+<span class="nc" id="L135">        auth.requireAuth();</span>
+<span class="nc bnc" id="L136" title="All 2 branches missed.">        if (dataSource.findApproval(approvalId).isEmpty())</span>
+<span class="nc" id="L137">            return new NotFoundError(&quot;TravelApproval&quot;, approvalId);</span>
+<span class="nc" id="L138">        return dataSource.reviewApproval(approvalId, decision, auth.guestId(), notes);</span>
+    }
+
+    // ── GuestProfile.corporateAccount federation ──────────────────────────────
+
+    @DgsData(parentType = &quot;GuestProfile&quot;, field = &quot;corporateAccount&quot;)
+    public CorporateAccount guestCorporateAccount(DataFetchingEnvironment dfe) {
+<span class="fc" id="L145">        GuestProfile guest = dfe.getSource();</span>
+<span class="fc" id="L146">        return dataSource.findByGuestId(guest.getId()).orElse(null);</span>
+    }
+
+    @DgsEntityFetcher(name = &quot;CorporateAccount&quot;)
+    public CorporateAccount fetchAccount(Map&lt;String, Object&gt; values) {
+<span class="fc" id="L151">        return dataSource.findById((String) values.get(&quot;id&quot;)).orElse(null);</span>
+    }
+    @DgsEntityFetcher(name = &quot;GuestProfile&quot;)
+    public GuestProfile fetchGuestProfileReference(Map&lt;String, Object&gt; values) {
+<span class="fc" id="L155">        return new GuestProfile((String) values.get(&quot;id&quot;));</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

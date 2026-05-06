@@ -1,0 +1,4 @@
+com/luxe/loyalty/datasource/LoyaltyMutationsTest.class
+com/luxe/loyalty/datasource/LoyaltyMockDataSourceTest.class
+com/luxe/loyalty/resolver/LoyaltyDataFetcherTest.class
+com/luxe/loyalty/resolver/LoyaltyMutationsResolverTest.class

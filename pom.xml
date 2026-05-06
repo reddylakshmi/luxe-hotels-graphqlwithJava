@@ -42,6 +42,7 @@
         <jjwt.version>0.12.6</jjwt.version>
         <graalvm-native.version>0.10.3</graalvm-native.version>
         <logback-logstash.version>7.4</logback-logstash.version>
+        <jacoco.version>0.8.12</jacoco.version>
     </properties>
 
     <dependencyManagement>
@@ -187,6 +188,41 @@
                     <compilerArgs>
                         <arg>--enable-preview</arg>
                     </compilerArgs>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>jacoco-prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>jacoco-report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <excludes>
+                        <!-- Spring Boot bootstrap class — no logic to cover -->
+                        <exclude>**/*Application.class</exclude>
+                        <!-- Federation reference stubs in non-owning subgraphs (id-only POJOs) -->
+                        <exclude>com/luxe/experiences/schema/types/Hotel.class</exclude>
+                        <exclude>com/luxe/meetings/schema/types/Hotel.class</exclude>
+                        <exclude>com/luxe/pricing/schema/types/Hotel.class</exclude>
+                        <exclude>com/luxe/pricing/schema/types/RoomType.class</exclude>
+                        <exclude>com/luxe/corporate/schema/types/GuestProfile.class</exclude>
+                        <exclude>com/luxe/loyalty/schema/types/GuestProfile.class</exclude>
+                        <exclude>com/luxe/notifications/schema/types/GuestProfile.class</exclude>
+                        <exclude>com/luxe/reservations/schema/types/GuestProfile.class</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
         </plugins>
