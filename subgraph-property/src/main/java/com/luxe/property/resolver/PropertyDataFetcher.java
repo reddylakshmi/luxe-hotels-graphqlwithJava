@@ -48,6 +48,12 @@ public class PropertyDataFetcher {
     }
 
     @DgsQuery
+    public com.luxe.property.schema.types.HotelFacets hotelFacets(
+            @InputArgument Map<String, Object> filter) {
+        return dataSource.computeFacets(filter);
+    }
+
+    @DgsQuery
     public Brand brand(@InputArgument String id) {
         return dataSource.getBrandById(id).orElse(null);
     }

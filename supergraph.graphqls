@@ -180,6 +180,16 @@ enum AmenityCategory
   WELLNESS @join__enumValue(graph: PROPERTY)
 }
 
+type AmenityFacets
+  @join__type(graph: PROPERTY)
+{
+  hasFreeBreakfast: Int!
+  hasPool: Int!
+  hasSpa: Int!
+  hasGolf: Int!
+  petsAllowed: Int!
+}
+
 union ApplyGiftCardResult
   @join__type(graph: RESERVATIONS)
   @join__unionMember(graph: RESERVATIONS, member: "ReservationRateBreakdown")
@@ -609,6 +619,14 @@ type BrandEdge
   cursor: String!
 }
 
+type BrandFacet
+  @join__type(graph: PROPERTY)
+{
+  brandId: ID!
+  brand: Brand!
+  count: Int!
+}
+
 type BrandPillar
   @join__type(graph: CONTENT)
 {
@@ -929,6 +947,14 @@ type CheckOutPolicy
 {
   standardTime: String!
   lateCheckOut: EarlyLatePolicy
+}
+
+type CityFacet
+  @join__type(graph: PROPERTY)
+{
+  city: String!
+  countryCode: CountryCode!
+  count: Int!
 }
 
 type CommunicationPreferences
@@ -1849,6 +1875,13 @@ type GuestRating
   travelerTypes: [TravelerTypeRating!]!
 }
 
+type GuestRatingBucket
+  @join__type(graph: PROPERTY)
+{
+  minRating: Float!
+  count: Int!
+}
+
 type Hotel implements Node
   @join__implements(graph: PROPERTY, interface: "Node")
   @join__type(graph: CONTENT, key: "id")
@@ -1897,6 +1930,8 @@ type Hotel implements Node
   hasSpa: Boolean! @join__field(graph: PROPERTY)
   hasGolf: Boolean! @join__field(graph: PROPERTY)
   hasPool: Boolean! @join__field(graph: PROPERTY)
+  hasFreeBreakfast: Boolean! @join__field(graph: PROPERTY)
+  petsAllowed: Boolean! @join__field(graph: PROPERTY)
   isFeatured: Boolean! @join__field(graph: PROPERTY)
   updatedAt: DateTime! @join__field(graph: PROPERTY)
 }
@@ -1933,6 +1968,17 @@ type HotelEdge
   cursor: String!
 }
 
+type HotelFacets
+  @join__type(graph: PROPERTY)
+{
+  totalCount: Int!
+  byBrand: [BrandFacet!]!
+  byBrandTier: [TierFacet!]!
+  byCity: [CityFacet!]!
+  amenities: AmenityFacets!
+  guestRating: [GuestRatingBucket!]!
+}
+
 input HotelFilter
   @join__type(graph: PROPERTY)
 {
@@ -1945,6 +1991,10 @@ input HotelFilter
   hasPool: Boolean
   hasSpa: Boolean
   hasGolf: Boolean
+  hasFreeBreakfast: Boolean
+  petsAllowed: Boolean
+  maxNightlyRate: Float
+  minNightlyRate: Float
   amenityIds: [ID!]
   checkIn: Date
   checkOut: Date
@@ -1981,6 +2031,9 @@ enum HotelSortField
   STAR_RATING @join__enumValue(graph: PROPERTY)
   PRICE_LOW_TO_HIGH @join__enumValue(graph: PROPERTY)
   DISTANCE @join__enumValue(graph: PROPERTY)
+  CITY @join__enumValue(graph: PROPERTY)
+  BRAND @join__enumValue(graph: PROPERTY)
+  REVIEWS @join__enumValue(graph: PROPERTY)
 }
 
 enum HotelStatus
@@ -2964,6 +3017,13 @@ type Query
   hotel(id: ID!): Hotel @join__field(graph: PROPERTY)
   hotelBySlug(slug: String!): Hotel @join__field(graph: PROPERTY)
   hotels(first: Int = 10, after: String, filter: HotelFilter, sortBy: HotelSortField): HotelConnection! @join__field(graph: PROPERTY)
+
+  """
+  Counts of hotels matching the given filter, broken out by each filterable
+  dimension. Used by the search-results filter UI to show "Maison Lumière (1)"
+  next to every option, scoped to the current search (city/destination/etc.).
+  """
+  hotelFacets(filter: HotelFilter): HotelFacets! @join__field(graph: PROPERTY)
   brand(id: ID!): Brand @join__field(graph: PROPERTY)
   brandByCode(code: String!): Brand @join__field(graph: PROPERTY)
   brands(first: Int = 20, after: String, tier: BrandTier): BrandConnection! @join__field(graph: PROPERTY)
@@ -3920,6 +3980,13 @@ enum ThreadStatus
   PENDING_AGENT @join__enumValue(graph: NOTIFICATIONS)
   RESOLVED @join__enumValue(graph: NOTIFICATIONS)
   CLOSED @join__enumValue(graph: NOTIFICATIONS)
+}
+
+type TierFacet
+  @join__type(graph: PROPERTY)
+{
+  tier: BrandTier!
+  count: Int!
 }
 
 type TierProgress

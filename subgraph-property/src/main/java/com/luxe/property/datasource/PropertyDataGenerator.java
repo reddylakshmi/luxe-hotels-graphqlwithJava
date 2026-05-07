@@ -273,6 +273,7 @@ final class PropertyDataGenerator {
     private static final Amenity A_REST  = am("am-rest",  "REST",  "Restaurant",   "DINING",        "Restaurant",   false);
     private static final Amenity A_BUS   = am("am-bus",   "BUS",   "Business",     "BUSINESS",      "Business",     false);
     private static final Amenity A_KIDS  = am("am-kids",  "KIDS",  "Kids Club",    "RECREATION",    "Kids Club",    false);
+    private static final Amenity A_BREAKFAST = am("am-bfst", "BREAKFAST", "Free Breakfast", "DINING", "Daily breakfast included", false);
 
     /**
      * Generate brand records and templated hotels for them. The "Luxe Collection"
@@ -480,16 +481,24 @@ final class PropertyDataGenerator {
     private static List<Amenity> amenitiesForTier(String tier, int seed) {
         List<Amenity> base = new ArrayList<>(List.of(A_WIFI, A_GYM, A_REST));
         switch (tier) {
-            case "LUXURY" -> { base.addAll(List.of(A_POOL, A_SPA, A_VALET, A_CONC, A_BUS)); }
+            case "LUXURY" -> {
+                base.addAll(List.of(A_POOL, A_SPA, A_VALET, A_CONC, A_BUS));
+                // Most luxury properties include breakfast in club / suite bookings.
+                if (seed % 3 != 0) base.add(A_BREAKFAST);
+            }
             case "PREMIUM" -> {
                 base.add(A_CONC); base.add(A_BUS);
                 if (seed % 3 != 0) base.add(A_POOL);
                 if (seed % 2 == 0) base.add(A_SPA);
                 if (seed % 4 == 0) base.add(A_KIDS);
+                // Premium tier offers breakfast often (~50% of hotels).
+                if (seed % 2 == 1) base.add(A_BREAKFAST);
             }
             case "SELECT" -> {
                 if (seed % 4 == 0) base.add(A_POOL);
                 if (seed % 5 == 0) base.add(A_BUS);
+                // Free breakfast is a select-tier signature (~70% of hotels).
+                if (seed % 10 < 7) base.add(A_BREAKFAST);
             }
         }
         return base;

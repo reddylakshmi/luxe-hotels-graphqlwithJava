@@ -298,15 +298,153 @@ public class PropertyMockDataSource implements PropertyDataSource {
             }
             Integer minStar = (Integer) filter.get("minStarRating");
             if (minStar != null) result = result.stream().filter(h -> h.getStarRating() >= minStar).collect(Collectors.toList());
+            Number minGuest = (Number) filter.get("minGuestRating");
+            if (minGuest != null) {
+                double threshold = minGuest.doubleValue();
+                result = result.stream()
+                        .filter(h -> h.getGuestRating() != null && h.getGuestRating().overall() >= threshold)
+                        .collect(Collectors.toList());
+            }
             if (Boolean.TRUE.equals(filter.get("hasSpa"))) result = result.stream().filter(Hotel::isHasSpa).collect(Collectors.toList());
             if (Boolean.TRUE.equals(filter.get("hasPool"))) result = result.stream().filter(Hotel::isHasPool).collect(Collectors.toList());
+            if (Boolean.TRUE.equals(filter.get("hasGolf"))) result = result.stream().filter(Hotel::isHasGolf).collect(Collectors.toList());
+            if (Boolean.TRUE.equals(filter.get("hasFreeBreakfast"))) result = result.stream().filter(Hotel::isHasFreeBreakfast).collect(Collectors.toList());
+            if (Boolean.TRUE.equals(filter.get("petsAllowed"))) result = result.stream().filter(Hotel::isPetsAllowed).collect(Collectors.toList());
+            // Price filter — uses an estimated USD-per-night derived from brand tier
+            // and a deterministic seed. Matches the pricing subgraph's mock rates
+            // closely enough for filter narrowing; the rate shown on the card still
+            // comes from the pricing subgraph's per-hotel availability.
+            Number minRate = (Number) filter.get("minNightlyRate");
+            Number maxRate = (Number) filter.get("maxNightlyRate");
+            if (minRate != null || maxRate != null) {
+                final double lo = minRate != null ? minRate.doubleValue() : Double.NEGATIVE_INFINITY;
+                final double hi = maxRate != null ? maxRate.doubleValue() : Double.POSITIVE_INFINITY;
+                result = result.stream().filter(h -> {
+                    double est = estimateNightlyRateUsd(h);
+                    return est >= lo && est <= hi;
+                }).collect(Collectors.toList());
+            }
+            @SuppressWarnings("unchecked")
+            List<Object> tiers = (List<Object>) filter.get("brandTiers");
+            if (tiers != null && !tiers.isEmpty()) {
+                java.util.Set<String> tierNames = tiers.stream()
+                        .filter(java.util.Objects::nonNull)
+                        .map(Object::toString)
+                        .collect(java.util.stream.Collectors.toSet());
+                result = result.stream()
+                        .filter(h -> {
+                            Brand b = brands.get(h.getBrandId());
+                            return b != null && tierNames.contains(b.getTier());
+                        })
+                        .collect(Collectors.toList());
+            }
         }
-        if ("GUEST_RATING".equals(sortBy)) result.sort((a, b) -> Double.compare(
-                b.getGuestRating() != null ? b.getGuestRating().overall() : 0,
-                a.getGuestRating() != null ? a.getGuestRating().overall() : 0));
-        else if ("NAME".equals(sortBy)) result.sort(Comparator.comparing(Hotel::getName));
+        if (sortBy != null) {
+            switch (sortBy) {
+                case "GUEST_RATING" -> result.sort((a, b) -> Double.compare(
+                        b.getGuestRating() != null ? b.getGuestRating().overall() : 0,
+                        a.getGuestRating() != null ? a.getGuestRating().overall() : 0));
+                case "STAR_RATING" -> result.sort((a, b) -> Integer.compare(b.getStarRating(), a.getStarRating()));
+                case "REVIEWS" -> result.sort((a, b) -> Integer.compare(
+                        b.getGuestRating() != null ? b.getGuestRating().count() : 0,
+                        a.getGuestRating() != null ? a.getGuestRating().count() : 0));
+                case "CITY" -> result.sort(Comparator
+                        .comparing((Hotel h) -> h.getLocation().address().countryCode())
+                        .thenComparing(h -> h.getLocation().address().city())
+                        .thenComparing(Hotel::getName));
+                case "BRAND" -> result.sort(Comparator
+                        .comparing((Hotel h) -> {
+                            Brand br = brands.get(h.getBrandId());
+                            return br != null ? br.getName() : "";
+                        })
+                        .thenComparing(Hotel::getName));
+                case "PRICE_LOW_TO_HIGH" -> result.sort(
+                        Comparator.comparingDouble(this::estimateNightlyRateUsd));
+                case "DISTANCE" -> sortByDistanceFromCentroid(result);
+                case "NAME" -> result.sort(Comparator.comparing(Hotel::getName));
+                default -> { /* unknown sortBy → leave default order */ }
+            }
+        }
         return result;
     }
+    @Override
+    public HotelFacets computeFacets(Map<String, Object> filter) {
+        // Apply the current filter EXCEPT the dimension being faceted, so
+        // each option's count reflects "how many hotels remain if I check this
+        // additionally" (the user-friendly drill-down semantic).
+        List<Hotel> baseSet = searchHotels(filter, null);
+
+        // Per-brand
+        Map<String, Integer> brandCounts = new java.util.LinkedHashMap<>();
+        for (Hotel h : searchHotels(omit(filter, "brandIds"), null)) {
+            brandCounts.merge(h.getBrandId(), 1, Integer::sum);
+        }
+        List<HotelFacets.BrandFacet> byBrand = brandCounts.entrySet().stream()
+                .map(e -> new HotelFacets.BrandFacet(e.getKey(), brands.get(e.getKey()), e.getValue()))
+                .filter(f -> f.brand() != null)
+                .sorted(Comparator
+                        .<HotelFacets.BrandFacet>comparingInt(f -> -f.count())
+                        .thenComparing(f -> f.brand().getName()))
+                .toList();
+
+        // Per-tier
+        Map<String, Integer> tierCounts = new java.util.LinkedHashMap<>();
+        for (Hotel h : searchHotels(omit(filter, "brandTiers"), null)) {
+            Brand b = brands.get(h.getBrandId());
+            if (b != null && b.getTier() != null) tierCounts.merge(b.getTier(), 1, Integer::sum);
+        }
+        List<HotelFacets.TierFacet> byTier = List.of("LUXURY", "PREMIUM", "SELECT").stream()
+                .map(t -> new HotelFacets.TierFacet(t, tierCounts.getOrDefault(t, 0)))
+                .toList();
+
+        // Per-city — use the BASE set (city is informational, not a filter dim).
+        Map<String, int[]> cityCounts = new java.util.LinkedHashMap<>();
+        Map<String, String> cityCountry = new java.util.HashMap<>();
+        for (Hotel h : baseSet) {
+            String city = h.getLocation().address().city();
+            String cc = h.getLocation().address().countryCode();
+            cityCounts.computeIfAbsent(city, k -> new int[1])[0]++;
+            cityCountry.putIfAbsent(city, cc);
+        }
+        List<HotelFacets.CityFacet> byCity = cityCounts.entrySet().stream()
+                .map(e -> new HotelFacets.CityFacet(e.getKey(), cityCountry.get(e.getKey()), e.getValue()[0]))
+                .sorted(Comparator
+                        .<HotelFacets.CityFacet>comparingInt(c -> -c.count())
+                        .thenComparing(HotelFacets.CityFacet::city))
+                .toList();
+
+        // Per-amenity (each computed with everything else in filter applied,
+        // but the amenity dim itself omitted).
+        Map<String, Object> sansAmen = omit(filter, "hasFreeBreakfast", "hasPool", "hasSpa", "hasGolf", "petsAllowed");
+        List<Hotel> amenSet = searchHotels(sansAmen, null);
+        int hasFreeBreakfast = (int) amenSet.stream().filter(Hotel::isHasFreeBreakfast).count();
+        int hasPool = (int) amenSet.stream().filter(Hotel::isHasPool).count();
+        int hasSpa = (int) amenSet.stream().filter(Hotel::isHasSpa).count();
+        int hasGolf = (int) amenSet.stream().filter(Hotel::isHasGolf).count();
+        int petsAllowed = (int) amenSet.stream().filter(Hotel::isPetsAllowed).count();
+        HotelFacets.AmenityFacets amenities = new HotelFacets.AmenityFacets(
+                hasFreeBreakfast, hasPool, hasSpa, hasGolf, petsAllowed);
+
+        // Per-guest-rating bucket — counts at each threshold (≥7, ≥8, ≥9).
+        List<Hotel> grBase = searchHotels(omit(filter, "minGuestRating"), null);
+        List<HotelFacets.GuestRatingBucket> guestRating = List.of(9.0, 8.0, 7.0).stream()
+                .map(min -> new HotelFacets.GuestRatingBucket(
+                        min,
+                        (int) grBase.stream()
+                                .filter(h -> h.getGuestRating() != null && h.getGuestRating().overall() >= min)
+                                .count()))
+                .toList();
+
+        return new HotelFacets(baseSet.size(), byBrand, byTier, byCity, amenities, guestRating);
+    }
+
+    /** Return a copy of `filter` with the given keys removed. Null-safe. */
+    private static Map<String, Object> omit(Map<String, Object> filter, String... keys) {
+        Map<String, Object> out = filter == null ? new HashMap<>() : new HashMap<>(filter);
+        for (String k : keys) out.remove(k);
+        return out;
+    }
+
     @Override public List<Hotel> getFeaturedHotels(String brandTier, String countryCode, int limit) {
         return hotels.values().stream().filter(Hotel::getIsFeatured)
                 .filter(h -> countryCode == null || countryCode.equals(h.getLocation().address().countryCode()))
@@ -350,5 +488,58 @@ public class PropertyMockDataSource implements PropertyDataSource {
         Review r = reviews.get(reviewId);
         if (r != null) r.incrementHelpful();
         return Optional.ofNullable(r);
+    }
+
+    /**
+     * Sort the result list ascending by haversine distance from the centroid
+     * of the matching hotels. When the user has a destination filter, the
+     * centroid effectively sits at the heart of the filtered cluster
+     * (e.g. central Paris when destination=Paris), so the closest match
+     * comes first — the standard "Distance" sort users expect.
+     */
+    private static void sortByDistanceFromCentroid(List<Hotel> result) {
+        if (result.size() <= 1) return;
+        double avgLat = result.stream()
+                .mapToDouble(h -> h.getLocation().coordinates().latitude())
+                .average().orElse(0);
+        double avgLng = result.stream()
+                .mapToDouble(h -> h.getLocation().coordinates().longitude())
+                .average().orElse(0);
+        result.sort(Comparator.comparingDouble(h -> haversineKm(
+                h.getLocation().coordinates().latitude(),
+                h.getLocation().coordinates().longitude(),
+                avgLat, avgLng)));
+    }
+
+    /** Great-circle distance in kilometres between two lat/lng pairs. */
+    private static double haversineKm(double lat1, double lng1, double lat2, double lng2) {
+        double R = 6371.0;
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    /**
+     * Deterministic per-hotel price estimate in USD/night used for the price
+     * range filter. Buckets by brand tier with a seed-driven jitter so each
+     * hotel sits at a stable position inside its band.
+     *
+     *   LUXURY  : 400 – 1500
+     *   PREMIUM : 200 –  500
+     *   SELECT  : 100 –  250
+     */
+    double estimateNightlyRateUsd(Hotel h) {
+        Brand b = brands.get(h.getBrandId());
+        String tier = b != null ? b.getTier() : "PREMIUM";
+        int seed = Math.abs(h.getId().hashCode());
+        return switch (tier) {
+            case "LUXURY"  -> 400 + (seed % 1100);
+            case "PREMIUM" -> 200 + (seed %  300);
+            case "SELECT"  -> 100 + (seed %  150);
+            default        -> 250;
+        };
     }
 }

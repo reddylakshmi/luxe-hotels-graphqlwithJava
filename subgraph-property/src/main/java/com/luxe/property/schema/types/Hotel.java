@@ -85,4 +85,11 @@ public class Hotel implements HasId {
         return amenities != null && amenities.stream()
                 .anyMatch(a -> "POOL".equals(a.getCategory()));
     }
+    public boolean isHasFreeBreakfast() {
+        return amenities != null && amenities.stream()
+                .anyMatch(a -> "BREAKFAST".equals(a.getCode()));
+    }
+    public boolean isPetsAllowed() {
+        return policies != null && policies.petPolicy() != null && policies.petPolicy().allowed();
+    }
 }

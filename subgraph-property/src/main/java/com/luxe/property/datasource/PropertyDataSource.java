@@ -2,6 +2,7 @@ package com.luxe.property.datasource;
 
 import com.luxe.property.schema.types.Brand;
 import com.luxe.property.schema.types.Hotel;
+import com.luxe.property.schema.types.HotelFacets;
 import com.luxe.property.schema.types.Restaurant;
 import com.luxe.property.schema.types.Review;
 import com.luxe.property.schema.types.RoomType;
@@ -16,6 +17,8 @@ public interface PropertyDataSource {
     Optional<Hotel> getHotelBySlug(String slug);
     List<Hotel> searchHotels(Map<String, Object> filter, String sortBy);
     List<Hotel> getFeaturedHotels(String brandTier, String countryCode, int limit);
+    /** Per-filter-option counts for the current search context. */
+    HotelFacets computeFacets(Map<String, Object> filter);
 
     Optional<Brand> getBrandById(String id);
     Optional<Brand> getBrandByCode(String code);

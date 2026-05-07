@@ -174,6 +174,36 @@ class HotelAvailabilitySearchTest {
     }
 
     @Test
+    void availability_accepts_children_argument_without_error() {
+        // The web GuestPicker passes children + ages; pricing must accept the
+        // arg even if it doesn't yet vary rates by child age.
+        String q = """
+                query($repr: [_Any!]!) {
+                  _entities(representations: $repr) {
+                    ... on Hotel {
+                      availability(checkIn: "2026-09-01", checkOut: "2026-09-04",
+                                   adults: 2, children: 2) {
+                        nights guestCount { adults children }
+                      }
+                    }
+                  }
+                }
+                """;
+        List<Map<String, Object>> entities = dgs.executeAndExtractJsonPath(
+                q, "data._entities",
+                Map.of("repr", List.of(Map.of("__typename", "Hotel", "id", "prop-paris-001"))));
+        assertThat(entities).hasSize(1);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> avail = (Map<String, Object>) entities.get(0).get("availability");
+        assertThat(avail).isNotNull();
+        assertThat(avail.get("nights")).isEqualTo(3);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> guests = (Map<String, Object>) avail.get("guestCount");
+        assertThat(guests.get("adults")).isEqualTo(2);
+        assertThat(guests.get("children")).isEqualTo(2);
+    }
+
+    @Test
     void availability_does_not_throw_ClassCastException() {
         // Regression guard for the LocalDate→String cast bug. If reintroduced,
         // the query would surface a QueryException with ClassCastException.
