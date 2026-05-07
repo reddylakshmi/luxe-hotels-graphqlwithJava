@@ -17,7 +17,14 @@ public class PropertyMockDataSource implements PropertyDataSource {
     private final Map<String, Spa> spas = new LinkedHashMap<>();
     private final Map<String, Review> reviews = new LinkedHashMap<>();
 
-    public PropertyMockDataSource() { initData(); }
+    public PropertyMockDataSource() {
+        initData();
+        // Add 19 sibling brands and templated hotels around the 5 hand-crafted ones.
+        OffsetDateTime now = OffsetDateTime.now();
+        PropertyDataGenerator.Out gen = PropertyDataGenerator.generate(now, rt -> roomTypes.put(rt.getId(), rt));
+        gen.brands().forEach(b -> brands.put(b.getId(), b));
+        gen.hotels().forEach(h -> hotels.put(h.getId(), h));
+    }
 
     private static Amenity am(String id, String code, String name, String cat, String desc, boolean premium) {
         return new Amenity(id, code, name, cat, desc, null, premium, null, null);
@@ -277,6 +284,18 @@ public class PropertyMockDataSource implements PropertyDataSource {
             if (query != null) { String q = query.toLowerCase();
                 result = result.stream().filter(h -> h.getName().toLowerCase().contains(q)
                         || h.getLocation().address().city().toLowerCase().contains(q)).collect(Collectors.toList()); }
+            @SuppressWarnings("unchecked")
+            List<String> brandIds = (List<String>) filter.get("brandIds");
+            if (brandIds != null && !brandIds.isEmpty()) {
+                result = result.stream().filter(h -> brandIds.contains(h.getBrandId())).collect(Collectors.toList());
+            }
+            @SuppressWarnings("unchecked")
+            List<String> countryCodes = (List<String>) filter.get("countryCodes");
+            if (countryCodes != null && !countryCodes.isEmpty()) {
+                result = result.stream()
+                        .filter(h -> countryCodes.contains(h.getLocation().address().countryCode()))
+                        .collect(Collectors.toList());
+            }
             Integer minStar = (Integer) filter.get("minStarRating");
             if (minStar != null) result = result.stream().filter(h -> h.getStarRating() >= minStar).collect(Collectors.toList());
             if (Boolean.TRUE.equals(filter.get("hasSpa"))) result = result.stream().filter(Hotel::isHasSpa).collect(Collectors.toList());
