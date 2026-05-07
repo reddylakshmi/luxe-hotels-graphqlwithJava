@@ -249,6 +249,61 @@ java -jar subgraph-property/target/subgraph-property-1.0.0-SNAPSHOT.jar \
      --spring.profiles.active=local
 ```
 
+### Profiles & backend URLs
+
+Each subgraph is wired with four Spring profiles — `local`, `dev`, `stage`,
+`prod` — selected via `--spring.profiles.active=<env>` (default: `local`).
+Today every profile keeps using the in-memory mock data; the profile blocks
+exist so you can drop a real backend URL in once it's available, with no code
+change required.
+
+To point a subgraph at a real backend, **either** paste the URL into the
+matching profile block in its `src/main/resources/application.yml`:
+
+```yaml
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+luxe:
+  backend:
+    base-url: https://api-dev.luxe.example/property
+```
+
+**or** set the per-subgraph env var (no code edit) and start with that profile:
+
+```bash
+LUXE_PROPERTY_BACKEND_URL=https://api-dev.luxe.example/property \
+  java -jar subgraph-property/target/subgraph-property-1.0.0-SNAPSHOT.jar \
+       --spring.profiles.active=dev
+```
+
+| Subgraph        | Env var                          |
+|-----------------|----------------------------------|
+| `property`      | `LUXE_PROPERTY_BACKEND_URL`      |
+| `guest`         | `LUXE_GUEST_BACKEND_URL`         |
+| `pricing`       | `LUXE_PRICING_BACKEND_URL`       |
+| `reservations`  | `LUXE_RESERVATIONS_BACKEND_URL`  |
+| `loyalty`       | `LUXE_LOYALTY_BACKEND_URL`       |
+| `content`       | `LUXE_CONTENT_BACKEND_URL`       |
+| `experiences`   | `LUXE_EXPERIENCES_BACKEND_URL`   |
+| `meetings`      | `LUXE_MEETINGS_BACKEND_URL`      |
+| `notifications` | `LUXE_NOTIFICATIONS_BACKEND_URL` |
+| `corporate`     | `LUXE_CORPORATE_BACKEND_URL`     |
+
+The value binds to `LuxeBackendProperties` (`common/config`). When a real
+REST data source is added (per-subgraph), it should:
+
+1. Inject `LuxeBackendProperties`.
+2. Be annotated `@ConditionalOnProperty(prefix = "luxe.backend", name = "base-url", matchIfMissing = false)`
+   so it only loads when the URL is set.
+3. Mark the existing `*MockDataSource` with the inverse condition
+   (`matchIfMissing = true`) so the mock is the fallback when the URL is empty.
+
+That way `local` always uses mock; `dev`/`stage`/`prod` use the REST data
+source if a URL is configured, mock otherwise. No further wiring needed.
+
 ### Router
 
 `router/router.yaml` is the local-dev config. Notable settings:
