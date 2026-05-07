@@ -32,8 +32,8 @@ public class PricingDataFetcher {
                 "MISSING_FIELD", "hotelId is required",
                 List.of(new com.luxe.common.error.FieldError("hotelId", "Required")));
 
-        LocalDate checkIn  = LocalDate.parse((String) input.get("checkIn"));
-        LocalDate checkOut = LocalDate.parse((String) input.get("checkOut"));
+        LocalDate checkIn  = toDate(input.get("checkIn"));
+        LocalDate checkOut = toDate(input.get("checkOut"));
 
         if (!checkIn.isBefore(checkOut)) {
             return new com.luxe.common.error.ValidationError(
@@ -91,8 +91,8 @@ public class PricingDataFetcher {
     @DgsQuery
     public List<DateRateSummary> rateCalendar(@InputArgument Map<String, Object> input) {
         String hotelId   = (String) input.get("hotelId");
-        LocalDate start  = LocalDate.parse((String) input.get("startDate"));
-        LocalDate end    = LocalDate.parse((String) input.get("endDate"));
+        LocalDate start  = toDate(input.get("startDate"));
+        LocalDate end    = toDate(input.get("endDate"));
         int adults       = input.containsKey("adults") ? ((Number) input.get("adults")).intValue() : 1;
         String currency  = (String) input.getOrDefault("currency", "USD");
         return dataSource.getRateCalendar(hotelId, start, end, adults, currency);
@@ -107,8 +107,8 @@ public class PricingDataFetcher {
     @DgsQuery
     public List<RedemptionRate> redemptionRates(@InputArgument Map<String, Object> input) {
         String hotelId   = (String) input.get("hotelId");
-        LocalDate checkIn  = LocalDate.parse((String) input.get("checkIn"));
-        LocalDate checkOut = LocalDate.parse((String) input.get("checkOut"));
+        LocalDate checkIn  = toDate(input.get("checkIn"));
+        LocalDate checkOut = toDate(input.get("checkOut"));
         String roomTypeId  = (String) input.get("roomTypeId");
         return dataSource.findRedemptionRates(hotelId, checkIn, checkOut, roomTypeId);
     }
@@ -119,8 +119,8 @@ public class PricingDataFetcher {
     public List<Rate> hotelRates(DataFetchingEnvironment dfe) {
         Hotel source = dfe.getSource();
         String hotelId = source.getId();
-        LocalDate checkIn  = LocalDate.parse((String) dfe.getArgument("checkIn"));
-        LocalDate checkOut = LocalDate.parse((String) dfe.getArgument("checkOut"));
+        LocalDate checkIn  = toDate(dfe.getArgument("checkIn"));
+        LocalDate checkOut = toDate(dfe.getArgument("checkOut"));
         int adults = dfe.getArgumentOrDefault("adults", 1);
         return dataSource.findRatesByHotelId(hotelId, checkIn, checkOut, adults);
     }
@@ -129,8 +129,8 @@ public class PricingDataFetcher {
     public AvailabilityResult hotelAvailability(DataFetchingEnvironment dfe) {
         Hotel source = dfe.getSource();
         String hotelId = source.getId();
-        LocalDate checkIn  = LocalDate.parse((String) dfe.getArgument("checkIn"));
-        LocalDate checkOut = LocalDate.parse((String) dfe.getArgument("checkOut"));
+        LocalDate checkIn  = toDate(dfe.getArgument("checkIn"));
+        LocalDate checkOut = toDate(dfe.getArgument("checkOut"));
         int adults   = dfe.getArgumentOrDefault("adults", 1);
         int children = dfe.getArgumentOrDefault("children", 0);
         String currency = dfe.getArgumentOrDefault("currency", "USD");
@@ -144,8 +144,8 @@ public class PricingDataFetcher {
     public List<Rate> roomTypeRates(DataFetchingEnvironment dfe) {
         RoomType source = dfe.getSource();
         String roomTypeId = source.getId();
-        LocalDate checkIn  = LocalDate.parse((String) dfe.getArgument("checkIn"));
-        LocalDate checkOut = LocalDate.parse((String) dfe.getArgument("checkOut"));
+        LocalDate checkIn  = toDate(dfe.getArgument("checkIn"));
+        LocalDate checkOut = toDate(dfe.getArgument("checkOut"));
         int adults = dfe.getArgumentOrDefault("adults", 1);
         return dataSource.findRatesByRoomTypeId(roomTypeId, checkIn, checkOut, adults);
     }
@@ -154,8 +154,8 @@ public class PricingDataFetcher {
     public Object roomTypeAvailability(DataFetchingEnvironment dfe) {
         RoomType source = dfe.getSource();
         String roomTypeId = source.getId();
-        LocalDate checkIn  = LocalDate.parse((String) dfe.getArgument("checkIn"));
-        LocalDate checkOut = LocalDate.parse((String) dfe.getArgument("checkOut"));
+        LocalDate checkIn  = toDate(dfe.getArgument("checkIn"));
+        LocalDate checkOut = toDate(dfe.getArgument("checkOut"));
         List<Rate> rates = dataSource.findRatesByRoomTypeId(roomTypeId, checkIn, checkOut, 1);
         if (rates.isEmpty()) return null;
         Rate lowest = rates.stream()
@@ -191,4 +191,14 @@ public class PricingDataFetcher {
         return new RoomType((String) values.get("id"));
     }
 
+    /**
+     * Coerce a Date-scalar argument that DGS may have already deserialised into
+     * a {@link LocalDate}, but which legacy code paths sometimes still receive
+     * as a String. Returning {@code null} for null lets callers decide whether
+     * the field is required.
+     */
+    private static LocalDate toDate(Object raw) {
+        if (raw == null) return null;
+        return raw instanceof LocalDate ld ? ld : LocalDate.parse(raw.toString());
+    }
 }
