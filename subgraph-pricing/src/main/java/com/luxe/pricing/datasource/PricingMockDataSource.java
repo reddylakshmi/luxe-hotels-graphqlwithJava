@@ -17,36 +17,29 @@ public class PricingMockDataSource implements PricingDataSource {
     private final Map<String, Package> packages = new LinkedHashMap<>();
     private final Map<String, GiftCardBalance> giftCards = new LinkedHashMap<>();
 
-    // hotelId -> roomTypeId -> base nightly price (in cents, for the currency)
+    // hotelId -> roomTypeId -> [basePriceFlexible, basePriceNonRefundable, currencyMul, pointsPerNight]
+    // The room IDs here match the actual IDs used by the property subgraph
+    // (PropertyMockDataSource hand-curated hotels). Anything not in this map
+    // is served by the deterministic fallback generator below.
     private static final Map<String, Map<String, double[]>> HOTEL_ROOMS = new LinkedHashMap<>();
 
     static {
-        // [basePriceFlexible, basePriceNonRefundable, currency_multiplier, pointsPerNight]
-        // currency stored separately per hotel
         HOTEL_ROOMS.put("prop-paris-001", new LinkedHashMap<>(Map.of(
-                "rt-paris-std-001",   new double[]{350, 280, 1.0, 1000},
-                "rt-paris-dlx-001",   new double[]{520, 415, 1.0, 1500},
-                "rt-paris-suite-001", new double[]{720, 576, 1.0, 2500}
+                "rt-paris-deluxe", new double[]{520, 415, 1.0, 1500},
+                "rt-paris-suite",  new double[]{720, 576, 1.0, 2500}
         )));
         HOTEL_ROOMS.put("prop-tokyo-001", new LinkedHashMap<>(Map.of(
-                "rt-tokyo-std-001",   new double[]{55000, 44000, 1.0, 800},
-                "rt-tokyo-dlx-001",   new double[]{75000, 60000, 1.0, 1200},
-                "rt-tokyo-suite-001", new double[]{180000, 144000, 1.0, 3000}
+                "rt-tokyo-deluxe", new double[]{75000, 60000, 1.0, 1200},
+                "rt-tokyo-suite",  new double[]{180000, 144000, 1.0, 3000}
         )));
         HOTEL_ROOMS.put("prop-dubai-001", new LinkedHashMap<>(Map.of(
-                "rt-dubai-dlx-001",   new double[]{1100, 880, 1.0, 1500},
-                "rt-dubai-suite-001", new double[]{3800, 3040, 1.0, 5000},
-                "rt-dubai-villa-001", new double[]{11000, 8800, 1.0, 15000}
+                "rt-dubai-deluxe", new double[]{1100, 880, 1.0, 1500}
         )));
         HOTEL_ROOMS.put("prop-nyc-001", new LinkedHashMap<>(Map.of(
-                "rt-nyc-std-001",   new double[]{550, 440, 1.0, 1200},
-                "rt-nyc-dlx-001",   new double[]{720, 576, 1.0, 1800},
-                "rt-nyc-suite-001", new double[]{4500, 3600, 1.0, 8000}
+                "rt-nyc-deluxe", new double[]{720, 576, 1.0, 1800}
         )));
         HOTEL_ROOMS.put("prop-london-001", new LinkedHashMap<>(Map.of(
-                "rt-london-std-001",   new double[]{380, 304, 1.0, 1000},
-                "rt-london-dlx-001",   new double[]{580, 464, 1.0, 1600},
-                "rt-london-suite-001", new double[]{3200, 2560, 1.0, 7000}
+                "rt-london-deluxe", new double[]{580, 464, 1.0, 1600}
         )));
     }
 
@@ -60,6 +53,53 @@ public class PricingMockDataSource implements PricingDataSource {
             "prop-paris-001", 0.10, "prop-tokyo-001", 0.10,
             "prop-dubai-001", 0.10, "prop-nyc-001", 0.15,
             "prop-london-001", 0.20
+    );
+
+    /**
+     * FX rates expressed as "1 unit of CCY = X USD" — i.e., the multiplier to
+     * apply when converting from a foreign currency to USD. Approximate market
+     * rates as of mid-2026; exact values aren't important for a demo.
+     */
+    private static final Map<String, Double> FX_TO_USD = Map.ofEntries(
+            Map.entry("USD", 1.0),
+            Map.entry("EUR", 1.07),
+            Map.entry("GBP", 1.27),
+            Map.entry("JPY", 0.0067),
+            Map.entry("AED", 0.272),
+            Map.entry("INR", 0.012),
+            Map.entry("CAD", 0.74),
+            Map.entry("AUD", 0.66),
+            Map.entry("CHF", 1.13),
+            Map.entry("SGD", 0.74),
+            Map.entry("HKD", 0.128),
+            Map.entry("KRW", 0.00073),
+            Map.entry("CNY", 0.14),
+            Map.entry("THB", 0.029)
+    );
+
+    /**
+     * Convert {@code amount} from one currency to another via USD as the pivot.
+     * If either currency is unknown, returns the amount unchanged so the page
+     * still renders rather than 500-ing — but the label/amount may then be
+     * misaligned, which is preferable to a broken response.
+     */
+    static double convertCurrency(double amount, String from, String to) {
+        if (from == null || to == null || from.equals(to)) return amount;
+        Double fromRate = FX_TO_USD.get(from.toUpperCase());
+        Double toRate = FX_TO_USD.get(to.toUpperCase());
+        if (fromRate == null || toRate == null) return amount;
+        double usd = amount * fromRate;
+        return usd / toRate;
+    }
+
+    /** India IT-corridor hotels seeded as 5★ in the property subgraph — these
+     * also have a `-rm-ste` room. The other 12 India hotels stop at -rm-exe. */
+    private static final Set<String> INDIA_FIVE_STAR_HOTELS = Set.of(
+            "prop-india-bom-bkc",
+            "prop-india-del-cyber",
+            "prop-india-hyd-hitec",
+            "prop-india-blr-white",
+            "prop-india-maa-omr"
     );
 
     private static final CancellationPolicy FREE_48H = new CancellationPolicy(
@@ -77,27 +117,28 @@ public class PricingMockDataSource implements PricingDataSource {
     }
 
     private void initRatePlans() {
-        add(new RatePlan("rp-bar", "BAR", "Best Available Rate", "BEST_AVAILABLE",
-                "Our best flexible rate with free cancellation", true, false, true, false,
+        add(new RatePlan("rp-bar", "BAR", "Flexible Rate", "BEST_AVAILABLE",
+                "Our best flexible rate with free cancellation. Taxes and all fees included.",
+                true, false, true, false,
                 true, 1.0, FREE_48H, 1, null, null));
+        add(new RatePlan("rp-member", "MEMBER", "Member Exclusive Offer", "MEMBER_RATE",
+                "Includes 3000 Bonus Points per night, based upon availability. Fully refundable.",
+                true, false, true, false,
+                true, 1.5, FREE_48H, 1, null, 0));
+        add(new RatePlan("rp-pkg-stay", "PKG-STAY", "Package Rate", "PACKAGE",
+                "Room with daily breakfast and complimentary parking included.",
+                true, true, true, true,
+                true, 1.2, FREE_72H, 1, null, null));
+        // Other plans kept for promotion/corporate/redemption use-cases.
         add(new RatePlan("rp-nr", "NR", "Non-Refundable Saver", "BEST_AVAILABLE",
                 "Lowest price — non-refundable, no changes", false, false, true, false,
                 true, 1.0, NON_REF, 1, null, null));
-        add(new RatePlan("rp-bb", "BB", "Bed & Breakfast", "BEST_AVAILABLE",
-                "Room rate includes daily breakfast for two", true, true, true, false,
-                true, 1.2, FREE_72H, 2, null, null));
-        add(new RatePlan("rp-member", "MEMBER", "Luxe Member Rate", "MEMBER_RATE",
-                "Exclusive rate for Luxe loyalty members — 15% off BAR", true, false, true, false,
-                true, 1.5, FREE_48H, 1, null, 0));
         add(new RatePlan("rp-advance30", "ADV30", "Advance Purchase 30", "ADVANCE_PURCHASE",
                 "Save 20% when booking 30+ days in advance", false, false, true, false,
                 true, 1.0, NON_REF, 1, null, 30));
         add(new RatePlan("rp-corp", "CORP", "Corporate Rate", "CORPORATE",
                 "Negotiated rate for corporate accounts", true, false, true, true,
                 true, 1.0, FREE_48H, 1, null, 1));
-        add(new RatePlan("rp-pkg-spa", "PKG-SPA", "Spa & Stay Package", "PACKAGE",
-                "Room plus daily spa access for two", true, false, true, false,
-                false, null, FREE_72H, 2, null, null));
         add(new RatePlan("rp-redemption", "REDEEM", "Points Redemption", "REDEMPTION",
                 "Redeem loyalty points for complimentary nights", true, false, true, false,
                 false, null, FREE_72H, 1, 7, null));
@@ -215,6 +256,96 @@ public class PricingMockDataSource implements PricingDataSource {
                 OffsetDateTime.now().plusMinutes(30));
     }
 
+    // ── Room and tier inference ───────────────────────────────────────────────
+
+    /**
+     * Get the rooms map for a hotel. Hand-curated entries win; everything else
+     * uses a deterministic fallback based on the established room-ID convention
+     * in the property subgraph.
+     */
+    private Map<String, double[]> roomsForHotel(String hotelId) {
+        Map<String, double[]> handCurated = HOTEL_ROOMS.get(hotelId);
+        if (handCurated != null) return handCurated;
+        return generateFallbackRooms(hotelId);
+    }
+
+    /**
+     * Generate a synthetic room+price map for a hotel we don't have hand-curated
+     * data for. Uses two ID conventions known to match the property subgraph:
+     *
+     * <ul>
+     *   <li>India IT-corridor hotels — {@code {hotelId}-rm-dlx}, {@code -rm-exe},
+     *       optionally {@code -rm-ste} for 5★ properties.</li>
+     *   <li>Generator hotels (everything else under {@code prop-}) —
+     *       {@code {hotelId}-rm1}, {@code -rm2}, {@code -rm3}.</li>
+     * </ul>
+     */
+    private Map<String, double[]> generateFallbackRooms(String hotelId) {
+        Map<String, double[]> rooms = new LinkedHashMap<>();
+        String tier = inferTier(hotelId);
+        if (hotelId.startsWith("prop-india-")) {
+            rooms.put(hotelId + "-rm-dlx", priceTuple(hotelId, "dlx", tier));
+            rooms.put(hotelId + "-rm-exe", priceTuple(hotelId, "exe", tier));
+            if (INDIA_FIVE_STAR_HOTELS.contains(hotelId)) {
+                rooms.put(hotelId + "-rm-ste", priceTuple(hotelId, "ste", tier));
+            }
+        } else if (hotelId.startsWith("prop-")) {
+            rooms.put(hotelId + "-rm1", priceTuple(hotelId, "rm1", tier));
+            rooms.put(hotelId + "-rm2", priceTuple(hotelId, "rm2", tier));
+            rooms.put(hotelId + "-rm3", priceTuple(hotelId, "rm3", tier));
+        }
+        return rooms;
+    }
+
+    /** Build the {flex, nonRefundable, currencyMul, pointsPerNight} tuple. */
+    private static double[] priceTuple(String hotelId, String roomKey, String tier) {
+        int seed = Math.abs((hotelId + ":" + roomKey).hashCode());
+        double base = switch (tier) {
+            case "LUXURY"  -> 350 + (seed % 800);
+            case "PREMIUM" -> 180 + (seed % 220);
+            case "SELECT"  ->  95 + (seed % 130);
+            default        -> 200;
+        };
+        // Bigger rooms cost more.
+        double sizeMul = switch (roomKey) {
+            case "rm1", "dlx" -> 1.0;
+            case "rm2", "exe" -> 1.3;
+            case "rm3", "ste" -> 1.8;
+            default           -> 1.0;
+        };
+        base *= sizeMul;
+        double flex = Math.round(base);
+        double nonRef = Math.round(flex * 0.82);
+        double pointsPerNight = Math.round(flex * 4);
+        return new double[]{flex, nonRef, 1.0, pointsPerNight};
+    }
+
+    /**
+     * Infer a hotel's brand tier without going to another subgraph. Hand-crafted
+     * IDs are listed; generator IDs encode the brand code in the prefix
+     * (e.g. {@code prop-mai-fr-paris} → MAI → LUXURY).
+     */
+    private static String inferTier(String hotelId) {
+        if (LUXURY_HOTEL_IDS.contains(hotelId)) return "LUXURY";
+        if (PREMIUM_HOTEL_IDS.contains(hotelId)) return "PREMIUM";
+        // Generator pattern: prop-{brandCode}-{country}-{city}.
+        if (hotelId.matches("^prop-(mai|atl|aur|rgl)-.*")) return "LUXURY";
+        if (hotelId.matches("^prop-(mqs|lum|qlb|way|crd|hrh|wst)-.*")) return "SELECT";
+        return "PREMIUM";
+    }
+
+    /** Hotels that should price at LUXURY tier — the 5 hand-curated luxes plus
+     *  the two India MAI flagships. */
+    private static final Set<String> LUXURY_HOTEL_IDS = Set.of(
+            "prop-paris-001", "prop-tokyo-001", "prop-dubai-001", "prop-london-001",
+            "prop-india-bom-bkc", "prop-india-del-cyber"
+    );
+
+    /** Hotels that should price at PREMIUM tier — currently only NYC. India
+     *  business hotels and generator-PREMIUM brands fall through to PREMIUM via
+     *  the inferTier default path. */
+    private static final Set<String> PREMIUM_HOTEL_IDS = Set.of("prop-nyc-001");
+
     // ── PricingDataSource ─────────────────────────────────────────────────────
 
     @Override
@@ -222,8 +353,16 @@ public class PricingMockDataSource implements PricingDataSource {
                                            int adults, int children, String currency,
                                            List<String> ratePlanCodes, List<String> roomTypeIds,
                                            String promoCode, String corporateCode) {
-        Map<String, double[]> rooms = HOTEL_ROOMS.getOrDefault(hotelId, Map.of());
-        String hotelCurrency = HOTEL_CURRENCY.getOrDefault(hotelId, currency != null ? currency : "USD");
+        Map<String, double[]> rooms = roomsForHotel(hotelId);
+        // Two currencies in play:
+        //   • baseCurrency — the currency the price tuples are stored in (EUR
+        //     for Paris, JPY for Tokyo, USD for India + generator hotels).
+        //   • displayCurrency — what the user asked for. We honour the
+        //     request and convert all amounts via FX.
+        String baseCurrency = HOTEL_CURRENCY.getOrDefault(hotelId, "USD");
+        String displayCurrency = (currency != null && !currency.isBlank())
+                ? currency.toUpperCase() : baseCurrency;
+        double fx = convertCurrency(1.0, baseCurrency, displayCurrency);
         double taxRate = HOTEL_TAX_RATE.getOrDefault(hotelId, 0.10);
 
         Promotion promoDiscount = promoCode != null
@@ -238,12 +377,17 @@ public class PricingMockDataSource implements PricingDataSource {
                 .map(e -> {
                     String rtId = e.getKey();
                     double[] prices = e.getValue();
-                    double flexBase = prices[0] * (1 - discount);
-                    double nrBase   = prices[1] * (1 - discount);
+                    // Convert base→display once per room so all derived numbers
+                    // (per-rate-plan multipliers, totals, taxes) stay in sync.
+                    double flexBase = prices[0] * (1 - discount) * fx;
+                    double nrBase   = prices[1] * (1 - discount) * fx;
 
+                    // Default trio shown on the rate-list page: Flexible (most popular),
+                    // Member Exclusive Offer (with bonus points), Package Rate.
                     List<RatePlan> plans = new ArrayList<>(List.of(
-                            ratePlans.get("rp-bar"), ratePlans.get("rp-nr"),
-                            ratePlans.get("rp-bb")));
+                            ratePlans.get("rp-bar"),
+                            ratePlans.get("rp-member"),
+                            ratePlans.get("rp-pkg-stay")));
                     if (isCorporate) plans.add(ratePlans.get("rp-corp"));
 
                     if (ratePlanCodes != null && !ratePlanCodes.isEmpty()) {
@@ -256,11 +400,18 @@ public class PricingMockDataSource implements PricingDataSource {
                     for (RatePlan plan : plans) {
                         if (plan == null) continue;
                         double base = plan.isRefundable() ? flexBase : nrBase;
-                        Money strike = plan.isRefundable() ? null : Money.of(flexBase, hotelCurrency);
+                        // Package adds breakfast + parking value (~5% bump);
+                        // Member exclusive priced higher because it includes guaranteed
+                        // bonus points (~3000/night) on top of the base rate.
+                        switch (plan.getCode()) {
+                            case "PKG-STAY" -> base *= 1.05;
+                            case "MEMBER"   -> base *= 1.235;
+                        }
+                        Money strike = plan.isRefundable() ? null : Money.of(flexBase, displayCurrency);
                         String rateId = "r-" + rtId + "-" + plan.getCode().toLowerCase() + "-"
                                 + checkIn + "-" + checkOut;
                         rates.add(buildRate(rateId, hotelId, rtId, plan, base,
-                                hotelCurrency, taxRate, checkIn, checkOut, adults, strike));
+                                displayCurrency, taxRate, checkIn, checkOut, adults, strike));
                     }
 
                     Rate lowest = rates.stream()
@@ -284,22 +435,22 @@ public class PricingMockDataSource implements PricingDataSource {
                 .orElse(null);
 
         List<DateRateSummary> calendar = buildCalendar(hotelId, checkIn, checkOut,
-                rooms, hotelCurrency, discount);
+                rooms, displayCurrency, discount, fx);
 
         String searchToken = "st-" + hotelId + "-" + checkIn + "-" + checkOut + "-" + System.currentTimeMillis();
         return new AvailabilityResult(hotelId, checkIn, checkOut,
-                new GuestCount(adults, children), hotelCurrency,
+                new GuestCount(adults, children), displayCurrency,
                 roomAvails, globalLowest, calendar, searchToken,
                 OffsetDateTime.now().plusMinutes(30));
     }
 
     private List<DateRateSummary> buildCalendar(String hotelId, LocalDate start, LocalDate end,
-                                                  Map<String, double[]> rooms, String currency,
-                                                  double discount) {
+                                                  Map<String, double[]> rooms, String displayCurrency,
+                                                  double discount, double fx) {
         return start.datesUntil(end).map(date -> {
             double lowest = rooms.values().stream()
-                    .mapToDouble(p -> p[0] * (1 - discount)).min().orElse(0);
-            return new DateRateSummary(date, Money.of(lowest, currency), currency, true);
+                    .mapToDouble(p -> p[0] * (1 - discount) * fx).min().orElse(0);
+            return new DateRateSummary(date, Money.of(lowest, displayCurrency), displayCurrency, true);
         }).collect(Collectors.toList());
     }
 
@@ -337,13 +488,29 @@ public class PricingMockDataSource implements PricingDataSource {
     public List<Rate> findRatesByRoomTypeId(String roomTypeId, LocalDate checkIn, LocalDate checkOut, int adults) {
         String hotelId = HOTEL_ROOMS.entrySet().stream()
                 .filter(e -> e.getValue().containsKey(roomTypeId))
-                .map(Map.Entry::getKey).findFirst().orElse(null);
+                .map(Map.Entry::getKey).findFirst()
+                .orElseGet(() -> hotelIdFromFallbackRoomId(roomTypeId));
         if (hotelId == null) return List.of();
         AvailabilityResult result = searchRates(hotelId, checkIn, checkOut, adults, 0, null,
                 null, List.of(roomTypeId), null, null);
         return result.getRoomAvailabilities().stream()
                 .flatMap(ra -> ra.getRates().stream())
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Strip the trailing room suffix from a synthetic room ID to recover the
+     * hotel ID. Mirrors the conventions in {@link #generateFallbackRooms}.
+     */
+    private static String hotelIdFromFallbackRoomId(String roomTypeId) {
+        if (roomTypeId == null) return null;
+        for (String suffix : List.of("-rm-dlx", "-rm-exe", "-rm-ste",
+                                     "-rm1", "-rm2", "-rm3", "-rm4")) {
+            if (roomTypeId.endsWith(suffix)) {
+                return roomTypeId.substring(0, roomTypeId.length() - suffix.length());
+            }
+        }
+        return null;
     }
 
     @Override
@@ -370,9 +537,12 @@ public class PricingMockDataSource implements PricingDataSource {
     @Override
     public List<DateRateSummary> getRateCalendar(String hotelId, LocalDate startDate,
                                                    LocalDate endDate, int adults, String currency) {
-        Map<String, double[]> rooms = HOTEL_ROOMS.getOrDefault(hotelId, Map.of());
-        String hotelCurrency = HOTEL_CURRENCY.getOrDefault(hotelId, currency != null ? currency : "USD");
-        return buildCalendar(hotelId, startDate, endDate, rooms, hotelCurrency, 0.0);
+        Map<String, double[]> rooms = roomsForHotel(hotelId);
+        String baseCurrency = HOTEL_CURRENCY.getOrDefault(hotelId, "USD");
+        String displayCurrency = (currency != null && !currency.isBlank())
+                ? currency.toUpperCase() : baseCurrency;
+        double fx = convertCurrency(1.0, baseCurrency, displayCurrency);
+        return buildCalendar(hotelId, startDate, endDate, rooms, displayCurrency, 0.0, fx);
     }
 
     @Override
@@ -383,7 +553,7 @@ public class PricingMockDataSource implements PricingDataSource {
     @Override
     public List<RedemptionRate> findRedemptionRates(String hotelId, LocalDate checkIn,
                                                      LocalDate checkOut, String roomTypeId) {
-        Map<String, double[]> rooms = HOTEL_ROOMS.getOrDefault(hotelId, Map.of());
+        Map<String, double[]> rooms = roomsForHotel(hotelId);
         return rooms.entrySet().stream()
                 .filter(e -> roomTypeId == null || e.getKey().equals(roomTypeId))
                 .map(e -> {

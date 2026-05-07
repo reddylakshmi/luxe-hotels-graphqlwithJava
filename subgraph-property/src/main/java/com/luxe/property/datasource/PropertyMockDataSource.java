@@ -10,6 +10,18 @@ import java.util.stream.Collectors;
 @Component
 public class PropertyMockDataSource implements PropertyDataSource {
 
+    /**
+     * India IT-corridor hotels that should appear on the home-page featured
+     * carousel alongside the global flagships (Paris, Tokyo, Dubai, London).
+     * Picked from the 17 India-seeded hotels for their tier and rating.
+     */
+    private static final Set<String> FEATURED_INDIA_HOTEL_IDS = Set.of(
+            "prop-india-bom-bkc",      // Maison Lumière Mumbai BKC — LUXURY, 9.4
+            "prop-india-del-cyber",    // Maison Lumière Gurgaon Cyber City — LUXURY, 9.3
+            "prop-india-hyd-hitec",    // Northstar Hyderabad HITEC City — 5★, 9.1
+            "prop-india-blr-white"     // Northstar Bengaluru Whitefield — 5★, 9.0
+    );
+
     private final Map<String, Hotel> hotels = new LinkedHashMap<>();
     private final Map<String, Brand> brands = new LinkedHashMap<>();
     private final Map<String, RoomType> roomTypes = new LinkedHashMap<>();
@@ -461,7 +473,7 @@ public class PropertyMockDataSource implements PropertyDataSource {
                 new ParkingInfo(true, "Multi-storey", true, "INR 250/day", "INR 200/day", true),
                 new SustainabilityInfo(80, List.of(), true, 60, 55),
                 List.of(),
-                false, now);
+                FEATURED_INDIA_HOTEL_IDS.contains(id), now);
         hotels.put(h.getId(), h);
 
         addRoom(id + "-rm-dlx", id, "DLX", "Deluxe Room", "DELUXE",

@@ -192,6 +192,19 @@ class PropertyMockDataSourceTest {
     }
 
     @Test
+    void featured_hotels_include_flagship_india_properties() {
+        // first:9 is what the home page asks for after India flagships joined the
+        // carousel. The four India flagships sit after the four global ones in
+        // insertion order, so the home page surfaces all of them.
+        List<Hotel> top = ds.getFeaturedHotels(null, null, 9);
+        assertThat(top).extracting(Hotel::getId).contains(
+                "prop-india-bom-bkc",
+                "prop-india-del-cyber",
+                "prop-india-hyd-hitec",
+                "prop-india-blr-white");
+    }
+
+    @Test
     void india_hotels_cover_all_seven_target_cities() {
         List<Hotel> indianHotels = ds.searchHotels(
                 Map.of("countryCodes", List.of("IN")), null);
