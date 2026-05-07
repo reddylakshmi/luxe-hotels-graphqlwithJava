@@ -462,6 +462,36 @@ Excluded from coverage:
 
 ---
 
+## Roadmap / next steps
+
+In rough effort-vs-payoff order:
+
+1. **Reference REST data source** — wire one subgraph (e.g. `content`, the
+   simplest: no auth, no mutations) to call a real backend via
+   `LuxeBackendProperties` and `@ConditionalOnProperty`. Gives the team a
+   concrete template for the remaining nine.
+2. **CI** — GitHub Actions running `mvn verify` on PRs, with the JaCoCo
+   summary published as a check.
+3. **Fix composition hints** — align nullability of `ValidationError.fieldErrors`
+   (`[FieldError!]` in property vs `[FieldError!]!` everywhere else) and
+   `NotFoundError.resourceType` so `rover supergraph compose` is hint-free.
+4. **Lift `property` / `guest` branch coverage** — they sit at 48% / 51%, the
+   lowest in the matrix. Mostly untested validation branches and pagination
+   edge cases.
+5. **Idempotency enforcement** — every mutation already accepts an
+   `idempotencyKey: UUID!`, but no subgraph currently dedupes against a replay
+   store. Add a simple in-memory cache keyed by `(mutationName, key)` per
+   subgraph.
+6. **Persistence layer** — swap the in-memory mocks for H2 + Spring Data JPA
+   (or Postgres in `dev`+). Closer to production without depending on the
+   real backends being ready.
+7. **Observability** — OpenTelemetry traces propagated from router → subgraph,
+   structured JSON logs, Prometheus `/metrics` exposure on every subgraph.
+8. **Deployment** — flesh out `docker-compose.yml` for one-command local
+   stack; add a Helm chart for K8s.
+
+---
+
 ## Tech stack
 
 - Java 21 (records, virtual threads)
