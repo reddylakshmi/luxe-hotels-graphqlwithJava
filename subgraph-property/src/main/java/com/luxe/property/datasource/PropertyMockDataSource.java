@@ -210,6 +210,14 @@ public class PropertyMockDataSource implements PropertyDataSource {
                 true,now);
         hotels.put(london.getId(), london);
 
+        // ── India IT-corridor hotels ──────────────────────────────────────────
+        // Hand-curated business hotels next to the major IT business parks in
+        // Hyderabad, Delhi NCR, Bangalore, Mumbai, Chennai, Pune and Vizag.
+        // Brands referenced here (NST, MAI, SOL, MQS, CRD, WAY) are created
+        // moments later by PropertyDataGenerator, so the brand lookup at
+        // search/facet time succeeds.
+        addIndiaHotels(now, pool, spa, gym, wifi, valet, conc);
+
         // ── Room Types ────────────────────────────────────────────────────────
         addRoom("rt-paris-deluxe","prop-paris-001","DLX","Deluxe Room","DELUXE",
                 "Elegant room with Haussmann views.",45.0,new OccupancyLimit(2,1,3),
@@ -253,6 +261,227 @@ public class PropertyMockDataSource implements PropertyDataSource {
         addReview("rev-004","prop-dubai-001","Fatima A.","2025-03",9.3,
                 new CategoryRatings(9.5,9.4,9.0,8.5,9.5,9.2),
                 "Stunning in every way","The views of the Burj Khalifa from our suite were breathtaking.","en",true,88);
+    }
+
+    /**
+     * Seed a batch of IT-corridor business hotels across major Indian cities.
+     * Each hotel is positioned in (or adjacent to) the city's main IT business
+     * district — HITEC City, Cyber City, Whitefield, BKC, OMR, Hinjewadi,
+     * Rushikonda — so a search for the city or the IT park name surfaces them.
+     */
+    private void addIndiaHotels(OffsetDateTime now,
+                                Amenity pool, Amenity spaAm, Amenity gym,
+                                Amenity wifi, Amenity valet, Amenity conc) {
+        // Free breakfast is a near-universal feature for Indian business hotels;
+        // declare it here so isHasFreeBreakfast() flips on for hotels that include it.
+        Amenity breakfast = am("am-bfst","BREAKFAST","Free Breakfast","DINING","Daily breakfast included",false);
+        List<Amenity> fiveStar  = List.of(pool, spaAm, gym, wifi, valet, conc, breakfast);
+        List<Amenity> fourStar  = List.of(pool, gym, wifi, valet, conc, breakfast);
+        List<Amenity> threeStar = List.of(gym, wifi, conc, breakfast);
+
+        record Seed(String id, String brandId, String brandCode,
+                    String name, String slug, String area,
+                    String line1, String city, String state, String postal,
+                    double lat, double lng,
+                    int starRating, int rooms, double rating, int reviewCount,
+                    int openedYear, int floors,
+                    String airport, String airportName, double airportKm, int airportMin,
+                    List<Amenity> amen) {}
+
+        // (lat, lng) values target the IT district itself, not the city centre.
+        List<Seed> seeds = List.of(
+                // ── Hyderabad ─────────────────────────────────────────────
+                new Seed("prop-india-hyd-hitec", "brand-nst-001", "NST",
+                        "Northstar Hyderabad HITEC City", "northstar-hyderabad-hitec-city", "HITEC City",
+                        "Plot 17, Cyber Towers Road", "Hyderabad", "Telangana", "500081",
+                        17.4485, 78.3908, 5, 248, 9.1, 1450, 2014, 17,
+                        "HYD", "Rajiv Gandhi International", 30.0, 55, fiveStar),
+                new Seed("prop-india-hyd-gachi", "brand-sol-001", "SOL",
+                        "Solstice Hyderabad Gachibowli", "solstice-hyderabad-gachibowli", "Gachibowli",
+                        "Financial District, ISB Road", "Hyderabad", "Telangana", "500032",
+                        17.4144, 78.3489, 4, 198, 8.7, 980, 2017, 14,
+                        "HYD", "Rajiv Gandhi International", 27.0, 50, fourStar),
+                new Seed("prop-india-hyd-madha", "brand-mqs-001", "MQS",
+                        "Marquis Hyderabad Madhapur", "marquis-hyderabad-madhapur", "Madhapur",
+                        "Image Gardens Road, Madhapur", "Hyderabad", "Telangana", "500081",
+                        17.4486, 78.3915, 4, 156, 8.5, 720, 2019, 11,
+                        "HYD", "Rajiv Gandhi International", 32.0, 60, fourStar),
+
+                // ── Delhi NCR ─────────────────────────────────────────────
+                new Seed("prop-india-del-cyber", "brand-mai-001", "MAI",
+                        "Maison Lumière Gurgaon Cyber City", "maison-lumiere-gurgaon-cyber-city", "Cyber City",
+                        "DLF Cyber City, Phase III", "Gurgaon", "Haryana", "122002",
+                        28.4945, 77.0866, 5, 312, 9.3, 1820, 2012, 22,
+                        "DEL", "Indira Gandhi International", 18.0, 40, fiveStar),
+                new Seed("prop-india-del-dlf2", "brand-nst-001", "NST",
+                        "Northstar Gurgaon DLF Phase II", "northstar-gurgaon-dlf-phase-2", "DLF Phase II",
+                        "Golf Course Road, DLF Phase II", "Gurgaon", "Haryana", "122002",
+                        28.4733, 77.0735, 4, 220, 8.9, 1140, 2015, 16,
+                        "DEL", "Indira Gandhi International", 22.0, 50, fourStar),
+                new Seed("prop-india-del-noida", "brand-crd-001", "CRD",
+                        "Cardinal Noida Sector 62", "cardinal-noida-sector-62", "Noida Sector 62",
+                        "C-25, Sector 62", "Noida", "Uttar Pradesh", "201309",
+                        28.6285, 77.3635, 3, 142, 8.3, 640, 2018, 10,
+                        "DEL", "Indira Gandhi International", 38.0, 75, threeStar),
+
+                // ── Bangalore ─────────────────────────────────────────────
+                new Seed("prop-india-blr-white", "brand-nst-001", "NST",
+                        "Northstar Bengaluru Whitefield", "northstar-bengaluru-whitefield", "Whitefield",
+                        "ITPL Main Road, Whitefield", "Bangalore", "Karnataka", "560066",
+                        12.9698, 77.7500, 5, 268, 9.0, 1380, 2013, 18,
+                        "BLR", "Kempegowda International", 47.0, 75, fiveStar),
+                new Seed("prop-india-blr-ecity", "brand-sol-001", "SOL",
+                        "Solstice Bengaluru Electronic City", "solstice-bengaluru-electronic-city", "Electronic City",
+                        "Hosur Road, Phase 1", "Bangalore", "Karnataka", "560100",
+                        12.8456, 77.6603, 4, 204, 8.8, 1020, 2016, 13,
+                        "BLR", "Kempegowda International", 60.0, 90, fourStar),
+                new Seed("prop-india-blr-orr", "brand-mqs-001", "MQS",
+                        "Marquis Bengaluru ORR Marathahalli", "marquis-bengaluru-orr-marathahalli", "Outer Ring Road",
+                        "Outer Ring Road, Marathahalli", "Bangalore", "Karnataka", "560037",
+                        12.9591, 77.6974, 4, 174, 8.6, 860, 2018, 12,
+                        "BLR", "Kempegowda International", 42.0, 70, fourStar),
+
+                // ── Mumbai ────────────────────────────────────────────────
+                new Seed("prop-india-bom-bkc", "brand-mai-001", "MAI",
+                        "Maison Lumière Mumbai BKC", "maison-lumiere-mumbai-bkc", "Bandra Kurla Complex",
+                        "G-Block, Bandra Kurla Complex", "Mumbai", "Maharashtra", "400051",
+                        19.0596, 72.8656, 5, 286, 9.4, 2010, 2011, 26,
+                        "BOM", "Chhatrapati Shivaji International", 6.0, 18, fiveStar),
+                new Seed("prop-india-bom-powai", "brand-nst-001", "NST",
+                        "Northstar Mumbai Powai", "northstar-mumbai-powai", "Powai",
+                        "Hiranandani Gardens, Powai", "Mumbai", "Maharashtra", "400076",
+                        19.1197, 72.9090, 4, 232, 8.9, 1290, 2014, 19,
+                        "BOM", "Chhatrapati Shivaji International", 9.0, 25, fourStar),
+
+                // ── Chennai ───────────────────────────────────────────────
+                new Seed("prop-india-maa-omr", "brand-nst-001", "NST",
+                        "Northstar Chennai OMR Sholinganallur", "northstar-chennai-omr-sholinganallur", "OMR",
+                        "Old Mahabalipuram Road, Sholinganallur", "Chennai", "Tamil Nadu", "600119",
+                        12.9011, 80.2270, 5, 256, 8.9, 1210, 2014, 16,
+                        "MAA", "Chennai International", 28.0, 55, fiveStar),
+                new Seed("prop-india-maa-taram", "brand-way-001", "WAY",
+                        "Wayfarer Chennai Taramani Tidel Park", "wayfarer-chennai-taramani-tidel-park", "Taramani",
+                        "CSIR Road, Taramani", "Chennai", "Tamil Nadu", "600113",
+                        12.9854, 80.2425, 3, 138, 8.2, 580, 2019, 9,
+                        "MAA", "Chennai International", 14.0, 30, threeStar),
+
+                // ── Pune ──────────────────────────────────────────────────
+                new Seed("prop-india-pnq-hinje", "brand-nst-001", "NST",
+                        "Northstar Pune Hinjewadi", "northstar-pune-hinjewadi", "Hinjewadi Phase 1",
+                        "Rajiv Gandhi Infotech Park, Hinjewadi", "Pune", "Maharashtra", "411057",
+                        18.5912, 73.7389, 4, 210, 8.8, 990, 2015, 14,
+                        "PNQ", "Pune International", 24.0, 50, fourStar),
+                new Seed("prop-india-pnq-khara", "brand-sol-001", "SOL",
+                        "Solstice Pune Kharadi", "solstice-pune-kharadi", "Kharadi",
+                        "EON IT Park, Kharadi", "Pune", "Maharashtra", "411014",
+                        18.5515, 73.9425, 4, 188, 8.7, 870, 2017, 13,
+                        "PNQ", "Pune International", 8.0, 20, fourStar),
+
+                // ── Visakhapatnam ─────────────────────────────────────────
+                new Seed("prop-india-vtz-rushi", "brand-nst-001", "NST",
+                        "Northstar Visakhapatnam Rushikonda", "northstar-visakhapatnam-rushikonda", "Rushikonda IT SEZ",
+                        "Rushikonda IT SEZ Road", "Visakhapatnam", "Andhra Pradesh", "530045",
+                        17.7706, 83.3829, 4, 162, 8.6, 540, 2018, 11,
+                        "VTZ", "Visakhapatnam International", 22.0, 45, fourStar),
+                new Seed("prop-india-vtz-madhu", "brand-crd-001", "CRD",
+                        "Cardinal Visakhapatnam Madhurawada", "cardinal-visakhapatnam-madhurawada", "Madhurawada",
+                        "NH-16, Madhurawada", "Visakhapatnam", "Andhra Pradesh", "530048",
+                        17.8160, 83.3700, 3, 124, 8.1, 380, 2020, 8,
+                        "VTZ", "Visakhapatnam International", 18.0, 40, threeStar)
+        );
+
+        for (Seed s : seeds) {
+            buildIndiaHotel(s.id(), s.brandId(), s.brandCode(), s.name(), s.slug(), s.area(),
+                    s.line1(), s.city(), s.state(), s.postal(), s.lat(), s.lng(),
+                    s.starRating(), s.rooms(), s.rating(), s.reviewCount(), s.openedYear(), s.floors(),
+                    s.airport(), s.airportName(), s.airportKm(), s.airportMin(), s.amen(), now);
+        }
+    }
+
+    private void buildIndiaHotel(String id, String brandId, String brandCode,
+                                           String name, String slug, String area,
+                                           String line1, String city, String state, String postal,
+                                           double lat, double lng,
+                                           int starRating, int rooms, double rating, int reviewCount,
+                                           int openedYear, int floors,
+                                           String airport, String airportName, double airportKm, int airportMin,
+                                           List<Amenity> amen, OffsetDateTime now) {
+
+        boolean hasSpaAm = amen.stream().anyMatch(a -> "SPA".equals(a.getCategory()));
+        Spa spaObj = hasSpaAm
+                ? new Spa("spa-" + id, id, name + " Spa",
+                LocalizedContent.of("In-house spa serving the IT-corridor traveller."),
+                "07:00–22:00", true)
+                : null;
+        if (spaObj != null) spas.put(spaObj.id(), spaObj);
+
+        Restaurant rest = new Restaurant("rest-" + id, id, area + " Kitchen",
+                List.of("Indian", "Pan-Asian"),
+                LocalizedContent.of("All-day dining steps from the office tower lobby."),
+                "Smart Casual", "06:30–23:00",
+                starRating == 5 ? "INR ₹₹₹₹" : starRating == 4 ? "INR ₹₹₹" : "INR ₹₹",
+                false, true);
+        restaurants.put(rest.id(), rest);
+
+        HotelLocation loc = new HotelLocation(
+                new Address(line1, area, city, state, postal, "IN", "India"),
+                new Coordinates(lat, lng), "Asia/Kolkata",
+                new AirportInfo(airport, airportName, airportKm, airportMin), null);
+
+        int phoneSuffix = Math.abs(id.hashCode());
+        HotelContact contact = new HotelContact(
+                "+91-" + (40 + phoneSuffix % 49) + "-" + String.format("%07d", phoneSuffix % 9_999_999),
+                slug + "@luxehotels.com",
+                "https://" + slug + ".luxehotels.com", null, null);
+
+        HotelPolicies policies = new HotelPolicies(
+                new HotelPolicies.CheckInPolicy("14:00", new HotelPolicies.EarlyLatePolicy(true, "INR 500", true)),
+                new HotelPolicies.CheckOutPolicy("12:00", new HotelPolicies.EarlyLatePolicy(true, "INR 500", true)),
+                new HotelPolicies.CancellationPolicy(48, "Free cancellation up to 48h before arrival."),
+                new HotelPolicies.PetPolicy(false, null, "No pets allowed."),
+                "Non-smoking throughout.", "Children of all ages welcome.");
+
+        Hotel h = new Hotel(id, brandId, brandCode,
+                "IN" + String.format("%03d", Math.abs(id.hashCode()) % 999 + 1),
+                name, slug, "ACTIVE",
+                openedYear, null, floors, rooms, starRating,
+                new GuestRating(rating, reviewCount,
+                        new RatingBreakdown(reviewCount * 7 / 10, reviewCount * 2 / 10,
+                                reviewCount / 20, reviewCount / 50, reviewCount / 100),
+                        List.of(new TravelerTypeRating("Business", Math.min(10.0, rating + 0.1), reviewCount / 2))),
+                loc, contact,
+                LocalizedContent.of(name + " — a business stay in " + area + ", "
+                        + city + "'s major IT business district. Steps from corporate campuses, with workstations, fast WiFi, and a 24h business lounge."),
+                policies,
+                amen, new ArrayList<>(),
+                List.of(rest), spaObj, null,
+                List.of(media("m-" + id + "-1", "https://cdn.luxe.com/india/" + slug + "/exterior.jpg", "EXTERIOR", true, 1),
+                        media("m-" + id + "-2", "https://cdn.luxe.com/india/" + slug + "/lobby.jpg", "INTERIOR", false, 2)),
+                List.of(new Attraction("a-" + id + "-1", area + " IT Park", "Business district", 0.3, 4.6)),
+                new ParkingInfo(true, "Multi-storey", true, "INR 250/day", "INR 200/day", true),
+                new SustainabilityInfo(80, List.of(), true, 60, 55),
+                List.of(),
+                false, now);
+        hotels.put(h.getId(), h);
+
+        addRoom(id + "-rm-dlx", id, "DLX", "Deluxe Room", "DELUXE",
+                "Comfortable room with workstation — ideal for IT-corridor business stays.",
+                32.0, new OccupancyLimit(2, 1, 3),
+                List.of(new BedConfiguration("KING", 1)), "City view", "5-15",
+                List.of("Workstation", "High-speed WiFi", "Laundry"), false, false);
+        addRoom(id + "-rm-exe", id, "EXE", "Executive Room", "PREMIER",
+                "Executive room with lounge access — for extended business trips.",
+                42.0, new OccupancyLimit(2, 1, 3),
+                List.of(new BedConfiguration("KING", 1)), "Skyline view", "12-20",
+                List.of("Executive lounge", "Welcome amenities"), false, false);
+        if (starRating == 5) {
+            addRoom(id + "-rm-ste", id, "STE", "Junior Suite", "JUNIOR_SUITE",
+                    "Suite with separate living area for in-room client meetings.",
+                    65.0, new OccupancyLimit(3, 2, 4),
+                    List.of(new BedConfiguration("KING", 1), new BedConfiguration("SOFA_BED", 1)),
+                    "Premium view", "15-25",
+                    List.of("Living area", "Meeting space"), false, true);
+        }
     }
 
     private void addRoom(String id, String hotelId, String code, String name, String category,

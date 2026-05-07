@@ -159,4 +159,47 @@ class PropertyMockDataSourceTest {
     void mark_review_helpful_returns_empty_for_unknown_id() {
         assertThat(ds.markReviewHelpful("not-real")).isEmpty();
     }
+
+    // ── India IT-corridor hotels ─────────────────────────────────────────────
+
+    @Test
+    void india_it_corridor_seed_includes_two_to_three_hotels_per_city() {
+        List<Hotel> indianHotels = ds.searchHotels(
+                Map.of("countryCodes", List.of("IN")), null);
+        // 17 hand-curated IT-area hotels + the procedurally-generated ones from
+        // the data generator (which uses the same IN country seed).
+        assertThat(indianHotels).hasSizeGreaterThanOrEqualTo(17);
+
+        List<String> hyderabad = indianHotels.stream()
+                .filter(h -> "Hyderabad".equals(h.getLocation().address().city()))
+                .map(Hotel::getId).toList();
+        assertThat(hyderabad).contains(
+                "prop-india-hyd-hitec", "prop-india-hyd-gachi", "prop-india-hyd-madha");
+    }
+
+    @Test
+    void search_by_it_district_name_finds_business_hotels() {
+        // The IT-area name is in each hotel's display name, so a destination
+        // search for "HITEC City" should surface the Hyderabad IT property.
+        List<Hotel> matches = ds.searchHotels(Map.of("query", "HITEC City"), null);
+        assertThat(matches).extracting(Hotel::getId).contains("prop-india-hyd-hitec");
+
+        List<Hotel> bkc = ds.searchHotels(Map.of("query", "BKC"), null);
+        assertThat(bkc).extracting(Hotel::getId).contains("prop-india-bom-bkc");
+
+        List<Hotel> whitefield = ds.searchHotels(Map.of("query", "Whitefield"), null);
+        assertThat(whitefield).extracting(Hotel::getId).contains("prop-india-blr-white");
+    }
+
+    @Test
+    void india_hotels_cover_all_seven_target_cities() {
+        List<Hotel> indianHotels = ds.searchHotels(
+                Map.of("countryCodes", List.of("IN")), null);
+        var cities = indianHotels.stream()
+                .map(h -> h.getLocation().address().city())
+                .distinct()
+                .toList();
+        assertThat(cities).contains("Hyderabad", "Gurgaon", "Noida",
+                "Bangalore", "Mumbai", "Chennai", "Pune", "Visakhapatnam");
+    }
 }
