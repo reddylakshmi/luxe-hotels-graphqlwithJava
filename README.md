@@ -462,14 +462,68 @@ Excluded from coverage:
 
 ---
 
+## Reference REST integration: content subgraph
+
+A working REST data source ships for the **content** subgraph as the template
+to copy when other backends become available. The companion backend service
+lives at [`../luxe-content-api/`](../luxe-content-api) (Spring Boot, port
+`7006`). It serves the same article / inspiration / brand-story / spotlight /
+collection data the mock has, as flat JSON DTOs.
+
+### Pattern
+
+`subgraph-content` ships **two** `ContentDataSource` implementations selected
+at startup by a SpEL expression on `luxe.backend.base-url`:
+
+| URL value           | Loaded data source         | Annotation                                                                |
+|---------------------|----------------------------|---------------------------------------------------------------------------|
+| empty / unset       | `ContentMockDataSource`    | `@ConditionalOnExpression("'${luxe.backend.base-url:}'.length() == 0")`   |
+| any non-empty value | `ContentRestDataSource`    | `@ConditionalOnExpression("'${luxe.backend.base-url:}'.length() > 0")`    |
+
+The REST data source uses Spring 6 `RestClient`, decodes flat record DTOs
+(`RestDtos`), and maps them to the existing `Article` / `TravelInspiration`
+domain classes — so resolvers and the GraphQL schema are unchanged.
+
+### Try it locally
+
+```bash
+# 1. Start the content backend
+cd ../luxe-content-api
+mvn -q package -DskipTests
+java -jar target/luxe-content-api-1.0.0-SNAPSHOT.jar &
+# health: http://localhost:7006/actuator/health
+
+# 2. Start the content subgraph in dev mode pointing at the backend
+cd ../luxe-hotels-graphqlwithJava
+LUXE_CONTENT_BACKEND_URL=http://localhost:7006 \
+  java -jar subgraph-content/target/subgraph-content-1.0.0-SNAPSHOT.jar \
+       --spring.profiles.active=dev
+```
+
+A query against `http://localhost:4006/graphql` now flows: GraphQL →
+`ContentRestDataSource` → backend JSON → DTO mapper → domain types → GraphQL
+response. Drop `LUXE_CONTENT_BACKEND_URL` (or run with `--spring.profiles.active=local`)
+to fall back to the in-memory mock.
+
+### Replicating for other subgraphs
+
+Per subgraph (when the real backend exists):
+
+1. Define a wire-format `RestDtos` record class.
+2. Add `XRestDataSource implements XDataSource` annotated
+   `@ConditionalOnExpression("'${luxe.backend.base-url:}'.length() > 0")`.
+3. Add the inverse condition (`length() == 0`) to the existing `XMockDataSource`.
+4. The subgraph's `application.yml` already has `luxe.backend.base-url` and
+   per-env profile blocks ready — no config changes needed.
+
+---
+
 ## Roadmap / next steps
 
 In rough effort-vs-payoff order:
 
-1. **Reference REST data source** — wire one subgraph (e.g. `content`, the
-   simplest: no auth, no mutations) to call a real backend via
-   `LuxeBackendProperties` and `@ConditionalOnProperty`. Gives the team a
-   concrete template for the remaining nine.
+1. **Replicate the REST pattern** for the remaining subgraphs once their
+   backends are available. Content is the worked example above.
 2. **CI** — GitHub Actions running `mvn verify` on PRs, with the JaCoCo
    summary published as a check.
 3. **Fix composition hints** — align nullability of `ValidationError.fieldErrors`

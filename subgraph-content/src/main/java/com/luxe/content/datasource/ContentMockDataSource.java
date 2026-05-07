@@ -3,6 +3,7 @@ package com.luxe.content.datasource;
 import com.luxe.common.scalar.Money;
 import com.luxe.content.schema.types.*;
 import com.luxe.content.schema.types.LocalizedContent.LocaleText;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -11,6 +12,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
+@ConditionalOnExpression("'${luxe.backend.base-url:}'.length() == 0")
 public class ContentMockDataSource implements ContentDataSource {
 
     private final Map<String, Article> articles = new LinkedHashMap<>();
