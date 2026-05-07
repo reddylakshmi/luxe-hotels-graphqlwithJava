@@ -466,9 +466,9 @@ Excluded from coverage:
 
 A working REST data source ships for the **content** subgraph as the template
 to copy when other backends become available. The companion backend service
-lives at [`../luxe-content-api/`](../luxe-content-api) (Spring Boot, port
-`7006`). It serves the same article / inspiration / brand-story / spotlight /
-collection data the mock has, as flat JSON DTOs.
+lives at [`../luxe-hotels-content-api/`](../luxe-hotels-content-api) (Spring
+Boot, port `7006`). It serves the same article / inspiration / brand-story /
+spotlight / collection data the mock has, as flat JSON DTOs.
 
 ### Pattern
 
@@ -488,9 +488,9 @@ domain classes — so resolvers and the GraphQL schema are unchanged.
 
 ```bash
 # 1. Start the content backend
-cd ../luxe-content-api
+cd ../luxe-hotels-content-api
 mvn -q package -DskipTests
-java -jar target/luxe-content-api-1.0.0-SNAPSHOT.jar &
+java -jar target/luxe-hotels-content-api-1.0.0-SNAPSHOT.jar &
 # health: http://localhost:7006/actuator/health
 
 # 2. Start the content subgraph in dev mode pointing at the backend

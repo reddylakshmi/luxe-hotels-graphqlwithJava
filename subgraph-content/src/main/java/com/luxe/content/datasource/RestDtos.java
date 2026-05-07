@@ -5,7 +5,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 /**
- * Wire-format DTOs that mirror the JSON shape served by luxe-content-api.
+ * Wire-format DTOs that mirror the JSON shape served by luxe-hotels-content-api.
  * These are deliberately decoupled from {@code com.luxe.content.schema.types}
  * so the backend's contract can evolve independently from the GraphQL schema.
  * {@link ContentRestDataSource} maps DTOs into the domain types after fetching.

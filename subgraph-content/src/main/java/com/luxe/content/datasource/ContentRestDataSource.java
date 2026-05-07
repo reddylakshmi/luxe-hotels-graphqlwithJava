@@ -17,7 +17,7 @@ import java.util.*;
  * {@code luxe.backend.base-url} is set to a non-empty value. The mock impl
  * is loaded otherwise (see {@link ContentMockDataSource}).
  *
- * <p>The backend (luxe-content-api) returns flat JSON DTOs; we map them into
+ * <p>The backend (luxe-hotels-content-api) returns flat JSON DTOs; we map them into
  * the subgraph's existing domain types so the resolver layer stays
  * unchanged.
  */
