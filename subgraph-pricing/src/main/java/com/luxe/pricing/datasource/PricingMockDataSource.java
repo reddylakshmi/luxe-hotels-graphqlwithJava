@@ -56,25 +56,66 @@ public class PricingMockDataSource implements PricingDataSource {
     );
 
     /**
-     * FX rates expressed as "1 unit of CCY = X USD" — i.e., the multiplier to
-     * apply when converting from a foreign currency to USD. Approximate market
-     * rates as of mid-2026; exact values aren't important for a demo.
+     * FX rates expressed as "1 unit of CCY = X USD" — the multiplier to apply
+     * when converting from a foreign currency to USD. Approximate market rates
+     * as of mid-2026; exact values aren't important for a demo. Coverage spans
+     * every currency a hotel in the property subgraph is denominated in (see
+     * {@code PropertyDataGenerator.COUNTRIES}). A unit test in pricing pins
+     * the cardinality so adding a country without its FX rate fails CI.
      */
-    private static final Map<String, Double> FX_TO_USD = Map.ofEntries(
-            Map.entry("USD", 1.0),
-            Map.entry("EUR", 1.07),
-            Map.entry("GBP", 1.27),
-            Map.entry("JPY", 0.0067),
-            Map.entry("AED", 0.272),
-            Map.entry("INR", 0.012),
-            Map.entry("CAD", 0.74),
-            Map.entry("AUD", 0.66),
-            Map.entry("CHF", 1.13),
-            Map.entry("SGD", 0.74),
-            Map.entry("HKD", 0.128),
-            Map.entry("KRW", 0.00073),
-            Map.entry("CNY", 0.14),
-            Map.entry("THB", 0.029)
+    static final Map<String, Double> FX_TO_USD = Map.ofEntries(
+            // North America
+            Map.entry("USD",     1.0),
+            Map.entry("CAD",     0.74),
+            Map.entry("MXN",     0.058),
+            // South America
+            Map.entry("BRL",     0.20),
+            Map.entry("ARS",     0.001),
+            Map.entry("CLP",     0.0011),
+            Map.entry("PEN",     0.27),
+            // Western & Northern Europe
+            Map.entry("EUR",     1.07),
+            Map.entry("GBP",     1.27),
+            Map.entry("CHF",     1.13),
+            Map.entry("SEK",     0.094),
+            Map.entry("NOK",     0.094),
+            Map.entry("DKK",     0.144),
+            Map.entry("ISK",     0.0072),
+            // Eastern Europe
+            Map.entry("PLN",     0.247),
+            Map.entry("CZK",     0.043),
+            Map.entry("HUF",     0.0028),
+            // East Asia
+            Map.entry("JPY",     0.0067),
+            Map.entry("KRW",     0.00073),
+            Map.entry("CNY",     0.14),
+            Map.entry("HKD",     0.128),
+            Map.entry("TWD",     0.031),
+            // Southeast Asia
+            Map.entry("SGD",     0.74),
+            Map.entry("THB",     0.029),
+            Map.entry("MYR",     0.214),
+            Map.entry("IDR",     0.0000625),
+            Map.entry("VND",     0.0000405),
+            Map.entry("PHP",     0.0173),
+            // South Asia
+            Map.entry("INR",     0.012),
+            Map.entry("LKR",     0.0034),
+            // Middle East
+            Map.entry("AED",     0.272),
+            Map.entry("SAR",     0.267),
+            Map.entry("QAR",     0.275),
+            Map.entry("OMR",     2.60),
+            Map.entry("ILS",     0.275),
+            Map.entry("JOD",     1.41),
+            // Africa
+            Map.entry("EGP",     0.020),
+            Map.entry("MAD",     0.10),
+            Map.entry("ZAR",     0.054),
+            Map.entry("KES",     0.0078),
+            // Oceania
+            Map.entry("AUD",     0.66),
+            Map.entry("NZD",     0.61)
     );
 
     /**
