@@ -2029,6 +2029,12 @@ input HotelFilter
   @join__type(graph: PROPERTY)
 {
   query: String
+
+  """
+   Restrict to a specific set of hotel ids — useful for "recently viewed"
+  or any other client-side bookmarked list. 
+  """
+  ids: [ID!]
   countryCodes: [CountryCode!]
   brandIds: [ID!]
   brandTiers: [BrandTier!]

@@ -85,6 +85,28 @@ class PropertyMockDataSourceTest {
     }
 
     @Test
+    void search_filters_by_ids_returns_only_those_hotels() {
+        List<String> wanted = List.of("prop-paris-001", "prop-india-bom-bkc", "prop-london-001");
+        List<Hotel> matches = ds.searchHotels(Map.of("ids", wanted), null);
+        assertThat(matches).extracting(Hotel::getId)
+                .containsExactlyInAnyOrderElementsOf(wanted);
+    }
+
+    @Test
+    void search_filters_by_ids_skips_unknown_ids() {
+        List<Hotel> matches = ds.searchHotels(
+                Map.of("ids", List.of("prop-paris-001", "prop-bogus")), null);
+        assertThat(matches).extracting(Hotel::getId).containsExactly("prop-paris-001");
+    }
+
+    @Test
+    void search_filters_by_ids_with_empty_list_returns_nothing() {
+        // Explicit empty list distinguishes from null ("no id constraint").
+        // Used by the home page when there are no recently-viewed entries.
+        assertThat(ds.searchHotels(Map.of("ids", List.of()), null)).isEmpty();
+    }
+
+    @Test
     void search_query_matches_state_substring() {
         // India hotels are seeded with state names — Telangana for Hyderabad,
         // Maharashtra for Mumbai, etc. Searching by state should surface every

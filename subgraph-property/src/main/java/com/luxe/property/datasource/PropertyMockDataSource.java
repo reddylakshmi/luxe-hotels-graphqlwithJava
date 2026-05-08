@@ -545,6 +545,20 @@ public class PropertyMockDataSource implements PropertyDataSource {
                 }).collect(Collectors.toList());
             }
             @SuppressWarnings("unchecked")
+            List<String> ids = (List<String>) filter.get("ids");
+            if (ids != null) {
+                if (ids.isEmpty()) {
+                    // Explicit empty list → match nothing. Distinct from null
+                    // (which means "no id constraint").
+                    result = List.of();
+                } else {
+                    java.util.Set<String> idSet = new java.util.HashSet<>(ids);
+                    result = result.stream()
+                            .filter(h -> idSet.contains(h.getId()))
+                            .collect(Collectors.toList());
+                }
+            }
+            @SuppressWarnings("unchecked")
             List<String> brandIds = (List<String>) filter.get("brandIds");
             if (brandIds != null && !brandIds.isEmpty()) {
                 result = result.stream().filter(h -> brandIds.contains(h.getBrandId())).collect(Collectors.toList());
