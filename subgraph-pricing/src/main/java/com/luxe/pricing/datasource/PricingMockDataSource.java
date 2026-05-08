@@ -3,26 +3,15 @@ package com.luxe.pricing.datasource;
 import com.luxe.common.scalar.Money;
 import com.luxe.pricing.schema.types.*;
 import com.luxe.pricing.schema.types.Package;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.time.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Component
 public class PricingMockDataSource implements PricingDataSource {
 
-    private static final Logger LOG = LoggerFactory.getLogger(PricingMockDataSource.class);
-    /**
-     * Tracks currency pairs we've already warned about so the same gap doesn't
-     * spam logs on every request. ConcurrentHashMap so it's safe under DGS's
-     * thread pool. The set never grows beyond a handful in practice — one
-     * entry per unsupported currency seen at runtime.
-     */
-    private static final Set<String> LOGGED_FX_GAPS = ConcurrentHashMap.newKeySet();
 
     private final Map<String, RatePlan> ratePlans = new LinkedHashMap<>();
     private final Map<String, Promotion> promotions = new LinkedHashMap<>();
@@ -80,95 +69,18 @@ public class PricingMockDataSource implements PricingDataSource {
     );
 
     /**
-     * FX rates expressed as "1 unit of CCY = X USD" — the multiplier to apply
-     * when converting from a foreign currency to USD. Approximate market rates
-     * as of mid-2026; exact values aren't important for a demo. Coverage spans
-     * every currency a hotel in the property subgraph is denominated in (see
-     * {@code PropertyDataGenerator.COUNTRIES}). A unit test in pricing pins
-     * the cardinality so adding a country without its FX rate fails CI.
-     */
-    static final Map<String, Double> FX_TO_USD = Map.ofEntries(
-            // North America
-            Map.entry("USD",     1.0),
-            Map.entry("CAD",     0.74),
-            Map.entry("MXN",     0.058),
-            // South America
-            Map.entry("BRL",     0.20),
-            Map.entry("ARS",     0.001),
-            Map.entry("CLP",     0.0011),
-            Map.entry("PEN",     0.27),
-            // Western & Northern Europe
-            Map.entry("EUR",     1.07),
-            Map.entry("GBP",     1.27),
-            Map.entry("CHF",     1.13),
-            Map.entry("SEK",     0.094),
-            Map.entry("NOK",     0.094),
-            Map.entry("DKK",     0.144),
-            Map.entry("ISK",     0.0072),
-            // Eastern Europe
-            Map.entry("PLN",     0.247),
-            Map.entry("CZK",     0.043),
-            Map.entry("HUF",     0.0028),
-            // East Asia
-            Map.entry("JPY",     0.0067),
-            Map.entry("KRW",     0.00073),
-            Map.entry("CNY",     0.14),
-            Map.entry("HKD",     0.128),
-            Map.entry("TWD",     0.031),
-            // Southeast Asia
-            Map.entry("SGD",     0.74),
-            Map.entry("THB",     0.029),
-            Map.entry("MYR",     0.214),
-            Map.entry("IDR",     0.0000625),
-            Map.entry("VND",     0.0000405),
-            Map.entry("PHP",     0.0173),
-            // South Asia
-            Map.entry("INR",     0.012),
-            Map.entry("LKR",     0.0034),
-            // Middle East
-            Map.entry("AED",     0.272),
-            Map.entry("SAR",     0.267),
-            Map.entry("QAR",     0.275),
-            Map.entry("OMR",     2.60),
-            Map.entry("ILS",     0.275),
-            Map.entry("JOD",     1.41),
-            // Africa
-            Map.entry("EGP",     0.020),
-            Map.entry("MAD",     0.10),
-            Map.entry("ZAR",     0.054),
-            Map.entry("KES",     0.0078),
-            // Oceania
-            Map.entry("AUD",     0.66),
-            Map.entry("NZD",     0.61)
-    );
-
-    /**
-     * Convert {@code amount} from one currency to another via USD as the pivot.
-     * If either currency is unknown, returns the amount unchanged so the page
-     * still renders rather than 500-ing — but the label/amount may then be
-     * misaligned, which is preferable to a broken response. Each missing pair
-     * is logged at WARN exactly once so silent data drift surfaces in logs
-     * without spamming every request.
+     * FX conversion lives in {@link FxConversionService} — kept here as a
+     * delegating alias so the existing pricing tests + searchRates code
+     * paths don't have to change. New code should call
+     * {@link FxConversionService#convert(double, String, String)} directly.
      */
     static double convertCurrency(double amount, String from, String to) {
-        if (from == null || to == null || from.equals(to)) return amount;
-        String fromUpper = from.toUpperCase();
-        String toUpper   = to.toUpperCase();
-        Double fromRate = FX_TO_USD.get(fromUpper);
-        Double toRate   = FX_TO_USD.get(toUpper);
-        if (fromRate == null || toRate == null) {
-            String key = fromUpper + "->" + toUpper;
-            if (LOGGED_FX_GAPS.add(key)) {
-                LOG.warn("Pricing: missing FX rate for {} (from={} to={}); passing amount through unchanged",
-                        key,
-                        fromRate == null ? fromUpper : "ok",
-                        toRate == null ? toUpper : "ok");
-            }
-            return amount;
-        }
-        double usd = amount * fromRate;
-        return usd / toRate;
+        return FxConversionService.convert(amount, from, to);
     }
+
+    /** Backwards-compat handle to the FX rate table — same as
+     *  {@link FxConversionService#RATES_TO_USD}. */
+    static final Map<String, Double> FX_TO_USD = FxConversionService.RATES_TO_USD;
 
     /** India IT-corridor hotels seeded as 5★ in the property subgraph — these
      * also have a `-rm-ste` room. The other 12 India hotels stop at -rm-exe. */
