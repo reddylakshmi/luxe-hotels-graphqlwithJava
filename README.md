@@ -154,24 +154,32 @@ logs to `/tmp/luxe-run/<name>.log`.
 
 ### Destination autocomplete (typeahead)
 
-Lightweight ranked list of cities, countries, and hotels matching a partial
-query — backs the search bar's typeahead. Returns prefix matches first, then
-substring matches, broad-first within each tier.
+Lightweight ranked list of cities, states/regions, countries, and hotels
+matching a partial query — backs the search bar's typeahead. Within each
+tier, prefix matches rank above substring matches; the tier ordering is
+**CITY → STATE → COUNTRY → HOTEL** (broad-but-specific intent first).
 
 ```graphql
 {
-  destinationSuggestions(query: "Hyd", limit: 6) {
-    type            # CITY | COUNTRY | HOTEL
+  destinationSuggestions(query: "Telang", limit: 6) {
+    type            # CITY | STATE | COUNTRY | HOTEL
     label
     sublabel        # "India · 3 hotels", "Plot 17, Cyber Towers Road, Hyderabad, India", etc.
     hotelId         # set when type == HOTEL
     hotelSlug
     city
+    state           # set when type == STATE — e.g. "Telangana"
     country
     countryCode
   }
 }
 ```
+
+The matching domain mirrors the `hotels(filter: { query: ... })`
+server-side filter: hotel name, city, state, country name (substring),
+and country code (exact). So picking a state suggestion in the
+autocomplete and submitting the search returns exactly the same set as
+typing the state manually.
 
 ### A multilingual content query with locale fallback
 
@@ -373,20 +381,26 @@ that produce monetary values can return it.
 
 ## Testing & coverage
 
-The project ships with **635 unit + DGS integration tests** across 35 test classes,
+The project ships with **651 unit + DGS integration tests** across 35 test classes,
 covering common scalars/auth/pagination, every subgraph's mock data source, real
 GraphQL execution through `DgsQueryExecutor` (including federation `_entities`
 resolution), and authenticated mutation paths via a per-test `AuthContextResolver`
 override (see `common/auth/AuthContextResolver.java`).
 
 Test highlights for the most-active subgraphs:
-- **Property** (72 tests) — search/sort/facet logic, India IT-corridor seed
-  invariants, the destination-autocomplete query (prefix vs substring ranking,
-  city/country dedupe with hotel counts), federated `_entities` resolution.
+- **Property** (77 tests) — search/sort/facet logic, India IT-corridor seed
+  invariants, destination-search filter (matches name / city / state /
+  country / 2-letter country code), destination-autocomplete query (prefix
+  vs substring ranking across all four tiers, dedupe with hotel counts),
+  federated `_entities` resolution.
 - **Pricing** (58 tests) — FX coverage pin (every currency in
   `PropertyDataGenerator.COUNTRIES` must have an FX entry), explicit
   conversion math (EUR→GBP via USD pivot, OMR→USD above-parity, etc.),
   rate-plan generation for hand-curated and synthetic-rate hotels.
+- **Content** (18 tests) — composite resolver paths on `ContentCollection`
+  (articles / inspirations / spotlights), federated `Article` entity
+  fetcher round-trip, locale-fallback tagging, season + category filters
+  on the public queries.
 
 ```bash
 mvn test                              # full suite (~30s test execution, ~47s with JaCoCo + package)
@@ -405,7 +419,7 @@ Latest per-module breakdown:
 | pricing       | 84.1%        | 62.3%    |
 | reservations  | 83.3%        | 54.1%    |
 | loyalty       | 88.1%        | 63.8%    |
-| content       | 51.5%        | 24.0%    |
+| content       | 54.7%        | 29.2%    |
 | experiences   | 93.1%        | 71.1%    |
 | meetings      | 90.1%        | 65.7%    |
 | notifications | 90.1%        | 87.0%    |

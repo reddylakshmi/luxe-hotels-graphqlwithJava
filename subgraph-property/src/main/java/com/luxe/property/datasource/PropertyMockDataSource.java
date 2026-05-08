@@ -522,9 +522,28 @@ public class PropertyMockDataSource implements PropertyDataSource {
         List<Hotel> result = new ArrayList<>(hotels.values());
         if (filter != null) {
             String query = (String) filter.get("query");
-            if (query != null) { String q = query.toLowerCase();
-                result = result.stream().filter(h -> h.getName().toLowerCase().contains(q)
-                        || h.getLocation().address().city().toLowerCase().contains(q)).collect(Collectors.toList()); }
+            if (query != null) {
+                String q = query.toLowerCase();
+                result = result.stream().filter(h -> {
+                    var addr = h.getLocation().address();
+                    String name        = h.getName().toLowerCase();
+                    String city        = addr.city() != null ? addr.city().toLowerCase() : "";
+                    String state       = addr.state() != null ? addr.state().toLowerCase() : "";
+                    String countryName = addr.countryName() != null ? addr.countryName().toLowerCase() : "";
+                    String countryCode = addr.countryCode() != null ? addr.countryCode().toLowerCase() : "";
+                    // Match the destination string against name, city, state,
+                    // country name (substring), or country code (exact). The
+                    // autocomplete fills the input with the display name when
+                    // the user picks a city/state/country suggestion, so all
+                    // four substring paths are load-bearing; country-code
+                    // match also accepts ?destination=FR style URLs.
+                    return name.contains(q)
+                            || city.contains(q)
+                            || state.contains(q)
+                            || countryName.contains(q)
+                            || countryCode.equals(q);
+                }).collect(Collectors.toList());
+            }
             @SuppressWarnings("unchecked")
             List<String> brandIds = (List<String>) filter.get("brandIds");
             if (brandIds != null && !brandIds.isEmpty()) {
@@ -698,11 +717,13 @@ public class PropertyMockDataSource implements PropertyDataSource {
         String q = query.trim().toLowerCase();
         int cap = Math.min(limit, 25);
 
-        // Walk every hotel once; stash unique cities and countries with their
-        // hotel counts as we go. We rank in two passes: prefix matches first
-        // (more relevant), substring matches second.
+        // Walk every hotel once; stash unique cities, states, and countries
+        // with their hotel counts as we go. We rank in two passes: prefix
+        // matches first (more relevant), substring matches second.
         record CityKey(String city, String country, String countryCode) {}
+        record StateKey(String state, String country, String countryCode) {}
         Map<CityKey, Integer> cityCounts = new LinkedHashMap<>();
+        Map<StateKey, Integer> stateCounts = new LinkedHashMap<>();
         Map<String, int[]> countryCounts = new LinkedHashMap<>();
         Map<String, String> countryCodeByName = new HashMap<>();
         List<Hotel> hotelMatchesPrefix = new ArrayList<>();
@@ -711,12 +732,15 @@ public class PropertyMockDataSource implements PropertyDataSource {
         for (Hotel h : hotels.values()) {
             String name = h.getName().toLowerCase();
             String city = h.getLocation().address().city();
+            String state = h.getLocation().address().state();
             String country = h.getLocation().address().countryName();
             String countryCode = h.getLocation().address().countryCode();
 
-            // Tally cities + countries (every hotel contributes once).
-            CityKey key = new CityKey(city, country, countryCode);
-            cityCounts.merge(key, 1, Integer::sum);
+            // Tally cities + states + countries (every hotel contributes once).
+            cityCounts.merge(new CityKey(city, country, countryCode), 1, Integer::sum);
+            if (state != null && !state.isBlank()) {
+                stateCounts.merge(new StateKey(state, country, countryCode), 1, Integer::sum);
+            }
             if (country != null) {
                 countryCounts.computeIfAbsent(country, k -> new int[1])[0]++;
                 countryCodeByName.put(country, countryCode);
@@ -739,6 +763,18 @@ public class PropertyMockDataSource implements PropertyDataSource {
             else if (name.contains(q)) citySubstring.add(s);
         }
 
+        // States matching the query (prefix > substring).
+        List<com.luxe.property.schema.types.DestinationSuggestion> statePrefix = new ArrayList<>();
+        List<com.luxe.property.schema.types.DestinationSuggestion> stateSubstring = new ArrayList<>();
+        for (var entry : stateCounts.entrySet()) {
+            String name = entry.getKey().state().toLowerCase();
+            var s = com.luxe.property.schema.types.DestinationSuggestion.state(
+                    entry.getKey().state(), entry.getKey().country(),
+                    entry.getKey().countryCode(), entry.getValue());
+            if (name.startsWith(q)) statePrefix.add(s);
+            else if (name.contains(q)) stateSubstring.add(s);
+        }
+
         // Countries matching the query (prefix > substring).
         List<com.luxe.property.schema.types.DestinationSuggestion> countryPrefix = new ArrayList<>();
         List<com.luxe.property.schema.types.DestinationSuggestion> countrySubstring = new ArrayList<>();
@@ -750,13 +786,15 @@ public class PropertyMockDataSource implements PropertyDataSource {
             else if (name.contains(q)) countrySubstring.add(s);
         }
 
-        // Build the final list: cities first (prefix then substring), then
-        // countries, then hotels. Within each group sorted by name for
-        // stable output. Cap at limit.
+        // Final ranking: cities (specific intent) → states (regional intent)
+        // → countries (broadest) → hotels (specific). Prefix matches always
+        // come before substring matches within the same tier.
         Comparator<com.luxe.property.schema.types.DestinationSuggestion> byLabel =
                 Comparator.comparing(com.luxe.property.schema.types.DestinationSuggestion::label);
         cityPrefix.sort(byLabel);
         citySubstring.sort(byLabel);
+        statePrefix.sort(byLabel);
+        stateSubstring.sort(byLabel);
         countryPrefix.sort(byLabel);
         countrySubstring.sort(byLabel);
         hotelMatchesPrefix.sort(Comparator.comparing(Hotel::getName));
@@ -764,12 +802,14 @@ public class PropertyMockDataSource implements PropertyDataSource {
 
         List<com.luxe.property.schema.types.DestinationSuggestion> out = new ArrayList<>(cap);
         appendUntilFull(out, cityPrefix, cap);
+        appendUntilFull(out, statePrefix, cap);
         appendUntilFull(out, countryPrefix, cap);
         for (Hotel h : hotelMatchesPrefix) {
             if (out.size() >= cap) break;
             out.add(com.luxe.property.schema.types.DestinationSuggestion.hotel(h));
         }
         appendUntilFull(out, citySubstring, cap);
+        appendUntilFull(out, stateSubstring, cap);
         appendUntilFull(out, countrySubstring, cap);
         for (Hotel h : hotelMatchesSubstring) {
             if (out.size() >= cap) break;

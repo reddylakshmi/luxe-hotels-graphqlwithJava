@@ -482,13 +482,13 @@ type Query {
 }
 
 """
-A single autocomplete entry for the destination search box. Three flavours:
-HOTEL (a specific property), CITY (e.g. "Paris" — clicking searches that city),
-COUNTRY (e.g. "France" — clicking searches the whole country).
+A single autocomplete entry for the destination search box. Four flavours:
+HOTEL (a specific property), CITY (e.g. "Paris"), STATE (e.g. "Telangana" —
+clicking narrows to that state's hotels), COUNTRY (e.g. "France").
 """
 type DestinationSuggestion @shareable {
   type: DestinationSuggestionType!
-  """ Bold label shown in the dropdown (hotel name, city name, or country). """
+  """ Bold label shown in the dropdown (hotel name, city, state, or country). """
   label: String!
   """ Secondary line — country for cities, address+city for hotels, etc. """
   sublabel: String
@@ -498,6 +498,8 @@ type DestinationSuggestion @shareable {
   hotelSlug: String
   """ Set when {@code type == CITY}; the destination string to pre-fill. """
   city: String
+  """ Set when {@code type == STATE}; the state/region name to pre-fill. """
+  state: String
   """ Set when {@code type == COUNTRY}; the country name to pre-fill. """
   country: String
   """ ISO 3166-1 alpha-2 code, when relevant — for filter narrowing. """
@@ -507,6 +509,7 @@ type DestinationSuggestion @shareable {
 enum DestinationSuggestionType {
   HOTEL
   CITY
+  STATE
   COUNTRY
 }
 

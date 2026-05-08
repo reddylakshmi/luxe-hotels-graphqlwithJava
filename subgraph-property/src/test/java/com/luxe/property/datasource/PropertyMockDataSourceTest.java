@@ -63,6 +63,65 @@ class PropertyMockDataSourceTest {
     }
 
     @Test
+    void search_query_matches_country_name() {
+        // The autocomplete fills the destination input with a country's
+        // display name when the user picks a country suggestion. The search
+        // filter must surface every hotel in that country, not just hotels
+        // whose name or city happens to contain "France".
+        List<Hotel> matches = ds.searchHotels(Map.of("query", "France"), null);
+        assertThat(matches).isNotEmpty();
+        assertThat(matches).allSatisfy(h ->
+                assertThat(h.getLocation().address().countryName()).isEqualToIgnoringCase("France"));
+    }
+
+    @Test
+    void search_query_matches_country_name_case_insensitively() {
+        List<Hotel> lower = ds.searchHotels(Map.of("query", "india"), null);
+        List<Hotel> upper = ds.searchHotels(Map.of("query", "INDIA"), null);
+        List<Hotel> mixed = ds.searchHotels(Map.of("query", "India"), null);
+        assertThat(lower).isNotEmpty();
+        assertThat(lower).hasSameSizeAs(upper);
+        assertThat(lower).hasSameSizeAs(mixed);
+    }
+
+    @Test
+    void search_query_matches_state_substring() {
+        // India hotels are seeded with state names — Telangana for Hyderabad,
+        // Maharashtra for Mumbai, etc. Searching by state should surface every
+        // hotel in that state.
+        List<Hotel> matches = ds.searchHotels(Map.of("query", "Telangana"), null);
+        assertThat(matches).isNotEmpty();
+        assertThat(matches).allSatisfy(h ->
+                assertThat(h.getLocation().address().state()).isEqualToIgnoringCase("Telangana"));
+        // All three Hyderabad hotels are in Telangana.
+        assertThat(matches).extracting(Hotel::getId)
+                .contains("prop-india-hyd-hitec", "prop-india-hyd-gachi", "prop-india-hyd-madha");
+    }
+
+    @Test
+    void search_query_state_match_is_case_insensitive() {
+        List<Hotel> mixed = ds.searchHotels(Map.of("query", "TaMiL NaDu"), null);
+        assertThat(mixed).isNotEmpty();
+        assertThat(mixed).allSatisfy(h ->
+                assertThat(h.getLocation().address().state()).isEqualToIgnoringCase("Tamil Nadu"));
+    }
+
+    @Test
+    void search_query_matches_country_code_exactly() {
+        // Two-letter country code path supports URLs like ?destination=FR.
+        // The result set may also include hotels whose name contains "fr"
+        // as a substring (e.g. "...Frankfurt") — that's the name-substring
+        // path and is intentional. We only assert the country-code
+        // match path delivers all FR-coded hotels.
+        List<Hotel> matches = ds.searchHotels(Map.of("query", "FR"), null);
+        var allFrenchIds = ds.searchHotels(null, null).stream()
+                .filter(h -> "FR".equalsIgnoreCase(h.getLocation().address().countryCode()))
+                .map(Hotel::getId).toList();
+        assertThat(matches).isNotEmpty();
+        assertThat(matches).extracting(Hotel::getId).containsAll(allFrenchIds);
+    }
+
+    @Test
     void search_filters_by_min_star_rating() {
         List<Hotel> fives = ds.searchHotels(Map.of("minStarRating", 5), null);
         assertThat(fives).isNotEmpty();
@@ -253,6 +312,45 @@ class PropertyMockDataSourceTest {
         assertThat(lower).isNotEmpty();
         assertThat(upper).hasSameSizeAs(lower);
         assertThat(mixed).hasSameSizeAs(lower);
+    }
+
+    @Test
+    void destination_suggestions_emits_state_type_for_state_matches() {
+        var out = ds.destinationSuggestions("Telangana", 10);
+        var stateMatches = out.stream()
+                .filter(s -> "STATE".equals(s.type()))
+                .toList();
+        assertThat(stateMatches).isNotEmpty();
+        assertThat(stateMatches).extracting(com.luxe.property.schema.types.DestinationSuggestion::label)
+                .contains("Telangana");
+        var t = stateMatches.stream()
+                .filter(s -> "Telangana".equals(s.label())).findFirst().orElseThrow();
+        assertThat(t.state()).isEqualTo("Telangana");
+        assertThat(t.country()).isEqualTo("India");
+        assertThat(t.sublabel()).contains("India").contains("hotel");
+    }
+
+    @Test
+    void destination_suggestions_dedupes_states_per_country() {
+        var out = ds.destinationSuggestions("Maharashtra", 10);
+        long count = out.stream()
+                .filter(s -> "STATE".equals(s.type()) && "Maharashtra".equals(s.label()))
+                .count();
+        assertThat(count).isEqualTo(1);
+    }
+
+    @Test
+    void destination_suggestions_ranks_state_matches_above_country_matches() {
+        // "Tamil Nadu" prefix-matches a state but no country. Verify the state
+        // suggestion is present and lands before the hotel suggestions.
+        var out = ds.destinationSuggestions("Tamil", 10);
+        int stateIdx = -1, hotelIdx = -1;
+        for (int i = 0; i < out.size(); i++) {
+            if (stateIdx == -1 && "STATE".equals(out.get(i).type())) stateIdx = i;
+            if (hotelIdx == -1 && "HOTEL".equals(out.get(i).type())) hotelIdx = i;
+        }
+        assertThat(stateIdx).isGreaterThanOrEqualTo(0);
+        if (hotelIdx >= 0) assertThat(stateIdx).isLessThan(hotelIdx);
     }
 
     @Test

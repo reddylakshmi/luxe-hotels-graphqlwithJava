@@ -6,12 +6,13 @@ package com.luxe.property.schema.types;
  * no nested objects. See schema.graphqls for the matching GraphQL type.
  */
 public record DestinationSuggestion(
-        String type,         // "HOTEL" | "CITY" | "COUNTRY"
+        String type,         // "HOTEL" | "CITY" | "STATE" | "COUNTRY"
         String label,
         String sublabel,
         String hotelId,
         String hotelSlug,
         String city,
+        String state,
         String country,
         String countryCode
 ) {
@@ -24,18 +25,24 @@ public record DestinationSuggestion(
         return new DestinationSuggestion(
                 "HOTEL", h.getName(), sub,
                 h.getId(), h.getSlug(),
-                addr.city(), addr.countryName(), addr.countryCode());
+                addr.city(), addr.state(), addr.countryName(), addr.countryCode());
     }
 
     public static DestinationSuggestion city(String city, String country, String countryCode, int hotelCount) {
         String sub = country + " · " + hotelCount + " hotel" + (hotelCount == 1 ? "" : "s");
         return new DestinationSuggestion(
-                "CITY", city, sub, null, null, city, country, countryCode);
+                "CITY", city, sub, null, null, city, null, country, countryCode);
+    }
+
+    public static DestinationSuggestion state(String state, String country, String countryCode, int hotelCount) {
+        String sub = country + " · " + hotelCount + " hotel" + (hotelCount == 1 ? "" : "s");
+        return new DestinationSuggestion(
+                "STATE", state, sub, null, null, null, state, country, countryCode);
     }
 
     public static DestinationSuggestion country(String country, String countryCode, int hotelCount) {
         String sub = hotelCount + " hotel" + (hotelCount == 1 ? "" : "s");
         return new DestinationSuggestion(
-                "COUNTRY", country, sub, null, null, null, country, countryCode);
+                "COUNTRY", country, sub, null, null, null, null, country, countryCode);
     }
 }

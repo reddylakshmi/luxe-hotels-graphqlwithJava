@@ -1225,16 +1225,16 @@ type DestinationSpend
 }
 
 """
-A single autocomplete entry for the destination search box. Three flavours:
-HOTEL (a specific property), CITY (e.g. "Paris" — clicking searches that city),
-COUNTRY (e.g. "France" — clicking searches the whole country).
+A single autocomplete entry for the destination search box. Four flavours:
+HOTEL (a specific property), CITY (e.g. "Paris"), STATE (e.g. "Telangana" —
+clicking narrows to that state's hotels), COUNTRY (e.g. "France").
 """
 type DestinationSuggestion
   @join__type(graph: PROPERTY)
 {
   type: DestinationSuggestionType!
 
-  """ Bold label shown in the dropdown (hotel name, city name, or country). 
+  """ Bold label shown in the dropdown (hotel name, city, state, or country). 
   """
   label: String!
 
@@ -1251,6 +1251,9 @@ type DestinationSuggestion
   """ Set when {@code type == CITY}; the destination string to pre-fill. """
   city: String
 
+  """ Set when {@code type == STATE}; the state/region name to pre-fill. """
+  state: String
+
   """ Set when {@code type == COUNTRY}; the country name to pre-fill. """
   country: String
 
@@ -1263,6 +1266,7 @@ enum DestinationSuggestionType
 {
   HOTEL @join__enumValue(graph: PROPERTY)
   CITY @join__enumValue(graph: PROPERTY)
+  STATE @join__enumValue(graph: PROPERTY)
   COUNTRY @join__enumValue(graph: PROPERTY)
 }
 
