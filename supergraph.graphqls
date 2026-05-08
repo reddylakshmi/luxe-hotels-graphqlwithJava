@@ -1224,6 +1224,48 @@ type DestinationSpend
   totalSpend: Money!
 }
 
+"""
+A single autocomplete entry for the destination search box. Three flavours:
+HOTEL (a specific property), CITY (e.g. "Paris" — clicking searches that city),
+COUNTRY (e.g. "France" — clicking searches the whole country).
+"""
+type DestinationSuggestion
+  @join__type(graph: PROPERTY)
+{
+  type: DestinationSuggestionType!
+
+  """ Bold label shown in the dropdown (hotel name, city name, or country). 
+  """
+  label: String!
+
+  """ Secondary line — country for cities, address+city for hotels, etc. """
+  sublabel: String
+
+  """ Set when {@code type == HOTEL}; lets the UI deep-link to the hotel page. 
+  """
+  hotelId: ID
+
+  """ Set when {@code type == HOTEL}; for slug-based deep-linking. """
+  hotelSlug: String
+
+  """ Set when {@code type == CITY}; the destination string to pre-fill. """
+  city: String
+
+  """ Set when {@code type == COUNTRY}; the country name to pre-fill. """
+  country: String
+
+  """ ISO 3166-1 alpha-2 code, when relevant — for filter narrowing. """
+  countryCode: String
+}
+
+enum DestinationSuggestionType
+  @join__type(graph: PROPERTY)
+{
+  HOTEL @join__enumValue(graph: PROPERTY)
+  CITY @join__enumValue(graph: PROPERTY)
+  COUNTRY @join__enumValue(graph: PROPERTY)
+}
+
 enum DevicePlatform
   @join__type(graph: NOTIFICATIONS)
 {
@@ -3029,6 +3071,15 @@ type Query
   brands(first: Int = 20, after: String, tier: BrandTier): BrandConnection! @join__field(graph: PROPERTY)
   roomType(id: ID!): RoomType @join__field(graph: PROPERTY)
   featuredHotels(first: Int = 6, brandTier: BrandTier, countryCode: CountryCode): [Hotel!]! @join__field(graph: PROPERTY)
+
+  """
+  Lightweight typeahead query — returns up to {@code limit} suggestions matching
+  the partial query against hotel names, city names, and country names.
+  Optimised for the destination-search input on the home / search-results page;
+  prefer this over the full {@code hotels(filter: { query })} query when only
+  a "what could the user mean?" preview list is needed.
+  """
+  destinationSuggestions(query: String!, limit: Int = 10): [DestinationSuggestion!]! @join__field(graph: PROPERTY)
   restaurant(id: ID!): Restaurant @join__field(graph: PROPERTY)
   spa(id: ID!): Spa @join__field(graph: PROPERTY)
   reservation(id: ID!): Reservation @join__field(graph: RESERVATIONS)

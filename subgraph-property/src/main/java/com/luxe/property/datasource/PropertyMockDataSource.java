@@ -691,6 +691,102 @@ public class PropertyMockDataSource implements PropertyDataSource {
                 .filter(h -> countryCode == null || countryCode.equals(h.getLocation().address().countryCode()))
                 .limit(limit).collect(Collectors.toList());
     }
+
+    @Override
+    public List<com.luxe.property.schema.types.DestinationSuggestion> destinationSuggestions(String query, int limit) {
+        if (query == null || query.isBlank() || limit <= 0) return List.of();
+        String q = query.trim().toLowerCase();
+        int cap = Math.min(limit, 25);
+
+        // Walk every hotel once; stash unique cities and countries with their
+        // hotel counts as we go. We rank in two passes: prefix matches first
+        // (more relevant), substring matches second.
+        record CityKey(String city, String country, String countryCode) {}
+        Map<CityKey, Integer> cityCounts = new LinkedHashMap<>();
+        Map<String, int[]> countryCounts = new LinkedHashMap<>();
+        Map<String, String> countryCodeByName = new HashMap<>();
+        List<Hotel> hotelMatchesPrefix = new ArrayList<>();
+        List<Hotel> hotelMatchesSubstring = new ArrayList<>();
+
+        for (Hotel h : hotels.values()) {
+            String name = h.getName().toLowerCase();
+            String city = h.getLocation().address().city();
+            String country = h.getLocation().address().countryName();
+            String countryCode = h.getLocation().address().countryCode();
+
+            // Tally cities + countries (every hotel contributes once).
+            CityKey key = new CityKey(city, country, countryCode);
+            cityCounts.merge(key, 1, Integer::sum);
+            if (country != null) {
+                countryCounts.computeIfAbsent(country, k -> new int[1])[0]++;
+                countryCodeByName.put(country, countryCode);
+            }
+
+            // Hotel-level match.
+            if (name.startsWith(q)) hotelMatchesPrefix.add(h);
+            else if (name.contains(q)) hotelMatchesSubstring.add(h);
+        }
+
+        // Cities matching the query (prefix > substring).
+        List<com.luxe.property.schema.types.DestinationSuggestion> cityPrefix = new ArrayList<>();
+        List<com.luxe.property.schema.types.DestinationSuggestion> citySubstring = new ArrayList<>();
+        for (var entry : cityCounts.entrySet()) {
+            String name = entry.getKey().city().toLowerCase();
+            var s = com.luxe.property.schema.types.DestinationSuggestion.city(
+                    entry.getKey().city(), entry.getKey().country(),
+                    entry.getKey().countryCode(), entry.getValue());
+            if (name.startsWith(q)) cityPrefix.add(s);
+            else if (name.contains(q)) citySubstring.add(s);
+        }
+
+        // Countries matching the query (prefix > substring).
+        List<com.luxe.property.schema.types.DestinationSuggestion> countryPrefix = new ArrayList<>();
+        List<com.luxe.property.schema.types.DestinationSuggestion> countrySubstring = new ArrayList<>();
+        for (var entry : countryCounts.entrySet()) {
+            String name = entry.getKey().toLowerCase();
+            var s = com.luxe.property.schema.types.DestinationSuggestion.country(
+                    entry.getKey(), countryCodeByName.get(entry.getKey()), entry.getValue()[0]);
+            if (name.startsWith(q)) countryPrefix.add(s);
+            else if (name.contains(q)) countrySubstring.add(s);
+        }
+
+        // Build the final list: cities first (prefix then substring), then
+        // countries, then hotels. Within each group sorted by name for
+        // stable output. Cap at limit.
+        Comparator<com.luxe.property.schema.types.DestinationSuggestion> byLabel =
+                Comparator.comparing(com.luxe.property.schema.types.DestinationSuggestion::label);
+        cityPrefix.sort(byLabel);
+        citySubstring.sort(byLabel);
+        countryPrefix.sort(byLabel);
+        countrySubstring.sort(byLabel);
+        hotelMatchesPrefix.sort(Comparator.comparing(Hotel::getName));
+        hotelMatchesSubstring.sort(Comparator.comparing(Hotel::getName));
+
+        List<com.luxe.property.schema.types.DestinationSuggestion> out = new ArrayList<>(cap);
+        appendUntilFull(out, cityPrefix, cap);
+        appendUntilFull(out, countryPrefix, cap);
+        for (Hotel h : hotelMatchesPrefix) {
+            if (out.size() >= cap) break;
+            out.add(com.luxe.property.schema.types.DestinationSuggestion.hotel(h));
+        }
+        appendUntilFull(out, citySubstring, cap);
+        appendUntilFull(out, countrySubstring, cap);
+        for (Hotel h : hotelMatchesSubstring) {
+            if (out.size() >= cap) break;
+            out.add(com.luxe.property.schema.types.DestinationSuggestion.hotel(h));
+        }
+        return out;
+    }
+
+    private static void appendUntilFull(
+            List<com.luxe.property.schema.types.DestinationSuggestion> sink,
+            List<com.luxe.property.schema.types.DestinationSuggestion> from,
+            int cap) {
+        for (var s : from) {
+            if (sink.size() >= cap) return;
+            sink.add(s);
+        }
+    }
     @Override public Optional<Brand> getBrandById(String id) { return Optional.ofNullable(brands.get(id)); }
     @Override public Optional<Brand> getBrandByCode(String code) {
         return brands.values().stream().filter(b -> code.equals(b.getCode())).findFirst();

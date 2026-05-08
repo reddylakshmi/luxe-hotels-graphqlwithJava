@@ -1,6 +1,7 @@
 package com.luxe.property.datasource;
 
 import com.luxe.property.schema.types.Brand;
+import com.luxe.property.schema.types.DestinationSuggestion;
 import com.luxe.property.schema.types.Hotel;
 import com.luxe.property.schema.types.HotelFacets;
 import com.luxe.property.schema.types.Restaurant;
@@ -19,6 +20,13 @@ public interface PropertyDataSource {
     List<Hotel> getFeaturedHotels(String brandTier, String countryCode, int limit);
     /** Per-filter-option counts for the current search context. */
     HotelFacets computeFacets(Map<String, Object> filter);
+
+    /**
+     * Lightweight typeahead — returns up to {@code limit} suggestions matching
+     * the partial query against hotel names, city names, and country names.
+     * Empty / blank queries return an empty list.
+     */
+    List<DestinationSuggestion> destinationSuggestions(String query, int limit);
 
     Optional<Brand> getBrandById(String id);
     Optional<Brand> getBrandByCode(String code);

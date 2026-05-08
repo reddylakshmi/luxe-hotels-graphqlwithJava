@@ -84,6 +84,12 @@ public class PropertyDataFetcher {
     }
 
     @DgsQuery
+    public List<com.luxe.property.schema.types.DestinationSuggestion> destinationSuggestions(
+            @InputArgument String query, @InputArgument Integer limit) {
+        return dataSource.destinationSuggestions(query, limit != null ? limit : 10);
+    }
+
+    @DgsQuery
     public Restaurant restaurant(@InputArgument String id) {
         return dataSource.getRestaurantById(id).orElse(null);
     }

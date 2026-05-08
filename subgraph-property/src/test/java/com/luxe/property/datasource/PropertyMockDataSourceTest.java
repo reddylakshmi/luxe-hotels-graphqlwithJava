@@ -204,6 +204,96 @@ class PropertyMockDataSourceTest {
                 "prop-india-blr-white");
     }
 
+    // ── Destination autocomplete ─────────────────────────────────────────────
+
+    @Test
+    void destination_suggestions_returns_empty_for_blank_query() {
+        assertThat(ds.destinationSuggestions(null, 10)).isEmpty();
+        assertThat(ds.destinationSuggestions("", 10)).isEmpty();
+        assertThat(ds.destinationSuggestions("   ", 10)).isEmpty();
+    }
+
+    @Test
+    void destination_suggestions_returns_empty_when_limit_is_zero_or_negative() {
+        assertThat(ds.destinationSuggestions("Paris", 0)).isEmpty();
+        assertThat(ds.destinationSuggestions("Paris", -1)).isEmpty();
+    }
+
+    @Test
+    void destination_suggestions_matches_a_city_by_prefix() {
+        var out = ds.destinationSuggestions("Par", 10);
+        assertThat(out).extracting(com.luxe.property.schema.types.DestinationSuggestion::label)
+                .contains("Paris");
+        // Cities come before hotel-name matches.
+        assertThat(out.get(0).type()).isEqualTo("CITY");
+    }
+
+    @Test
+    void destination_suggestions_matches_country_by_prefix() {
+        var out = ds.destinationSuggestions("India", 10);
+        assertThat(out).extracting(com.luxe.property.schema.types.DestinationSuggestion::type)
+                .contains("COUNTRY");
+        assertThat(out).extracting(com.luxe.property.schema.types.DestinationSuggestion::label)
+                .contains("India");
+    }
+
+    @Test
+    void destination_suggestions_matches_hotel_by_substring() {
+        var out = ds.destinationSuggestions("HITEC", 10);
+        assertThat(out)
+                .extracting(com.luxe.property.schema.types.DestinationSuggestion::hotelId)
+                .contains("prop-india-hyd-hitec");
+    }
+
+    @Test
+    void destination_suggestions_is_case_insensitive() {
+        var lower = ds.destinationSuggestions("paris", 10);
+        var upper = ds.destinationSuggestions("PARIS", 10);
+        var mixed = ds.destinationSuggestions("PaRiS", 10);
+        assertThat(lower).isNotEmpty();
+        assertThat(upper).hasSameSizeAs(lower);
+        assertThat(mixed).hasSameSizeAs(lower);
+    }
+
+    @Test
+    void destination_suggestions_dedupes_cities_with_count_in_sublabel() {
+        var out = ds.destinationSuggestions("Paris", 20);
+        var paris = out.stream()
+                .filter(s -> "CITY".equals(s.type()) && "Paris".equals(s.label()))
+                .findFirst().orElseThrow();
+        // Sublabel should mention the country and the hotel count.
+        assertThat(paris.sublabel()).contains("France").contains("hotel");
+    }
+
+    @Test
+    void destination_suggestions_caps_at_limit() {
+        var out = ds.destinationSuggestions("a", 5); // wide match
+        assertThat(out).hasSizeLessThanOrEqualTo(5);
+    }
+
+    @Test
+    void destination_suggestions_ranks_prefix_matches_above_substring_matches() {
+        // "Lon" prefix-matches "London"; substring-matches hotels whose names
+        // contain "Lon" only mid-string. The prefix city should sit before any
+        // mid-string hotel match.
+        var out = ds.destinationSuggestions("Lon", 20);
+        int firstLondonCity = -1;
+        int firstSubstringHotel = -1;
+        for (int i = 0; i < out.size(); i++) {
+            var s = out.get(i);
+            if (firstLondonCity == -1 && "CITY".equals(s.type()) && "London".equalsIgnoreCase(s.label())) {
+                firstLondonCity = i;
+            }
+            if (firstSubstringHotel == -1 && "HOTEL".equals(s.type())
+                    && !s.label().toLowerCase().startsWith("lon")) {
+                firstSubstringHotel = i;
+            }
+        }
+        if (firstLondonCity >= 0 && firstSubstringHotel >= 0) {
+            assertThat(firstLondonCity).isLessThan(firstSubstringHotel);
+        }
+    }
+
     @Test
     void india_hotels_cover_all_seven_target_cities() {
         List<Hotel> indianHotels = ds.searchHotels(
