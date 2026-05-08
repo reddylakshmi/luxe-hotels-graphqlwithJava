@@ -25,8 +25,8 @@ public class GuestMockDataSource implements GuestDataSource {
                 prefs("City view", "High floor", "King", "Soft",
                         List.of("Vegetarian"), List.of(), false, false, false, "en"),
                 List.of(
-                        address("home", "123 Powell St", "San Francisco", "CA", "94102", "US", true),
-                        address("work", "1 Market St", "San Francisco", "CA", "94105", "US", false)
+                        address("HOME", "123 Powell St", "San Francisco", "CA", "94102", "US", true),
+                        address("WORK", "1 Market St", "San Francisco", "CA", "94105", "US", false)
                 ),
                 List.of(
                         pm("pm-001", "CREDIT_CARD", "Visa", "4242", "Sophia Chen", "tok_001",
@@ -52,7 +52,7 @@ public class GuestMockDataSource implements GuestDataSource {
                 "British", "en", "GBP",
                 prefs(null, "Low floor", "King", "Firm",
                         List.of(), List.of(), false, false, false, "en"),
-                List.of(address("home", "14 Belgravia Sq", "London", null, "SW1X 8PZ", "GB", true)),
+                List.of(address("HOME", "14 Belgravia Sq", "London", null, "SW1X 8PZ", "GB", true)),
                 List.of(pm("pm-003", "CREDIT_CARD", "Mastercard", "5678", "James Morrison", "tok_003",
                         3, 2025, null, true)),
                 List.of(
@@ -74,7 +74,7 @@ public class GuestMockDataSource implements GuestDataSource {
                 "Japanese", "ja", "JPY",
                 prefs(null, null, "Twin", "Medium",
                         List.of("No shellfish"), List.of("Shellfish"), false, false, false, "ja"),
-                List.of(address("home", "2-3-4 Shibuya", "Tokyo", null, "150-0002", "JP", true)),
+                List.of(address("HOME", "2-3-4 Shibuya", "Tokyo", null, "150-0002", "JP", true)),
                 List.of(pm("pm-004", "CREDIT_CARD", "JCB", "9012", "Yuki Tanaka", "tok_004",
                         9, 2026, null, true)),
                 List.of(),
@@ -89,7 +89,7 @@ public class GuestMockDataSource implements GuestDataSource {
                 "Emirati", "ar", "AED",
                 prefs("Sea view", "High floor", "King", "Soft",
                         List.of(), List.of("Pork"), false, true, false, "ar"),
-                List.of(address("home", "Palm Jumeirah, Villa 42", "Dubai", null, "00000", "AE", true)),
+                List.of(address("HOME", "Palm Jumeirah, Villa 42", "Dubai", null, "00000", "AE", true)),
                 List.of(
                         pm("pm-005", "CREDIT_CARD", "Visa", "3456", "Fatima Al-Rashid", "tok_005",
                                 11, 2027, null, true)
@@ -109,7 +109,7 @@ public class GuestMockDataSource implements GuestDataSource {
                 "Italian", "it", "EUR",
                 prefs(null, "Mid floor", "King", "Soft",
                         List.of("Gluten-free"), List.of("Gluten"), false, false, false, "it"),
-                List.of(address("home", "Via della Spiga 42", "Milan", null, "20121", "IT", true)),
+                List.of(address("HOME", "Via della Spiga 42", "Milan", null, "20121", "IT", true)),
                 List.of(pm("pm-006", "CREDIT_CARD", "Visa", "7890", "Marco Ferrari", "tok_006",
                         5, 2026, null, true)),
                 List.of(companion("tc-004", new GuestName("Ms", "Lucia", null, "Ferrari", null, null),
@@ -128,7 +128,7 @@ public class GuestMockDataSource implements GuestDataSource {
                 "Nigerian", "en", "USD",
                 prefs(null, "High floor", "King", null,
                         List.of(), List.of(), false, false, false, "en"),
-                List.of(address("home", "3 Bourdillon Rd", "Lagos", null, "101233", "NG", true)),
+                List.of(address("HOME", "3 Bourdillon Rd", "Lagos", null, "101233", "NG", true)),
                 List.of(pm("pm-007", "CREDIT_CARD", "Mastercard", "2468", "Diana Okonkwo", "tok_007",
                         8, 2028, null, true)),
                 List.of(),
