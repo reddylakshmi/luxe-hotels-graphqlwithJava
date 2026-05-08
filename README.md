@@ -381,7 +381,7 @@ that produce monetary values can return it.
 
 ## Testing & coverage
 
-The project ships with **672 unit + DGS integration tests** across 37 test classes,
+The project ships with **690 unit + DGS integration tests** across 37 test classes,
 covering common scalars/auth/pagination, every subgraph's mock data source, real
 GraphQL execution through `DgsQueryExecutor` (including federation `_entities`
 resolution), and authenticated mutation paths via a per-test `AuthContextResolver`
@@ -407,7 +407,19 @@ Test highlights for the most-active subgraphs:
   (extracted out of the data source) with its own
   `FxConversionServiceTest` suite alongside the through-data-source
   pricing tests.
-- **Content** (18 tests) — composite resolver paths on `ContentCollection`
+- **Guest** (88 tests) — sign-in / sign-up flows, profile partial-update
+  (the `phone`/`dateOfBirth`/`nationality` mutation surface), full
+  address CRUD with primary-flag invariants (auto-promote when removing
+  the primary, demote-existing on add/update/setPrimary), payment-method
+  add/remove/set-default, saved-hotels and travel-companion list
+  mutators. Both the data-source layer and the DGS resolver layer get
+  coverage so the union return shapes (`AddAddressResult`,
+  `UpdateAddressResult`) are exercised end-to-end.
+- **Reservations** (68 tests) — including the `canCheckInOnline` /
+  `canModify` / `isRefundable` regression that locks the JavaBean-getter
+  naming (the schema declares them as `Boolean!`, so a doubled-`is`
+  prefix on a getter would surface as a non-null bubble-up at runtime).
+- **Content** (23 tests) — composite resolver paths on `ContentCollection`
   (articles / inspirations / spotlights), federated `Article` entity
   fetcher round-trip, locale-fallback tagging, season + category filters
   on the public queries.
@@ -579,22 +591,19 @@ In rough effort-vs-payoff order:
    backends are available. Content is the worked example above.
 2. **CI** — GitHub Actions running `mvn verify` on PRs, with the JaCoCo
    summary published as a check.
-3. **Fix composition hints** — align nullability of `ValidationError.fieldErrors`
-   (`[FieldError!]` in property vs `[FieldError!]!` everywhere else) and
-   `NotFoundError.resourceType` so `rover supergraph compose` is hint-free.
-4. **Lift `content` / `guest` branch coverage** — they sit at 24% / 51%, the
-   lowest in the matrix. Mostly untested validation branches, pagination
-   edge cases, and the REST-data-source error paths in content.
-5. **Idempotency enforcement** — every mutation already accepts an
+3. **Lift `content` / `guest` branch coverage** — content branch sits
+   below 30%, mostly untested validation branches and the REST-data-source
+   error paths.
+4. **Idempotency enforcement** — every mutation already accepts an
    `idempotencyKey: UUID!`, but no subgraph currently dedupes against a replay
    store. Add a simple in-memory cache keyed by `(mutationName, key)` per
    subgraph.
-6. **Persistence layer** — swap the in-memory mocks for H2 + Spring Data JPA
+5. **Persistence layer** — swap the in-memory mocks for H2 + Spring Data JPA
    (or Postgres in `dev`+). Closer to production without depending on the
    real backends being ready.
-7. **Observability** — OpenTelemetry traces propagated from router → subgraph,
+6. **Observability** — OpenTelemetry traces propagated from router → subgraph,
    structured JSON logs, Prometheus `/metrics` exposure on every subgraph.
-8. **Deployment** — flesh out `docker-compose.yml` for one-command local
+7. **Deployment** — flesh out `docker-compose.yml` for one-command local
    stack; add a Helm chart for K8s.
 
 ---
