@@ -6,18 +6,24 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 public class GuestProfile implements HasId {
-    private final String id, email, phone, nationality, avatarUrl;
+    private final String id, email, avatarUrl;
     private final String languagePreference, currencyPreference;
-    private final LocalDate dateOfBirth;
     private final GuestName name;
     private final GuestExternalIds externalIds;
-    private GuestPreferences preferences;
     private final List<GuestAddress> addresses;
     private final List<PaymentMethod> paymentMethods;
     private final List<TravelCompanion> travelCompanions;
     private final List<SavedHotel> savedHotels;
     private final GuestCorporateProfile corporateProfile;
-    private final OffsetDateTime memberSince, updatedAt;
+    private final OffsetDateTime memberSince;
+
+    // Mutable via updateGuestProfile / updatePreferences. Other fields
+    // stay final because the schema currently has no mutation for them.
+    private String phone;
+    private String nationality;
+    private LocalDate dateOfBirth;
+    private GuestPreferences preferences;
+    private OffsetDateTime updatedAt;
 
     public GuestProfile(String id, String email, String phone, String nationality, String avatarUrl,
                         String languagePreference, String currencyPreference, LocalDate dateOfBirth,
@@ -56,6 +62,10 @@ public class GuestProfile implements HasId {
     public GuestExternalIds getExternalIds() { return externalIds; }
     public GuestPreferences getPreferences() { return preferences; }
     public void setPreferences(GuestPreferences p) { this.preferences = p; }
+    public void setPhone(String phone) { this.phone = phone; }
+    public void setNationality(String nationality) { this.nationality = nationality; }
+    public void setDateOfBirth(LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; }
+    public void setUpdatedAt(OffsetDateTime updatedAt) { this.updatedAt = updatedAt; }
     public List<GuestAddress> getAddresses() { return addresses; }
     public List<PaymentMethod> getPaymentMethods() { return paymentMethods; }
     public List<TravelCompanion> getTravelCompanions() { return travelCompanions; }

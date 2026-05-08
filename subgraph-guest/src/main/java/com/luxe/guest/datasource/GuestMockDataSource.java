@@ -18,7 +18,7 @@ public class GuestMockDataSource implements GuestDataSource {
     }
 
     private void initData() {
-        add(profile("guest-001", "sophia.chen@email.com", "+1-415-555-0101",
+            add(profile("guest-001", "sophia.chen@email.com", "+1-415-555-0101",
                 new GuestName("Ms", "Sophia", null, "Chen", null, null),
                 new GuestExternalIds("LUX0001234567", null, null, null),
                 "CN", "en", "USD",
@@ -241,7 +241,23 @@ public class GuestMockDataSource implements GuestDataSource {
 
     @Override
     public GuestProfile update(String id, Map<String, Object> fields) {
-        return guests.get(id);
+        GuestProfile g = guests.get(id);
+        if (g == null) return null;
+        if (fields.containsKey("phone")) {
+            Object v = fields.get("phone");
+            g.setPhone(v == null ? null : v.toString());
+        }
+        if (fields.containsKey("nationality")) {
+            Object v = fields.get("nationality");
+            g.setNationality(v == null ? null : v.toString());
+        }
+        if (fields.containsKey("dateOfBirth")) {
+            Object v = fields.get("dateOfBirth");
+            g.setDateOfBirth(v == null ? null
+                    : (v instanceof LocalDate ld ? ld : LocalDate.parse(v.toString())));
+        }
+        g.setUpdatedAt(OffsetDateTime.now());
+        return g;
     }
 
     @Override
