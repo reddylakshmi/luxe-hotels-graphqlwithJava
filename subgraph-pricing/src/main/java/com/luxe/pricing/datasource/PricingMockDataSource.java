@@ -3,19 +3,43 @@ package com.luxe.pricing.datasource;
 import com.luxe.common.scalar.Money;
 import com.luxe.pricing.schema.types.*;
 import com.luxe.pricing.schema.types.Package;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.time.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Component
 public class PricingMockDataSource implements PricingDataSource {
 
+    private static final Logger LOG = LoggerFactory.getLogger(PricingMockDataSource.class);
+    /**
+     * Tracks currency pairs we've already warned about so the same gap doesn't
+     * spam logs on every request. ConcurrentHashMap so it's safe under DGS's
+     * thread pool. The set never grows beyond a handful in practice — one
+     * entry per unsupported currency seen at runtime.
+     */
+    private static final Set<String> LOGGED_FX_GAPS = ConcurrentHashMap.newKeySet();
+
     private final Map<String, RatePlan> ratePlans = new LinkedHashMap<>();
     private final Map<String, Promotion> promotions = new LinkedHashMap<>();
     private final Map<String, Package> packages = new LinkedHashMap<>();
     private final Map<String, GiftCardBalance> giftCards = new LinkedHashMap<>();
+
+    /**
+     * Indices into the per-room price tuple stored in {@link #HOTEL_ROOMS} and
+     * returned from {@link #priceTuple(String, String, String)}. Named so call
+     * sites read {@code tuple[FLEX_IDX]} instead of {@code tuple[0]}.
+     */
+    private static final int FLEX_IDX = 0;
+    private static final int NONREF_IDX = 1;
+    private static final int FX_IDX = 2;
+    private static final int POINTS_IDX = 3;
+    /** Length of every price tuple — used by the fallback generator factory. */
+    private static final int PRICE_TUPLE_SIZE = 4;
 
     // hotelId -> roomTypeId -> [basePriceFlexible, basePriceNonRefundable, currencyMul, pointsPerNight]
     // The room IDs here match the actual IDs used by the property subgraph
@@ -122,13 +146,26 @@ public class PricingMockDataSource implements PricingDataSource {
      * Convert {@code amount} from one currency to another via USD as the pivot.
      * If either currency is unknown, returns the amount unchanged so the page
      * still renders rather than 500-ing — but the label/amount may then be
-     * misaligned, which is preferable to a broken response.
+     * misaligned, which is preferable to a broken response. Each missing pair
+     * is logged at WARN exactly once so silent data drift surfaces in logs
+     * without spamming every request.
      */
     static double convertCurrency(double amount, String from, String to) {
         if (from == null || to == null || from.equals(to)) return amount;
-        Double fromRate = FX_TO_USD.get(from.toUpperCase());
-        Double toRate = FX_TO_USD.get(to.toUpperCase());
-        if (fromRate == null || toRate == null) return amount;
+        String fromUpper = from.toUpperCase();
+        String toUpper   = to.toUpperCase();
+        Double fromRate = FX_TO_USD.get(fromUpper);
+        Double toRate   = FX_TO_USD.get(toUpper);
+        if (fromRate == null || toRate == null) {
+            String key = fromUpper + "->" + toUpper;
+            if (LOGGED_FX_GAPS.add(key)) {
+                LOG.warn("Pricing: missing FX rate for {} (from={} to={}); passing amount through unchanged",
+                        key,
+                        fromRate == null ? fromUpper : "ok",
+                        toRate == null ? toUpper : "ok");
+            }
+            return amount;
+        }
         double usd = amount * fromRate;
         return usd / toRate;
     }
@@ -355,10 +392,12 @@ public class PricingMockDataSource implements PricingDataSource {
             default           -> 1.0;
         };
         base *= sizeMul;
-        double flex = Math.round(base);
-        double nonRef = Math.round(flex * 0.82);
-        double pointsPerNight = Math.round(flex * 4);
-        return new double[]{flex, nonRef, 1.0, pointsPerNight};
+        double[] tuple = new double[PRICE_TUPLE_SIZE];
+        tuple[FLEX_IDX]   = Math.round(base);
+        tuple[NONREF_IDX] = Math.round(tuple[FLEX_IDX] * 0.82);
+        tuple[FX_IDX]     = 1.0;
+        tuple[POINTS_IDX] = Math.round(tuple[FLEX_IDX] * 4);
+        return tuple;
     }
 
     /**
@@ -420,8 +459,8 @@ public class PricingMockDataSource implements PricingDataSource {
                     double[] prices = e.getValue();
                     // Convert base→display once per room so all derived numbers
                     // (per-rate-plan multipliers, totals, taxes) stay in sync.
-                    double flexBase = prices[0] * (1 - discount) * fx;
-                    double nrBase   = prices[1] * (1 - discount) * fx;
+                    double flexBase = prices[FLEX_IDX]   * (1 - discount) * fx;
+                    double nrBase   = prices[NONREF_IDX] * (1 - discount) * fx;
 
                     // Default trio shown on the rate-list page: Flexible (most popular),
                     // Member Exclusive Offer (with bonus points), Package Rate.
@@ -490,7 +529,7 @@ public class PricingMockDataSource implements PricingDataSource {
                                                   double discount, double fx) {
         return start.datesUntil(end).map(date -> {
             double lowest = rooms.values().stream()
-                    .mapToDouble(p -> p[0] * (1 - discount) * fx).min().orElse(0);
+                    .mapToDouble(p -> p[FLEX_IDX] * (1 - discount) * fx).min().orElse(0);
             return new DateRateSummary(date, Money.of(lowest, displayCurrency), displayCurrency, true);
         }).collect(Collectors.toList());
     }
@@ -598,8 +637,8 @@ public class PricingMockDataSource implements PricingDataSource {
         return rooms.entrySet().stream()
                 .filter(e -> roomTypeId == null || e.getKey().equals(roomTypeId))
                 .map(e -> {
-                    double pricePerNight = e.getValue()[0];
-                    int pointsPerNight = (int) (e.getValue()[3]);
+                    double pricePerNight = e.getValue()[FLEX_IDX];
+                    int pointsPerNight = (int) (e.getValue()[POINTS_IDX]);
                     int nights = (int) checkIn.until(checkOut).getDays();
                     List<LocalDate> available = checkIn.datesUntil(checkOut).collect(Collectors.toList());
                     return new RedemptionRate(e.getKey(), hotelId, pointsPerNight * nights,

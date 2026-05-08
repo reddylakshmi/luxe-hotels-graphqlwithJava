@@ -312,8 +312,8 @@ final class PropertyDataGenerator {
         for (BrandSpec b : BRANDS) {
             String brandId = "brand-" + b.code().toLowerCase() + "-001";
             int count = propertyCounts.getOrDefault(brandId, 0);
-            String logoUrl = "https://cdn.luxe.com/brands/" + b.slug() + "-logo.svg";
-            String heroUrl = "https://cdn.luxe.com/brands/" + b.slug() + "-hero.jpg";
+            String logoUrl = MediaUrls.brandLogoUrl(b.slug());
+            String heroUrl = MediaUrls.brandHeroUrl(b.slug());
             brands.add(new Brand(brandId, b.code(), b.name(), b.slug(), b.tier(),
                     b.tagline(),
                     "The " + b.name() + " collection — " + b.tagline().toLowerCase(),
@@ -431,12 +431,15 @@ final class PropertyDataGenerator {
                         b.tier().equals("LUXURY"), true))
                 : List.of();
 
+        String citySlug = slugify(city.name());
         List<MediaAsset> media = List.of(
-                new MediaAsset("m-" + hid + "-1", "https://cdn.luxe.com/" + b.slug() + "/" + slugify(city.name()) + "/exterior.jpg",
-                        "https://cdn.luxe.com/" + b.slug() + "/" + slugify(city.name()) + "/exterior_thumb.jpg",
+                new MediaAsset("m-" + hid + "-1",
+                        MediaUrls.hotelExteriorUrl(b.slug(), citySlug),
+                        MediaUrls.hotelExteriorThumbUrl(b.slug(), citySlug),
                         "EXTERIOR", "Exterior view", null, true, 1),
-                new MediaAsset("m-" + hid + "-2", "https://cdn.luxe.com/" + b.slug() + "/" + slugify(city.name()) + "/lobby.jpg",
-                        "https://cdn.luxe.com/" + b.slug() + "/" + slugify(city.name()) + "/lobby_thumb.jpg",
+                new MediaAsset("m-" + hid + "-2",
+                        MediaUrls.hotelLobbyUrl(b.slug(), citySlug),
+                        MediaUrls.hotelLobbyThumbUrl(b.slug(), citySlug),
                         "INTERIOR", "Lobby", null, false, 2)
         );
 
@@ -551,8 +554,8 @@ final class PropertyDataGenerator {
                 LocalizedContent.of(desc), sqm, occ, beds, view, floor,
                 List.of(),
                 List.of(new MediaAsset(id + "-img",
-                        "https://cdn.luxe.com/rooms/" + id + ".jpg",
-                        "https://cdn.luxe.com/rooms/" + id + "_thumb.jpg",
+                        MediaUrls.roomImageUrl(id),
+                        MediaUrls.roomImageThumbUrl(id),
                         "ROOM", null, null, true, 1)),
                 List.of(),
                 highlights, smoking, connecting);
