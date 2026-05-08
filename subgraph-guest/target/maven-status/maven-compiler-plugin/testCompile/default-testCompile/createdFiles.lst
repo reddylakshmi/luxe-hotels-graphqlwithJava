@@ -1,6 +1,0 @@
-com/luxe/guest/datasource/GuestMutationsTest.class
-com/luxe/guest/resolver/GuestMutationsResolverTest.class
-com/luxe/guest/datasource/GuestMockDataSourceTest.class
-com/luxe/guest/resolver/GuestAuthenticatedTest.class
-com/luxe/guest/resolver/GuestDataFetcherTest.class
-com/luxe/guest/resolver/GuestAuthenticatedTest$AuthOverrideConfig.class
