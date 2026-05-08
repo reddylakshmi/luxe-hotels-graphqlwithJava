@@ -233,6 +233,10 @@ type Mutation {
   signOut: Boolean!
   updateGuestProfile(input: UpdateGuestProfileInput!): UpdateProfileResult!
   updatePreferences(input: UpdatePreferencesInput!): GuestPreferences!
+  addAddress(input: AddAddressInput!): AddAddressResult!
+  updateAddress(id: ID!, input: UpdateAddressInput!): UpdateAddressResult!
+  removeAddress(id: ID!): Boolean!
+  setPrimaryAddress(id: ID!): GuestAddress
   addPaymentMethod(input: AddPaymentMethodInput!): AddPaymentMethodResult!
   removePaymentMethod(id: ID!): Boolean!
   setDefaultPaymentMethod(id: ID!): PaymentMethod
@@ -241,3 +245,30 @@ type Mutation {
   addTravelCompanion(input: TravelCompanionInput!): TravelCompanion!
   removeTravelCompanion(id: ID!): Boolean!
 }
+
+# ── Address mutation inputs / unions ────────────────────────────────────
+
+input AddAddressInput {
+  type: AddressType!
+  line1: String!
+  line2: String
+  city: String!
+  stateCode: String
+  postalCode: String
+  countryCode: CountryCode!
+  isPrimary: Boolean
+}
+
+input UpdateAddressInput {
+  type: AddressType
+  line1: String
+  line2: String
+  city: String
+  stateCode: String
+  postalCode: String
+  countryCode: CountryCode
+  isPrimary: Boolean
+}
+
+union AddAddressResult = GuestAddress | ValidationError | AuthorizationError
+union UpdateAddressResult = GuestAddress | ValidationError | NotFoundError | AuthorizationError

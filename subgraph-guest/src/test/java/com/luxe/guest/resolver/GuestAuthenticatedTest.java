@@ -102,6 +102,80 @@ class GuestAuthenticatedTest {
         assertThat(result).isNotNull();
     }
 
+    // ── Address mutations ────────────────────────────────────────────────────
+
+    @Test
+    void add_address_returns_address_in_union_with_generated_id() {
+        String id = dgs.executeAndExtractJsonPath("""
+                mutation { addAddress(input: {
+                    type: BILLING, line1: "1 Hacker Way", city: "Menlo Park",
+                    stateCode: "CA", postalCode: "94025", countryCode: "US"
+                }) {
+                  ... on GuestAddress { id type city }
+                  ... on ValidationError { code }
+                } }
+                """, "data.addAddress.id");
+        assertThat(id).isNotNull().startsWith("addr-");
+    }
+
+    @Test
+    void update_address_changes_only_specified_fields() {
+        String addressId = dgs.executeAndExtractJsonPath("""
+                mutation { addAddress(input: {
+                    type: OTHER, line1: "Pre-update St", city: "Palo Alto",
+                    countryCode: "US"
+                }) {
+                  ... on GuestAddress { id }
+                } }
+                """, "data.addAddress.id");
+        String city = dgs.executeAndExtractJsonPath("""
+                mutation { updateAddress(id: "%s", input: { city: "Mountain View" }) {
+                  ... on GuestAddress { city }
+                  ... on NotFoundError { code }
+                } }
+                """.formatted(addressId), "data.updateAddress.city");
+        assertThat(city).isEqualTo("Mountain View");
+    }
+
+    @Test
+    void update_unknown_address_returns_not_found_in_union() {
+        String typename = dgs.executeAndExtractJsonPath("""
+                mutation { updateAddress(id: "addr-nope", input: { city: "X" }) {
+                  __typename
+                  ... on GuestAddress { id }
+                  ... on NotFoundError { code }
+                } }
+                """, "data.updateAddress.__typename");
+        assertThat(typename).isEqualTo("NotFoundError");
+    }
+
+    @Test
+    void remove_address_returns_true_when_authenticated() {
+        String id = dgs.executeAndExtractJsonPath("""
+                mutation { addAddress(input: {
+                    type: HOME, line1: "Doomed Ln", city: "X", countryCode: "US"
+                }) { ... on GuestAddress { id } } }
+                """, "data.addAddress.id");
+        Boolean ok = dgs.executeAndExtractJsonPath(
+                "mutation { removeAddress(id: \"%s\") }".formatted(id),
+                "data.removeAddress");
+        assertThat(ok).isTrue();
+    }
+
+    @Test
+    void set_primary_address_returns_promoted_record() {
+        // Add a non-primary address, then promote it.
+        String id = dgs.executeAndExtractJsonPath("""
+                mutation { addAddress(input: {
+                    type: WORK, line1: "Promote Me", city: "X", countryCode: "US"
+                }) { ... on GuestAddress { id } } }
+                """, "data.addAddress.id");
+        Boolean isPrimary = dgs.executeAndExtractJsonPath(
+                "mutation { setPrimaryAddress(id: \"%s\") { id isPrimary } }".formatted(id),
+                "data.setPrimaryAddress.isPrimary");
+        assertThat(isPrimary).isTrue();
+    }
+
     // ── Payment-method mutations ─────────────────────────────────────────────
 
     @Test

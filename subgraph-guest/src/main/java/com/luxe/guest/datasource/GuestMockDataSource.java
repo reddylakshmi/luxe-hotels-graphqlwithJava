@@ -268,6 +268,109 @@ public class GuestMockDataSource implements GuestDataSource {
         return g;
     }
 
+    /**
+     * Map values for custom scalars (CountryCode, EmailAddress, …) come
+     * through as their parsed object form rather than String. toString()
+     * gives back the canonical wire shape, which is what GuestAddress
+     * stores.
+     */
+    private static String asString(Object v) {
+        return v == null ? null : v.toString();
+    }
+
+    @Override
+    public GuestProfile addAddress(String guestId, Map<String, Object> input) {
+        GuestProfile g = guests.get(guestId);
+        if (g == null) return null;
+        boolean isPrimary = Boolean.TRUE.equals(input.get("isPrimary"));
+        // First address is automatically primary; explicit isPrimary wins otherwise.
+        if (g.getAddresses().isEmpty()) isPrimary = true;
+        if (isPrimary) g.clearPrimaryAddresses();
+        String id = "addr-" + UUID.randomUUID().toString().substring(0, 8);
+        GuestAddress next = new GuestAddress(
+                id,
+                asString(input.get("type")),
+                asString(input.get("line1")),
+                asString(input.get("line2")),
+                asString(input.get("city")),
+                asString(input.get("stateCode")),
+                asString(input.get("postalCode")),
+                asString(input.get("countryCode")),
+                isPrimary
+        );
+        g.addAddressToList(next);
+        g.setUpdatedAt(OffsetDateTime.now());
+        return g;
+    }
+
+    @Override
+    public GuestProfile updateAddress(String guestId, String addressId, Map<String, Object> input) {
+        GuestProfile g = guests.get(guestId);
+        if (g == null) return null;
+        GuestAddress current = g.getAddresses().stream()
+                .filter(a -> a.id().equals(addressId))
+                .findFirst().orElse(null);
+        if (current == null) return null;
+        boolean nowPrimary = input.containsKey("isPrimary")
+                ? Boolean.TRUE.equals(input.get("isPrimary"))
+                : current.isPrimary();
+        // Promoting a different address to primary clears the old one.
+        if (nowPrimary && !current.isPrimary()) g.clearPrimaryAddresses();
+        GuestAddress next = new GuestAddress(
+                current.id(),
+                input.containsKey("type") ? asString(input.get("type")) : current.type(),
+                input.containsKey("line1") ? asString(input.get("line1")) : current.line1(),
+                input.containsKey("line2") ? asString(input.get("line2")) : current.line2(),
+                input.containsKey("city") ? asString(input.get("city")) : current.city(),
+                input.containsKey("stateCode") ? asString(input.get("stateCode")) : current.stateCode(),
+                input.containsKey("postalCode") ? asString(input.get("postalCode")) : current.postalCode(),
+                input.containsKey("countryCode") ? asString(input.get("countryCode")) : current.countryCode(),
+                nowPrimary
+        );
+        g.replaceAddressInList(addressId, next);
+        g.setUpdatedAt(OffsetDateTime.now());
+        return g;
+    }
+
+    @Override
+    public GuestProfile removeAddress(String guestId, String addressId) {
+        GuestProfile g = guests.get(guestId);
+        if (g == null) return null;
+        GuestAddress removed = g.getAddresses().stream()
+                .filter(a -> a.id().equals(addressId))
+                .findFirst().orElse(null);
+        if (removed == null) return null;
+        g.removeAddressFromList(addressId);
+        // If we just removed the primary, promote the new first entry (if any).
+        if (removed.isPrimary() && !g.getAddresses().isEmpty()) {
+            GuestAddress first = g.getAddresses().get(0);
+            g.replaceAddressInList(first.id(), new GuestAddress(
+                    first.id(), first.type(), first.line1(), first.line2(),
+                    first.city(), first.stateCode(), first.postalCode(),
+                    first.countryCode(), true));
+        }
+        g.setUpdatedAt(OffsetDateTime.now());
+        return g;
+    }
+
+    @Override
+    public GuestProfile setPrimaryAddress(String guestId, String addressId) {
+        GuestProfile g = guests.get(guestId);
+        if (g == null) return null;
+        GuestAddress current = g.getAddresses().stream()
+                .filter(a -> a.id().equals(addressId))
+                .findFirst().orElse(null);
+        if (current == null) return null;
+        if (current.isPrimary()) return g; // no-op
+        g.clearPrimaryAddresses();
+        g.replaceAddressInList(addressId, new GuestAddress(
+                current.id(), current.type(), current.line1(), current.line2(),
+                current.city(), current.stateCode(), current.postalCode(),
+                current.countryCode(), true));
+        g.setUpdatedAt(OffsetDateTime.now());
+        return g;
+    }
+
     @Override
     public GuestProfile addPaymentMethod(String guestId, Map<String, Object> input) {
         GuestProfile g = guests.get(guestId);

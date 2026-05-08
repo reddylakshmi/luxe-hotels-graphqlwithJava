@@ -28,6 +28,26 @@ type AccessibilityNeeds
   hearingAccessible: Boolean
 }
 
+input AddAddressInput
+  @join__type(graph: GUEST)
+{
+  type: AddressType!
+  line1: String!
+  line2: String
+  city: String!
+  stateCode: String
+  postalCode: String
+  countryCode: CountryCode!
+  isPrimary: Boolean
+}
+
+union AddAddressResult
+  @join__type(graph: GUEST)
+  @join__unionMember(graph: GUEST, member: "GuestAddress")
+  @join__unionMember(graph: GUEST, member: "ValidationError")
+  @join__unionMember(graph: GUEST, member: "AuthorizationError")
+ = GuestAddress | ValidationError | AuthorizationError
+
 input AddOnInput
   @join__type(graph: RESERVATIONS)
 {
@@ -2461,6 +2481,10 @@ type Mutation
   signOut: Boolean! @join__field(graph: GUEST)
   updateGuestProfile(input: UpdateGuestProfileInput!): UpdateProfileResult! @join__field(graph: GUEST)
   updatePreferences(input: UpdatePreferencesInput!): GuestPreferences! @join__field(graph: GUEST)
+  addAddress(input: AddAddressInput!): AddAddressResult! @join__field(graph: GUEST)
+  updateAddress(id: ID!, input: UpdateAddressInput!): UpdateAddressResult! @join__field(graph: GUEST)
+  removeAddress(id: ID!): Boolean! @join__field(graph: GUEST)
+  setPrimaryAddress(id: ID!): GuestAddress @join__field(graph: GUEST)
   addPaymentMethod(input: AddPaymentMethodInput!): AddPaymentMethodResult! @join__field(graph: GUEST)
   removePaymentMethod(id: ID!): Boolean! @join__field(graph: GUEST)
   setDefaultPaymentMethod(id: ID!): PaymentMethod @join__field(graph: GUEST)
@@ -4304,6 +4328,27 @@ type TravelReport
   carbonFootprintKg: Float!
   generatedAt: DateTime!
 }
+
+input UpdateAddressInput
+  @join__type(graph: GUEST)
+{
+  type: AddressType
+  line1: String
+  line2: String
+  city: String
+  stateCode: String
+  postalCode: String
+  countryCode: CountryCode
+  isPrimary: Boolean
+}
+
+union UpdateAddressResult
+  @join__type(graph: GUEST)
+  @join__unionMember(graph: GUEST, member: "GuestAddress")
+  @join__unionMember(graph: GUEST, member: "ValidationError")
+  @join__unionMember(graph: GUEST, member: "NotFoundError")
+  @join__unionMember(graph: GUEST, member: "AuthorizationError")
+ = GuestAddress | ValidationError | NotFoundError | AuthorizationError
 
 input UpdateGuestProfileInput
   @join__type(graph: GUEST)

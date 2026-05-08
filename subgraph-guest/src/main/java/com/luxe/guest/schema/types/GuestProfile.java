@@ -44,6 +44,22 @@ public class GuestProfile implements HasId {
 
     @Override public String getId() { return id; }
 
+    public void addAddressToList(GuestAddress a) { addresses.add(a); }
+    public void removeAddressFromList(String id) { addresses.removeIf(a -> a.id().equals(id)); }
+    public void replaceAddressInList(String id, GuestAddress next) {
+        for (int i = 0; i < addresses.size(); i++) {
+            if (addresses.get(i).id().equals(id)) { addresses.set(i, next); return; }
+        }
+    }
+    public void clearPrimaryAddresses() {
+        for (int i = 0; i < addresses.size(); i++) {
+            GuestAddress a = addresses.get(i);
+            if (a.isPrimary()) {
+                addresses.set(i, new GuestAddress(a.id(), a.type(), a.line1(), a.line2(),
+                        a.city(), a.stateCode(), a.postalCode(), a.countryCode(), false));
+            }
+        }
+    }
     public void addPaymentMethodToList(PaymentMethod pm) { paymentMethods.add(pm); }
     public void removePaymentMethodFromList(String pmId) { paymentMethods.removeIf(pm -> pm.getId().equals(pmId)); }
     public void clearDefaultPaymentMethods() { paymentMethods.forEach(pm -> pm.setDefault(false)); }

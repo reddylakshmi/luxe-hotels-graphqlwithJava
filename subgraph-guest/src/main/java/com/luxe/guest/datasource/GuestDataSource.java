@@ -20,6 +20,11 @@ public interface GuestDataSource {
     GuestProfile update(String id, Map<String, Object> fields);
     GuestProfile updatePreferences(String id, GuestPreferences preferences);
 
+    GuestProfile addAddress(String guestId, Map<String, Object> input);
+    GuestProfile updateAddress(String guestId, String addressId, Map<String, Object> input);
+    GuestProfile removeAddress(String guestId, String addressId);
+    GuestProfile setPrimaryAddress(String guestId, String addressId);
+
     GuestProfile addPaymentMethod(String guestId, Map<String, Object> input);
     GuestProfile removePaymentMethod(String guestId, String paymentMethodId);
     GuestProfile setDefaultPaymentMethod(String guestId, String paymentMethodId);

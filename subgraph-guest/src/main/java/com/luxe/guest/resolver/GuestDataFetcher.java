@@ -112,6 +112,58 @@ public class GuestDataFetcher {
         return updated != null ? updated.getPreferences() : null;
     }
 
+    // ── Address Mutations ─────────────────────────────────────────────────────
+
+    @DgsMutation
+    public Object addAddress(@InputArgument Map<String, Object> input,
+                              DataFetchingEnvironment dfe) {
+        AuthContext auth = getAuthContext(dfe);
+        auth.requireAuth();
+        GuestProfile updated = dataSource.addAddress(auth.guestId(), input);
+        if (updated == null) {
+            return new com.luxe.common.error.ValidationError("ADD_ADDRESS_FAILED",
+                    "Could not add address", List.of());
+        }
+        // Return the most-recently-added address (last entry).
+        var addrs = updated.getAddresses();
+        return addrs.get(addrs.size() - 1);
+    }
+
+    @DgsMutation
+    public Object updateAddress(@InputArgument(name = "id") String addressId,
+                                 @InputArgument Map<String, Object> input,
+                                 DataFetchingEnvironment dfe) {
+        AuthContext auth = getAuthContext(dfe);
+        auth.requireAuth();
+        GuestProfile updated = dataSource.updateAddress(auth.guestId(), addressId, input);
+        if (updated == null) {
+            return new NotFoundError("Address", addressId);
+        }
+        return updated.getAddresses().stream()
+                .filter(a -> a.id().equals(addressId))
+                .findFirst().orElse(null);
+    }
+
+    @DgsMutation
+    public boolean removeAddress(@InputArgument(name = "id") String addressId,
+                                  DataFetchingEnvironment dfe) {
+        AuthContext auth = getAuthContext(dfe);
+        auth.requireAuth();
+        return dataSource.removeAddress(auth.guestId(), addressId) != null;
+    }
+
+    @DgsMutation
+    public GuestAddress setPrimaryAddress(@InputArgument(name = "id") String addressId,
+                                           DataFetchingEnvironment dfe) {
+        AuthContext auth = getAuthContext(dfe);
+        auth.requireAuth();
+        GuestProfile updated = dataSource.setPrimaryAddress(auth.guestId(), addressId);
+        if (updated == null) return null;
+        return updated.getAddresses().stream()
+                .filter(a -> a.id().equals(addressId))
+                .findFirst().orElse(null);
+    }
+
     // ── Payment Method Mutations ──────────────────────────────────────────────
 
     @DgsMutation

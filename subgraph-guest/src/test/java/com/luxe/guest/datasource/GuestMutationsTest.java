@@ -261,4 +261,134 @@ class GuestMutationsTest {
         // the data source is permissive: returns the profile without throwing
         assertThat(ds.removeTravelCompanion(existingGuestId, "tc-not-real")).isNotNull();
     }
+
+    // ── Address mutations ────────────────────────────────────────────────────
+
+    @Test
+    void add_address_appends_to_list_and_persists_fields() {
+        int sizeBefore = ds.findById(existingGuestId).get().getAddresses().size();
+        Map<String, Object> input = Map.of(
+                "type", "BILLING",
+                "line1", "500 Test Ave",
+                "city", "Sacramento",
+                "stateCode", "CA",
+                "postalCode", "95814",
+                "countryCode", "US"
+        );
+        GuestProfile updated = ds.addAddress(existingGuestId, input);
+        assertThat(updated.getAddresses()).hasSize(sizeBefore + 1);
+        var added = updated.getAddresses().get(updated.getAddresses().size() - 1);
+        assertThat(added.id()).startsWith("addr-");
+        assertThat(added.line1()).isEqualTo("500 Test Ave");
+        assertThat(added.city()).isEqualTo("Sacramento");
+        assertThat(added.stateCode()).isEqualTo("CA");
+    }
+
+    @Test
+    void add_address_with_isPrimary_demotes_existing_primary() {
+        Map<String, Object> input = Map.of(
+                "type", "WORK",
+                "line1", "1 New St",
+                "city", "Oakland",
+                "countryCode", "US",
+                "isPrimary", true
+        );
+        GuestProfile updated = ds.addAddress(existingGuestId, input);
+        long primaries = updated.getAddresses().stream().filter(a -> a.isPrimary()).count();
+        assertThat(primaries).isEqualTo(1);
+        var added = updated.getAddresses().get(updated.getAddresses().size() - 1);
+        assertThat(added.isPrimary()).isTrue();
+    }
+
+    @Test
+    void add_address_unknown_guest_returns_null() {
+        assertThat(ds.addAddress("not-real", Map.of(
+                "type", "HOME", "line1", "x", "city", "y", "countryCode", "US"
+        ))).isNull();
+    }
+
+    @Test
+    void update_address_only_changes_specified_fields() {
+        var existing = ds.findById(existingGuestId).get().getAddresses().get(0);
+        GuestProfile updated = ds.updateAddress(existingGuestId, existing.id(),
+                Map.of("line1", "999 Modified Way"));
+        var after = updated.getAddresses().stream()
+                .filter(a -> a.id().equals(existing.id())).findFirst().orElseThrow();
+        assertThat(after.line1()).isEqualTo("999 Modified Way");
+        // Unchanged fields preserved.
+        assertThat(after.city()).isEqualTo(existing.city());
+        assertThat(after.countryCode()).isEqualTo(existing.countryCode());
+        assertThat(after.isPrimary()).isEqualTo(existing.isPrimary());
+    }
+
+    @Test
+    void update_address_promote_to_primary_demotes_old_primary() {
+        var addrs = ds.findById(existingGuestId).get().getAddresses();
+        // sophia has HOME primary + WORK non-primary; promote WORK
+        var work = addrs.stream().filter(a -> !a.isPrimary()).findFirst().orElseThrow();
+        GuestProfile updated = ds.updateAddress(existingGuestId, work.id(),
+                Map.of("isPrimary", true));
+        long primaries = updated.getAddresses().stream().filter(a -> a.isPrimary()).count();
+        assertThat(primaries).isEqualTo(1);
+        var promoted = updated.getAddresses().stream()
+                .filter(a -> a.id().equals(work.id())).findFirst().orElseThrow();
+        assertThat(promoted.isPrimary()).isTrue();
+    }
+
+    @Test
+    void update_address_unknown_address_returns_null() {
+        assertThat(ds.updateAddress(existingGuestId, "addr-nope", Map.of("city", "Nowhere"))).isNull();
+    }
+
+    @Test
+    void remove_address_drops_entry() {
+        var existing = ds.findById(existingGuestId).get().getAddresses().get(0);
+        int before = ds.findById(existingGuestId).get().getAddresses().size();
+        GuestProfile updated = ds.removeAddress(existingGuestId, existing.id());
+        assertThat(updated).isNotNull();
+        assertThat(updated.getAddresses()).hasSize(before - 1);
+        assertThat(updated.getAddresses().stream().anyMatch(a -> a.id().equals(existing.id()))).isFalse();
+    }
+
+    @Test
+    void remove_primary_address_promotes_first_remaining() {
+        // sophia: HOME primary (index 0) + WORK non-primary (index 1)
+        var primary = ds.findById(existingGuestId).get().getAddresses().get(0);
+        assertThat(primary.isPrimary()).isTrue();
+        GuestProfile updated = ds.removeAddress(existingGuestId, primary.id());
+        long primaries = updated.getAddresses().stream().filter(a -> a.isPrimary()).count();
+        assertThat(primaries).isEqualTo(1);
+    }
+
+    @Test
+    void remove_address_unknown_returns_null() {
+        assertThat(ds.removeAddress(existingGuestId, "addr-nope")).isNull();
+    }
+
+    @Test
+    void set_primary_address_swaps_primary_flag() {
+        var addrs = ds.findById(existingGuestId).get().getAddresses();
+        var work = addrs.stream().filter(a -> !a.isPrimary()).findFirst().orElseThrow();
+        GuestProfile updated = ds.setPrimaryAddress(existingGuestId, work.id());
+        long primaries = updated.getAddresses().stream().filter(a -> a.isPrimary()).count();
+        assertThat(primaries).isEqualTo(1);
+        var nowPrimary = updated.getAddresses().stream()
+                .filter(a -> a.isPrimary()).findFirst().orElseThrow();
+        assertThat(nowPrimary.id()).isEqualTo(work.id());
+    }
+
+    @Test
+    void set_primary_address_already_primary_is_noop() {
+        var primary = ds.findById(existingGuestId).get().getAddresses().get(0);
+        assertThat(primary.isPrimary()).isTrue();
+        GuestProfile updated = ds.setPrimaryAddress(existingGuestId, primary.id());
+        assertThat(updated).isNotNull();
+        long primaries = updated.getAddresses().stream().filter(a -> a.isPrimary()).count();
+        assertThat(primaries).isEqualTo(1);
+    }
+
+    @Test
+    void set_primary_address_unknown_returns_null() {
+        assertThat(ds.setPrimaryAddress(existingGuestId, "addr-nope")).isNull();
+    }
 }
