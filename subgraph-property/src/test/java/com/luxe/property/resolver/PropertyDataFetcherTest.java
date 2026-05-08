@@ -64,6 +64,49 @@ class PropertyDataFetcherTest {
     }
 
     @Test
+    void hotels_filter_by_country_code_returns_french_hotels() {
+        // Regression: HotelFilter.countryCodes is [CountryCode!], which DGS
+        // hands to the resolver as List<CountryCode> rather than List<String>.
+        // Plain List<String>.contains(...) on the address's String countryCode
+        // would always return false and yield zero hits — which is what /hotels
+        // showed when picking a country with no city.
+        Integer total = dgs.executeAndExtractJsonPath(
+                "{ hotels(filter: { countryCodes: [\"FR\"] }, first: 50) { totalCount } }",
+                "data.hotels.totalCount");
+        assertThat(total).isNotNull().isGreaterThan(0);
+        // Every hit must actually live in FR.
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> nodes = dgs.executeAndExtractJsonPath(
+                """
+                { hotels(filter: { countryCodes: ["FR"] }, first: 50) {
+                    edges { node { id location { address { countryCode } } } }
+                } }
+                """,
+                "data.hotels.edges[*].node");
+        assertThat(nodes).isNotEmpty();
+        for (Map<String, Object> n : nodes) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> address = (Map<String, Object>)
+                    ((Map<String, Object>) n.get("location")).get("address");
+            assertThat(address.get("countryCode")).isEqualTo("FR");
+        }
+    }
+
+    @Test
+    void hotels_filter_by_multiple_country_codes_returns_union() {
+        Integer total = dgs.executeAndExtractJsonPath(
+                "{ hotels(filter: { countryCodes: [\"FR\", \"JP\"] }, first: 50) { totalCount } }",
+                "data.hotels.totalCount");
+        Integer fr = dgs.executeAndExtractJsonPath(
+                "{ hotels(filter: { countryCodes: [\"FR\"] }, first: 50) { totalCount } }",
+                "data.hotels.totalCount");
+        Integer jp = dgs.executeAndExtractJsonPath(
+                "{ hotels(filter: { countryCodes: [\"JP\"] }, first: 50) { totalCount } }",
+                "data.hotels.totalCount");
+        assertThat(total).isEqualTo(fr + jp);
+    }
+
+    @Test
     void featured_hotels_respects_first_argument() {
         List<Map<String, Object>> hotels = dgs.executeAndExtractJsonPath(
                 "{ featuredHotels(first: 2) { id name } }", "data.featuredHotels");

@@ -86,11 +86,18 @@ public class PropertySearchService {
             if (brandIds != null && !brandIds.isEmpty()) {
                 result = result.stream().filter(h -> brandIds.contains(h.getBrandId())).collect(Collectors.toList());
             }
-            @SuppressWarnings("unchecked")
-            List<String> countryCodes = (List<String>) filter.get("countryCodes");
-            if (countryCodes != null && !countryCodes.isEmpty()) {
+            // CountryCode is a custom scalar, so DGS hands us the wrapped
+            // CountryCode object, not String, when the filter comes from a
+            // GraphQL request. Funnel everything through toString() so we
+            // tolerate both shapes — the data-source unit tests pass plain
+            // List<String> and still need to work.
+            List<?> countryCodesRaw = (List<?>) filter.get("countryCodes");
+            if (countryCodesRaw != null && !countryCodesRaw.isEmpty()) {
+                Set<String> wantedCountryCodes = countryCodesRaw.stream()
+                        .map(Object::toString)
+                        .collect(Collectors.toSet());
                 result = result.stream()
-                        .filter(h -> countryCodes.contains(h.getLocation().address().countryCode()))
+                        .filter(h -> wantedCountryCodes.contains(h.getLocation().address().countryCode()))
                         .collect(Collectors.toList());
             }
             Integer minStar = (Integer) filter.get("minStarRating");
