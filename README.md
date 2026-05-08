@@ -381,24 +381,32 @@ that produce monetary values can return it.
 
 ## Testing & coverage
 
-The project ships with **654 unit + DGS integration tests** across 35 test classes,
+The project ships with **672 unit + DGS integration tests** across 37 test classes,
 covering common scalars/auth/pagination, every subgraph's mock data source, real
 GraphQL execution through `DgsQueryExecutor` (including federation `_entities`
 resolution), and authenticated mutation paths via a per-test `AuthContextResolver`
 override (see `common/auth/AuthContextResolver.java`).
 
 Test highlights for the most-active subgraphs:
-- **Property** (80 tests) — search/sort/facet logic, India IT-corridor seed
-  invariants, destination-search filter (matches name / city / state /
-  country / 2-letter country code), `HotelFilter.ids` by-id lookup
-  with empty-vs-null semantics (powers the web Recently Viewed home
-  section), destination-autocomplete query (prefix vs substring ranking
-  across all four tiers, dedupe with hotel counts), federated
-  `_entities` resolution.
-- **Pricing** (58 tests) — FX coverage pin (every currency in
+- **Property** (101 tests) — search/sort/facet logic, India IT-corridor
+  seed invariants, destination-search filter (matches name / city /
+  state / country / 2-letter country code), `HotelFilter.ids` by-id
+  lookup with empty-vs-null semantics (powers the web Recently Viewed
+  home section), destination-autocomplete query (prefix vs substring
+  ranking across all four tiers, dedupe with hotel counts), federated
+  `_entities` resolution. Search/facet/autocomplete logic itself lives
+  in a focused `PropertySearchService` (extracted out of the data
+  source) so it's exercised both end-to-end via
+  `PropertyMockDataSourceTest` and in isolation via
+  `PropertySearchServiceTest`.
+- **Pricing** (67 tests) — FX coverage pin (every currency in
   `PropertyDataGenerator.COUNTRIES` must have an FX entry), explicit
   conversion math (EUR→GBP via USD pivot, OMR→USD above-parity, etc.),
   rate-plan generation for hand-curated and synthetic-rate hotels.
+  FX conversion lives in a single-responsibility `FxConversionService`
+  (extracted out of the data source) with its own
+  `FxConversionServiceTest` suite alongside the through-data-source
+  pricing tests.
 - **Content** (18 tests) — composite resolver paths on `ContentCollection`
   (articles / inspirations / spotlights), federated `Article` entity
   fetcher round-trip, locale-fallback tagging, season + category filters
