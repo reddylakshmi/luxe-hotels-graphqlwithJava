@@ -152,6 +152,27 @@ logs to `/tmp/luxe-run/<name>.log`.
 }
 ```
 
+### Destination autocomplete (typeahead)
+
+Lightweight ranked list of cities, countries, and hotels matching a partial
+query — backs the search bar's typeahead. Returns prefix matches first, then
+substring matches, broad-first within each tier.
+
+```graphql
+{
+  destinationSuggestions(query: "Hyd", limit: 6) {
+    type            # CITY | COUNTRY | HOTEL
+    label
+    sublabel        # "India · 3 hotels", "Plot 17, Cyber Towers Road, Hyderabad, India", etc.
+    hotelId         # set when type == HOTEL
+    hotelSlug
+    city
+    country
+    countryCode
+  }
+}
+```
+
 ### A multilingual content query with locale fallback
 
 ```graphql
@@ -352,11 +373,20 @@ that produce monetary values can return it.
 
 ## Testing & coverage
 
-The project ships with **569 unit + DGS integration tests** across 33 test classes,
+The project ships with **635 unit + DGS integration tests** across 35 test classes,
 covering common scalars/auth/pagination, every subgraph's mock data source, real
 GraphQL execution through `DgsQueryExecutor` (including federation `_entities`
 resolution), and authenticated mutation paths via a per-test `AuthContextResolver`
 override (see `common/auth/AuthContextResolver.java`).
+
+Test highlights for the most-active subgraphs:
+- **Property** (72 tests) — search/sort/facet logic, India IT-corridor seed
+  invariants, the destination-autocomplete query (prefix vs substring ranking,
+  city/country dedupe with hotel counts), federated `_entities` resolution.
+- **Pricing** (58 tests) — FX coverage pin (every currency in
+  `PropertyDataGenerator.COUNTRIES` must have an FX entry), explicit
+  conversion math (EUR→GBP via USD pivot, OMR→USD above-parity, etc.),
+  rate-plan generation for hand-curated and synthetic-rate hotels.
 
 ```bash
 mvn test                              # full suite (~30s test execution, ~47s with JaCoCo + package)
@@ -365,18 +395,17 @@ mvn -pl subgraph-property test        # one subgraph
 mvn -pl common,subgraph-loyalty -am test   # subgraph + its deps
 ```
 
-Latest reactor totals: **83.7% instructions, 63.5% branches** (24,383 / 29,129
-instructions, 778 / 1,225 branches). Per-module breakdown:
+Latest per-module breakdown:
 
 | Module        | Instructions | Branches |
 |---------------|--------------|----------|
-| common        | 70.7%        | 76.8%    |
-| property      | 75.5%        | 48.1%    |
+| common        | 59.9%        | 59.7%    |
+| property      | 89.8%        | 77.0%    |
 | guest         | 80.1%        | 51.1%    |
-| pricing       | 78.7%        | 60.6%    |
+| pricing       | 84.1%        | 62.3%    |
 | reservations  | 83.3%        | 54.1%    |
 | loyalty       | 88.1%        | 63.8%    |
-| content       | 77.5%        | 50.0%    |
+| content       | 51.5%        | 24.0%    |
 | experiences   | 93.1%        | 71.1%    |
 | meetings      | 90.1%        | 65.7%    |
 | notifications | 90.1%        | 87.0%    |
@@ -529,9 +558,9 @@ In rough effort-vs-payoff order:
 3. **Fix composition hints** — align nullability of `ValidationError.fieldErrors`
    (`[FieldError!]` in property vs `[FieldError!]!` everywhere else) and
    `NotFoundError.resourceType` so `rover supergraph compose` is hint-free.
-4. **Lift `property` / `guest` branch coverage** — they sit at 48% / 51%, the
-   lowest in the matrix. Mostly untested validation branches and pagination
-   edge cases.
+4. **Lift `content` / `guest` branch coverage** — they sit at 24% / 51%, the
+   lowest in the matrix. Mostly untested validation branches, pagination
+   edge cases, and the REST-data-source error paths in content.
 5. **Idempotency enforcement** — every mutation already accepts an
    `idempotencyKey: UUID!`, but no subgraph currently dedupes against a replay
    store. Add a simple in-memory cache keyed by `(mutationName, key)` per
