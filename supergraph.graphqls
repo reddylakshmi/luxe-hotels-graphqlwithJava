@@ -2556,7 +2556,7 @@ type NotFoundError
 {
   code: String!
   message: String!
-  resourceType: String @join__field(graph: CORPORATE, type: "String!") @join__field(graph: EXPERIENCES, type: "String!") @join__field(graph: GUEST, type: "String!") @join__field(graph: LOYALTY, type: "String!") @join__field(graph: MEETINGS, type: "String!") @join__field(graph: NOTIFICATIONS, type: "String!") @join__field(graph: PRICING, type: "String!") @join__field(graph: PROPERTY, type: "String") @join__field(graph: RESERVATIONS, type: "String!")
+  resourceType: String!
 }
 
 type Notification implements Node
@@ -4415,5 +4415,5 @@ type ValidationError
 {
   code: String!
   message: String!
-  fieldErrors: [FieldError!] @join__field(graph: CORPORATE, type: "[FieldError!]!") @join__field(graph: EXPERIENCES, type: "[FieldError!]!") @join__field(graph: GUEST, type: "[FieldError!]!") @join__field(graph: LOYALTY, type: "[FieldError!]!") @join__field(graph: MEETINGS, type: "[FieldError!]!") @join__field(graph: NOTIFICATIONS, type: "[FieldError!]!") @join__field(graph: PRICING, type: "[FieldError!]!") @join__field(graph: PROPERTY, type: "[FieldError!]") @join__field(graph: RESERVATIONS, type: "[FieldError!]!")
+  fieldErrors: [FieldError!]!
 }

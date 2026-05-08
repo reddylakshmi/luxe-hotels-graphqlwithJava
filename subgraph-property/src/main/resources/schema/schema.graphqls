@@ -450,10 +450,10 @@ input CategoryRatingsInput {
 union SubmitReviewResult = Review | ValidationError | AuthorizationError | NotFoundError
 union MarkReviewHelpfulResult = Review | NotFoundError | AuthorizationError
 
-type ValidationError @shareable { code: String! message: String! fieldErrors: [FieldError!] }
+type ValidationError @shareable { code: String! message: String! fieldErrors: [FieldError!]! }
 type AuthorizationError @shareable { code: String! message: String! requiredRole: String }
 type AuthenticationError @shareable { code: String! message: String! }
-type NotFoundError @shareable { code: String! message: String! resourceType: String }
+type NotFoundError @shareable { code: String! message: String! resourceType: String! }
 type ExternalServiceError @shareable { code: String! message: String! service: String! retryAfter: Int }
 type FieldError @shareable { field: String! message: String! }
 
