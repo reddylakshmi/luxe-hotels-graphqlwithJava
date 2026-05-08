@@ -381,18 +381,20 @@ that produce monetary values can return it.
 
 ## Testing & coverage
 
-The project ships with **651 unit + DGS integration tests** across 35 test classes,
+The project ships with **654 unit + DGS integration tests** across 35 test classes,
 covering common scalars/auth/pagination, every subgraph's mock data source, real
 GraphQL execution through `DgsQueryExecutor` (including federation `_entities`
 resolution), and authenticated mutation paths via a per-test `AuthContextResolver`
 override (see `common/auth/AuthContextResolver.java`).
 
 Test highlights for the most-active subgraphs:
-- **Property** (77 tests) — search/sort/facet logic, India IT-corridor seed
+- **Property** (80 tests) — search/sort/facet logic, India IT-corridor seed
   invariants, destination-search filter (matches name / city / state /
-  country / 2-letter country code), destination-autocomplete query (prefix
-  vs substring ranking across all four tiers, dedupe with hotel counts),
-  federated `_entities` resolution.
+  country / 2-letter country code), `HotelFilter.ids` by-id lookup
+  with empty-vs-null semantics (powers the web Recently Viewed home
+  section), destination-autocomplete query (prefix vs substring ranking
+  across all four tiers, dedupe with hotel counts), federated
+  `_entities` resolution.
 - **Pricing** (58 tests) — FX coverage pin (every currency in
   `PropertyDataGenerator.COUNTRIES` must have an FX entry), explicit
   conversion math (EUR→GBP via USD pivot, OMR→USD above-parity, etc.),
