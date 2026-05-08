@@ -381,24 +381,27 @@ that produce monetary values can return it.
 
 ## Testing & coverage
 
-The project ships with **690 unit + DGS integration tests** across 37 test classes,
+The project ships with **692 unit + DGS integration tests** across 37 test classes,
 covering common scalars/auth/pagination, every subgraph's mock data source, real
 GraphQL execution through `DgsQueryExecutor` (including federation `_entities`
 resolution), and authenticated mutation paths via a per-test `AuthContextResolver`
 override (see `common/auth/AuthContextResolver.java`).
 
 Test highlights for the most-active subgraphs:
-- **Property** (101 tests) — search/sort/facet logic, India IT-corridor
+- **Property** (103 tests) — search/sort/facet logic, India IT-corridor
   seed invariants, destination-search filter (matches name / city /
   state / country / 2-letter country code), `HotelFilter.ids` by-id
   lookup with empty-vs-null semantics (powers the web Recently Viewed
   home section), destination-autocomplete query (prefix vs substring
   ranking across all four tiers, dedupe with hotel counts), federated
-  `_entities` resolution. Search/facet/autocomplete logic itself lives
-  in a focused `PropertySearchService` (extracted out of the data
-  source) so it's exercised both end-to-end via
-  `PropertyMockDataSourceTest` and in isolation via
-  `PropertySearchServiceTest`.
+  `_entities` resolution, plus a DGS-level regression on
+  `HotelFilter.countryCodes` so the `CountryCode` scalar coercion path
+  (object, not String) doesn't silently zero-out the filter — the
+  data-source unit tests bypass that coercion by passing plain
+  `List<String>`. Search/facet/autocomplete logic itself lives in a
+  focused `PropertySearchService` (extracted out of the data source) so
+  it's exercised both end-to-end via `PropertyMockDataSourceTest` and
+  in isolation via `PropertySearchServiceTest`.
 - **Pricing** (67 tests) — FX coverage pin (every currency in
   `PropertyDataGenerator.COUNTRIES` must have an FX entry), explicit
   conversion math (EUR→GBP via USD pivot, OMR→USD above-parity, etc.),
