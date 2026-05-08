@@ -39,7 +39,7 @@ public class ReservationMockDataSource implements ReservationDataSource {
 
         // Paris — upcoming confirmed
         Reservation r1 = res("res-001", "LUX-2025-100001", "guest-001", "prop-paris-001",
-                "rt-paris-dlx-001", "rate-paris-dlx-flex", null,
+                "rt-paris-deluxe", "rate-paris-dlx-flex", null,
                 today.plusDays(10), today.plusDays(15), 5, 2, 0,
                 Money.of(520, "EUR"), Money.of(2600, "EUR"), "EUR",
                 "CONFIRMED", "Late check-in requested", today.minusDays(30));
@@ -49,7 +49,7 @@ public class ReservationMockDataSource implements ReservationDataSource {
 
         // London — upcoming confirmed, check-in in 3 days (eligible for online check-in)
         Reservation r2 = res("res-002", "LUX-2025-100002", "guest-002", "prop-london-001",
-                "rt-london-dlx-001", "rate-london-dlx-flex", null,
+                "rt-london-deluxe", "rate-london-dlx-flex", null,
                 today.plusDays(3), today.plusDays(6), 3, 2, 0,
                 Money.of(580, "GBP"), Money.of(1740, "GBP"), "GBP",
                 "CONFIRMED", null, today.minusDays(15));
@@ -59,7 +59,7 @@ public class ReservationMockDataSource implements ReservationDataSource {
 
         // Tokyo — far future, anniversary
         Reservation r3 = res("res-003", "LUX-2025-100003", "guest-001", "prop-tokyo-001",
-                "rt-tokyo-suite-001", "rate-tokyo-suite-flex", null,
+                "rt-tokyo-suite", "rate-tokyo-suite-flex", null,
                 today.plusDays(60), today.plusDays(65), 5, 2, 1,
                 Money.of(180000, "JPY"), Money.of(900000, "JPY"), "JPY",
                 "CONFIRMED", "Celebrating anniversary — surprise decoration please", today.minusDays(5));
@@ -69,7 +69,7 @@ public class ReservationMockDataSource implements ReservationDataSource {
 
         // Dubai — currently checked in
         Reservation r4 = res("res-004", "LUX-2025-100004", "guest-003", "prop-dubai-001",
-                "rt-dubai-dlx-001", "rate-dubai-dlx-flex", "1205",
+                "rt-dubai-deluxe", "rate-dubai-dlx-flex", "1205",
                 today.minusDays(2), today.plusDays(3), 5, 2, 0,
                 Money.of(1100, "AED"), Money.of(5500, "AED"), "AED",
                 "CHECKED_IN", null, today.minusDays(20));
@@ -86,7 +86,7 @@ public class ReservationMockDataSource implements ReservationDataSource {
 
         // NYC — checked out
         Reservation r5 = res("res-005", "LUX-2025-100005", "guest-004", "prop-nyc-001",
-                "rt-nyc-dlx-001", "rate-nyc-dlx-flex", "2501",
+                "rt-nyc-deluxe", "rate-nyc-dlx-flex", "2501",
                 today.minusDays(10), today.minusDays(7), 3, 1, 0,
                 Money.of(720, "USD"), Money.of(2160, "USD"), "USD",
                 "CHECKED_OUT", null, today.minusDays(30));
@@ -100,7 +100,7 @@ public class ReservationMockDataSource implements ReservationDataSource {
 
         // Paris — cancelled
         Reservation r6 = res("res-006", "LUX-2025-100006", "guest-005", "prop-paris-001",
-                "rt-paris-std-001", "rate-paris-std-flex", null,
+                "rt-paris-deluxe", "rate-paris-std-flex", null,
                 today.plusDays(20), today.plusDays(23), 3, 2, 0,
                 Money.of(350, "EUR"), Money.of(1050, "EUR"), "EUR",
                 "CANCELLED", null, today.minusDays(45));
@@ -113,7 +113,7 @@ public class ReservationMockDataSource implements ReservationDataSource {
 
         // London — upcoming, family trip
         Reservation r7 = res("res-007", "LUX-2025-100007", "guest-005", "prop-london-001",
-                "rt-london-std-001", "rate-london-std-flex", null,
+                "rt-london-deluxe", "rate-london-std-flex", null,
                 today.plusDays(30), today.plusDays(35), 5, 2, 1,
                 Money.of(380, "GBP"), Money.of(1900, "GBP"), "GBP",
                 "CONFIRMED", "High floor preferred", today.minusDays(10));
@@ -121,11 +121,51 @@ public class ReservationMockDataSource implements ReservationDataSource {
 
         // Dubai — suite, future family trip
         Reservation r8 = res("res-008", "LUX-2025-100008", "guest-002", "prop-dubai-001",
-                "rt-dubai-suite-001", "rate-dubai-suite-flex", null,
+                "rt-dubai-deluxe", "rate-dubai-suite-flex", null,
                 today.plusDays(90), today.plusDays(95), 5, 2, 2,
                 Money.of(3800, "AED"), Money.of(19000, "AED"), "AED",
                 "CONFIRMED", "Family trip with children aged 4 and 7", today.minusDays(3));
         reservations.put(r8.getId(), r8);
+
+        // Tokyo — Diana's first booking, near-future so online check-in lights up
+        Reservation r9 = res("res-009", "LUX-2025-100009", "guest-006", "prop-tokyo-001",
+                "rt-tokyo-deluxe", "rate-tokyo-dlx-flex", null,
+                today.plusDays(2), today.plusDays(5), 3, 2, 0,
+                Money.of(150000, "JPY"), Money.of(450000, "JPY"), "JPY",
+                "CONFIRMED", "Vegetarian breakfast preferred", today.minusDays(20));
+        reservations.put(r9.getId(), r9);
+
+        // Paris — Diana's past stay, fully checked out with folio
+        Reservation r10 = res("res-010", "LUX-2025-100010", "guest-006", "prop-paris-001",
+                "rt-paris-deluxe", "rate-paris-std-flex", "0814",
+                today.minusDays(45), today.minusDays(40), 5, 1, 0,
+                Money.of(390, "EUR"), Money.of(1950, "EUR"), "EUR",
+                "CHECKED_OUT", null, today.minusDays(75));
+        r10.setCheckedInAt(today.minusDays(45).atTime(15, 0).atOffset(ZoneOffset.UTC));
+        r10.setCheckedOutAt(today.minusDays(40).atTime(11, 0).atOffset(ZoneOffset.UTC));
+        r10.setPaymentSummary(new PaymentSummary("CREDIT_CARD", "2468", "Mastercard",
+                "AUTH-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
+                today.minusDays(45).atTime(15, 0).atOffset(ZoneOffset.UTC),
+                Money.of(2145, "EUR"), "EUR", "CAPTURED"));
+        r10.setFolio(buildFolio("res-010", "EUR", Money.of(390, "EUR"), 5));
+        reservations.put(r10.getId(), r10);
+
+        // London — Sophia's past stay, gives My Trips a Completed section
+        Reservation r11 = res("res-011", "LUX-2025-100011", "guest-001", "prop-london-001",
+                "rt-london-deluxe", "rate-london-dlx-flex", "1402",
+                today.minusDays(90), today.minusDays(86), 4, 2, 0,
+                Money.of(620, "GBP"), Money.of(2480, "GBP"), "GBP",
+                "CHECKED_OUT", null, today.minusDays(120));
+        r11.setCheckedInAt(today.minusDays(90).atTime(16, 0).atOffset(ZoneOffset.UTC));
+        r11.setCheckedOutAt(today.minusDays(86).atTime(11, 30).atOffset(ZoneOffset.UTC));
+        r11.setLoyaltyContext(new ReservationLoyaltyContext("LUX0001234567", "GOLD",
+                2480, null, 1.5, 4));
+        r11.setPaymentSummary(new PaymentSummary("CREDIT_CARD", "4532", "Visa",
+                "AUTH-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
+                today.minusDays(90).atTime(16, 0).atOffset(ZoneOffset.UTC),
+                Money.of(2976, "GBP"), "GBP", "CAPTURED"));
+        r11.setFolio(buildFolio("res-011", "GBP", Money.of(620, "GBP"), 4));
+        reservations.put(r11.getId(), r11);
 
         // Dining reservations
         diningReservations.put("din-001", new DiningReservation("din-001", "res-001",

@@ -12,6 +12,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,6 +55,30 @@ class ReservationAuthenticatedTest {
                 "data.myReservations.totalCount");
         assertThat(total).isNotNull();
         assertThat(total).isGreaterThanOrEqualTo(0);
+    }
+
+    @Test
+    void my_reservations_resolves_boolean_status_fields() {
+        // Regression: doubled-is getters (isIsCan*) decoded to wrong property names → null on Boolean! fields.
+        var result = dgs.execute("""
+                { myReservations { edges { node {
+                    id canCheckInOnline canModify isRefundable
+                } } } }
+                """);
+        assertThat(result.getErrors()).isEmpty();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> conn = (Map<String, Object>)
+                ((Map<String, Object>) result.getData()).get("myReservations");
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> edges = (List<Map<String, Object>>) conn.get("edges");
+        assertThat(edges).isNotEmpty();
+        for (Map<String, Object> edge : edges) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> node = (Map<String, Object>) edge.get("node");
+            assertThat(node.get("canCheckInOnline")).isInstanceOf(Boolean.class);
+            assertThat(node.get("canModify")).isInstanceOf(Boolean.class);
+            assertThat(node.get("isRefundable")).isInstanceOf(Boolean.class);
+        }
     }
 
     @Test

@@ -132,7 +132,7 @@ public class Reservation implements HasId {
     public ReservationCancellationPolicy getCancellationPolicy() { return cancellationPolicy; }
     public CancellationRecord getCancellation() { return cancellation; }
 
-    public boolean isIsRefundable() {
+    public boolean getIsRefundable() {
         return cancellationPolicy != null && "FREE_CANCELLATION".equals(cancellationPolicy.type())
                 && !isCancellationDeadlinePassed();
     }
@@ -150,11 +150,11 @@ public class Reservation implements HasId {
                 .minusHours(cancellationPolicy.deadlineHours());
     }
 
-    public boolean isIsCanModify() {
+    public boolean isCanModify() {
         return "CONFIRMED".equals(status) || "MODIFIED".equals(status);
     }
 
-    public boolean isIsCanCheckInOnline() {
+    public boolean isCanCheckInOnline() {
         if (!"CONFIRMED".equals(status) && !"MODIFIED".equals(status)) return false;
         long daysUntilCheckIn = LocalDate.now().until(checkIn).getDays();
         return daysUntilCheckIn >= 0 && daysUntilCheckIn <= 3;
