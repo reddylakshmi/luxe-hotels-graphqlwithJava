@@ -196,6 +196,7 @@ type ReservationLoyaltyContext {
   pointsEarned: Int
   bonusMultiplier: Float
   qualifyingNights: Int!
+  pointsRedeemed: Int
 }
 
 type DigitalKey {
@@ -369,6 +370,12 @@ input CreateReservationInput {
   addOns: [AddOnInput!]
   loyaltyNumber: String
   promoCode: String
+  """ Points the guest is redeeming on this booking. Applied to the
+      rate breakdown as `loyaltyDiscount` at the standard 0.007/point
+      rate in the booking's currency. The loyalty subgraph remains the
+      authoritative source of truth for the balance — debiting it is
+      the booker's responsibility (saga / event-driven in production). """
+  pointsToRedeem: Int
 }
 
 input ConfirmReservationInput {

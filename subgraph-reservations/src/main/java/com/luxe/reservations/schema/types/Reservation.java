@@ -193,6 +193,34 @@ public class Reservation implements HasId {
     public void addAddOn(ReservationAddOn addOn) { this.addOns = new ArrayList<>(addOns); addOns.add(addOn); }
     public void rebuildRateBreakdown() { buildRateBreakdown(); }
 
+    /**
+     * Apply a loyalty-points-cash discount to this reservation's rate
+     * breakdown. Subtracts from totalDue / balanceDue (clamped at 0)
+     * and stamps the discount on the breakdown's loyaltyDiscount slot.
+     * Caller is responsible for setting `loyaltyContext.pointsRedeemed`
+     * separately so the schema reports both the cash impact and the
+     * point count.
+     */
+    public void applyLoyaltyDiscount(Money discount) {
+        if (rateBreakdown == null || discount == null) return;
+        double current = Double.parseDouble(rateBreakdown.totalDue().amount());
+        double off = Double.parseDouble(discount.amount());
+        if (off <= 0) return;
+        double newTotal = Math.max(0.0, current - off);
+        Money newTotalMoney = Money.of(newTotal, currency);
+        this.rateBreakdown = new ReservationRateBreakdown(
+                rateBreakdown.currency(), rateBreakdown.nightlyRates(),
+                rateBreakdown.roomSubtotal(), rateBreakdown.addOnSubtotal(),
+                rateBreakdown.promotionSavings(), rateBreakdown.taxesAndFees(),
+                discount, // loyaltyDiscount
+                rateBreakdown.giftCardDiscount(),
+                newTotalMoney, // totalDue
+                rateBreakdown.depositPaid(),
+                newTotalMoney, // balanceDue
+                rateBreakdown.lineItems());
+        this.totalAmount = newTotalMoney;
+    }
+
     // ── Inner value type ──────────────────────────────────────────────────────
 
     public record GuestCount(int adults, int children) {}

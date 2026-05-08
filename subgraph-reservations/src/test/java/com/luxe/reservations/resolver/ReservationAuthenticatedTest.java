@@ -145,6 +145,62 @@ class ReservationAuthenticatedTest {
     }
 
     @Test
+    void create_reservation_with_points_redeemed_applies_loyalty_discount() {
+        // 50,000 pts × $0.007 = $350 off the booking total.
+        String reservationId = dgs.executeAndExtractJsonPath("""
+                mutation { createReservation(input: {
+                    hotelId: "prop-paris-001",
+                    roomTypeId: "rt-paris-dlx-001",
+                    rateToken: "rate-paris-dlx-flex",
+                    checkIn: "2026-09-01", checkOut: "2026-09-04",
+                    adults: 2,
+                    loyaltyNumber: "LUX0001234567",
+                    pointsToRedeem: 50000
+                }, idempotencyKey: "%s") {
+                  ... on Reservation { id }
+                  ... on ValidationError { code message }
+                } }
+                """.formatted(key()), "data.createReservation.id");
+        assertThat(reservationId).isNotNull();
+
+        String discount = dgs.executeAndExtractJsonPath("""
+                { reservation(id: "%s") {
+                    rateBreakdown { loyaltyDiscount { amount currency } totalDue { amount } }
+                    loyaltyContext { pointsRedeemed }
+                } }
+                """.formatted(reservationId), "data.reservation.rateBreakdown.loyaltyDiscount.amount");
+        // The data source bills at 500/night × 3 nights = 1500 EUR base, plus
+        // taxes + fees → 1620 EUR pre-discount. Apply 350 EUR redemption.
+        assertThat(Double.parseDouble(discount)).isEqualTo(350.0);
+
+        Integer pointsRedeemed = dgs.executeAndExtractJsonPath(
+                "{ reservation(id: \"%s\") { loyaltyContext { pointsRedeemed } } }".formatted(reservationId),
+                "data.reservation.loyaltyContext.pointsRedeemed");
+        assertThat(pointsRedeemed).isEqualTo(50000);
+    }
+
+    @Test
+    void create_reservation_without_points_leaves_loyalty_discount_null() {
+        String reservationId = dgs.executeAndExtractJsonPath("""
+                mutation { createReservation(input: {
+                    hotelId: "prop-london-001",
+                    roomTypeId: "rt-london-dlx-001",
+                    rateToken: "rate-london-dlx-flex",
+                    checkIn: "2026-09-01", checkOut: "2026-09-03",
+                    adults: 2
+                }, idempotencyKey: "%s") {
+                  ... on Reservation { id }
+                } }
+                """.formatted(key()), "data.createReservation.id");
+        assertThat(reservationId).isNotNull();
+        Object discount = dgs.executeAndExtractJsonPath(
+                "{ reservation(id: \"%s\") { rateBreakdown { loyaltyDiscount { amount } } } }"
+                        .formatted(reservationId),
+                "data.reservation.rateBreakdown.loyaltyDiscount");
+        assertThat(discount).isNull();
+    }
+
+    @Test
     void create_reservation_with_check_out_before_check_in_returns_validation_error() {
         String mutation = """
                 mutation { createReservation(input: {

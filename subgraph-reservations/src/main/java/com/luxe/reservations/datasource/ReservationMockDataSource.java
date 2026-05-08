@@ -44,7 +44,7 @@ public class ReservationMockDataSource implements ReservationDataSource {
                 Money.of(520, "EUR"), Money.of(2600, "EUR"), "EUR",
                 "CONFIRMED", "Late check-in requested", today.minusDays(30));
         r1.setLoyaltyContext(new ReservationLoyaltyContext("LUX0001234567", "GOLD",
-                2600, null, 1.5, 5));
+                2600, null, 1.5, 5, null));
         reservations.put(r1.getId(), r1);
 
         // London — upcoming confirmed, check-in in 3 days (eligible for online check-in)
@@ -54,7 +54,7 @@ public class ReservationMockDataSource implements ReservationDataSource {
                 Money.of(580, "GBP"), Money.of(1740, "GBP"), "GBP",
                 "CONFIRMED", null, today.minusDays(15));
         r2.setLoyaltyContext(new ReservationLoyaltyContext("LUX0002345678", "PLATINUM",
-                1740, null, 2.0, 3));
+                1740, null, 2.0, 3, null));
         reservations.put(r2.getId(), r2);
 
         // Tokyo — far future, anniversary
@@ -64,7 +64,7 @@ public class ReservationMockDataSource implements ReservationDataSource {
                 Money.of(180000, "JPY"), Money.of(900000, "JPY"), "JPY",
                 "CONFIRMED", "Celebrating anniversary — surprise decoration please", today.minusDays(5));
         r3.setLoyaltyContext(new ReservationLoyaltyContext("LUX0001234567", "GOLD",
-                9000, null, 1.5, 5));
+                9000, null, 1.5, 5, null));
         reservations.put(r3.getId(), r3);
 
         // Dubai — currently checked in
@@ -159,7 +159,7 @@ public class ReservationMockDataSource implements ReservationDataSource {
         r11.setCheckedInAt(today.minusDays(90).atTime(16, 0).atOffset(ZoneOffset.UTC));
         r11.setCheckedOutAt(today.minusDays(86).atTime(11, 30).atOffset(ZoneOffset.UTC));
         r11.setLoyaltyContext(new ReservationLoyaltyContext("LUX0001234567", "GOLD",
-                2480, null, 1.5, 4));
+                2480, null, 1.5, 4, null));
         r11.setPaymentSummary(new PaymentSummary("CREDIT_CARD", "4532", "Visa",
                 "AUTH-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(),
                 today.minusDays(90).atTime(16, 0).atOffset(ZoneOffset.UTC),
@@ -295,6 +295,24 @@ public class ReservationMockDataSource implements ReservationDataSource {
                 null, checkIn, checkOut, nights, adults, children, nightly, total, currency,
                 "PENDING_PAYMENT", null, OffsetDateTime.now());
         r.setSource("WEB");
+
+        // Apply points-redemption (if any) at the demo's flat 0.007 rate
+        // in the booking's currency. Real systems would call the loyalty
+        // subgraph's pointsValuation(currency) and then publish a debit
+        // event; here we only stamp the cash impact + the redeemed count
+        // so the rate breakdown + loyaltyContext reflect what happened.
+        Object rawPoints = input.get("pointsToRedeem");
+        if (rawPoints instanceof Number n && n.intValue() > 0) {
+            int points = n.intValue();
+            double discountAmount = points * 0.007;
+            Money discount = Money.of(discountAmount, currency);
+            r.applyLoyaltyDiscount(discount);
+            String loyaltyNumber = (String) input.getOrDefault("loyaltyNumber", null);
+            r.setLoyaltyContext(new ReservationLoyaltyContext(
+                    loyaltyNumber != null ? loyaltyNumber : "",
+                    "MEMBER", 0, null, null, 0, points));
+        }
+
         reservations.put(id, r);
         return r;
     }
