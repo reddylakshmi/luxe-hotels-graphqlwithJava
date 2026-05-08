@@ -3,26 +3,53 @@
 import graphql.schema.DataFetchingEnvironment;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
- * Production resolver: reads the auth context that {@link SubgraphAuthInterceptor}
- * attached to the inbound HTTP request as an attribute.
+ * Production resolver: reads the {@link AuthContext} that
+ * {@link SubgraphAuthInterceptor} attached to the inbound HTTP request.
+ *
+ * &lt;p&gt;Lookup strategy (first hit wins):
+ * &lt;ol&gt;
+ *   &lt;li&gt;{@code dfe.getGraphQlContext().get(HttpServletRequest.class)} —
+ *       works when callers explicitly stash the request under that key.&lt;/li&gt;
+ *   &lt;li&gt;Spring's {@link RequestContextHolder} — populated for every MVC
+ *       request thread by {@code RequestContextFilter}, which is what
+ *       Spring Boot wires by default. This is the path the federated
+ *       runtime actually uses (DGS + Spring GraphQL doesn't put the raw
+ *       servlet request into the GraphQL context).&lt;/li&gt;
+ * &lt;/ol&gt;
+ *
+ * Tests can still override this whole bean with a {@code @TestConfiguration}
+ * that returns a fixed {@link AuthContext} per the existing pattern in
+ * {@code GuestAuthenticatedTest}.
  */
 @Component
-<span class="nc" id="L12">public class DefaultAuthContextResolver implements AuthContextResolver {</span>
+<span class="nc" id="L30">public class DefaultAuthContextResolver implements AuthContextResolver {</span>
 
     private static final String ATTRIBUTE = &quot;authContext&quot;;
 
     @Override
     public AuthContext resolve(DataFetchingEnvironment dfe) {
         try {
-<span class="nc" id="L19">            HttpServletRequest req = dfe.getGraphQlContext().get(HttpServletRequest.class);</span>
-<span class="nc bnc" id="L20" title="All 2 branches missed.">            if (req == null) return AuthContext.anonymous();</span>
-<span class="nc" id="L21">            AuthContext ctx = (AuthContext) req.getAttribute(ATTRIBUTE);</span>
-<span class="nc bnc" id="L22" title="All 2 branches missed.">            return ctx != null ? ctx : AuthContext.anonymous();</span>
-<span class="nc" id="L23">        } catch (Exception e) {</span>
-<span class="nc" id="L24">            return AuthContext.anonymous();</span>
+<span class="nc" id="L37">            HttpServletRequest req = dfe.getGraphQlContext().get(HttpServletRequest.class);</span>
+<span class="nc bnc" id="L38" title="All 2 branches missed.">            if (req == null) req = currentServletRequest();</span>
+<span class="nc bnc" id="L39" title="All 2 branches missed.">            if (req == null) return AuthContext.anonymous();</span>
+<span class="nc" id="L40">            AuthContext ctx = (AuthContext) req.getAttribute(ATTRIBUTE);</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">            return ctx != null ? ctx : AuthContext.anonymous();</span>
+<span class="nc" id="L42">        } catch (Exception e) {</span>
+<span class="nc" id="L43">            return AuthContext.anonymous();</span>
         }
+    }
+
+    private static HttpServletRequest currentServletRequest() {
+<span class="nc" id="L48">        RequestAttributes attrs = RequestContextHolder.getRequestAttributes();</span>
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        if (attrs instanceof ServletRequestAttributes sa) {</span>
+<span class="nc" id="L50">            return sa.getRequest();</span>
+        }
+<span class="nc" id="L52">        return null;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

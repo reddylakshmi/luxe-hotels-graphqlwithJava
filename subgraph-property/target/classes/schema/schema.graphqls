@@ -20,7 +20,7 @@ type Money @shareable {
 
 enum BrandTier { SELECT PREMIUM LUXURY }
 enum HotelStatus { ACTIVE TEMPORARILY_CLOSED UNDER_RENOVATION COMING_SOON }
-enum HotelSortField { NAME GUEST_RATING STAR_RATING PRICE_LOW_TO_HIGH DISTANCE }
+enum HotelSortField { NAME GUEST_RATING STAR_RATING PRICE_LOW_TO_HIGH DISTANCE CITY BRAND REVIEWS }
 enum BedType { KING QUEEN DOUBLE_DOUBLE TWIN SINGLE SOFA_BED BUNK }
 enum RoomCategory { STANDARD SUPERIOR DELUXE PREMIER JUNIOR_SUITE SUITE VILLA PENTHOUSE }
 enum AmenityCategory { POOL SPA FITNESS DINING BUSINESS PARKING TRANSPORT CONNECTIVITY RECREATION WELLNESS }
@@ -91,6 +91,8 @@ type Hotel implements Node @key(fields: "id") {
   hasSpa: Boolean!
   hasGolf: Boolean!
   hasPool: Boolean!
+  hasFreeBreakfast: Boolean!
+  petsAllowed: Boolean!
   isFeatured: Boolean!
   updatedAt: DateTime!
 }
@@ -384,8 +386,31 @@ type PropertyLocalizedContent @shareable {
   availableLocales: [LanguageCode!]!
 }
 
+type HotelFacets {
+  totalCount: Int!
+  byBrand: [BrandFacet!]!
+  byBrandTier: [TierFacet!]!
+  byCity: [CityFacet!]!
+  amenities: AmenityFacets!
+  guestRating: [GuestRatingBucket!]!
+}
+type BrandFacet { brandId: ID! brand: Brand! count: Int! }
+type TierFacet { tier: BrandTier! count: Int! }
+type CityFacet { city: String! countryCode: CountryCode! count: Int! }
+type AmenityFacets {
+  hasFreeBreakfast: Int!
+  hasPool: Int!
+  hasSpa: Int!
+  hasGolf: Int!
+  petsAllowed: Int!
+}
+type GuestRatingBucket { minRating: Float! count: Int! }
+
 input HotelFilter {
   query: String
+  """ Restrict to a specific set of hotel ids — useful for "recently viewed"
+      or any other client-side bookmarked list. """
+  ids: [ID!]
   countryCodes: [CountryCode!]
   brandIds: [ID!]
   brandTiers: [BrandTier!]
@@ -394,6 +419,10 @@ input HotelFilter {
   hasPool: Boolean
   hasSpa: Boolean
   hasGolf: Boolean
+  hasFreeBreakfast: Boolean
+  petsAllowed: Boolean
+  maxNightlyRate: Float
+  minNightlyRate: Float
   amenityIds: [ID!]
   checkIn: Date
   checkOut: Date
@@ -432,13 +461,59 @@ type Query {
   hotel(id: ID!): Hotel
   hotelBySlug(slug: String!): Hotel
   hotels(first: Int = 10, after: String, filter: HotelFilter, sortBy: HotelSortField): HotelConnection!
+  """
+  Counts of hotels matching the given filter, broken out by each filterable
+  dimension. Used by the search-results filter UI to show "Maison Lumière (1)"
+  next to every option, scoped to the current search (city/destination/etc.).
+  """
+  hotelFacets(filter: HotelFilter): HotelFacets!
   brand(id: ID!): Brand
   brandByCode(code: String!): Brand
   brands(first: Int = 20, after: String, tier: BrandTier): BrandConnection!
   roomType(id: ID!): RoomType
   featuredHotels(first: Int = 6, brandTier: BrandTier, countryCode: CountryCode): [Hotel!]!
+  """
+  Lightweight typeahead query — returns up to {@code limit} suggestions matching
+  the partial query against hotel names, city names, and country names.
+  Optimised for the destination-search input on the home / search-results page;
+  prefer this over the full {@code hotels(filter: { query })} query when only
+  a "what could the user mean?" preview list is needed.
+  """
+  destinationSuggestions(query: String!, limit: Int = 10): [DestinationSuggestion!]!
   restaurant(id: ID!): Restaurant
   spa(id: ID!): Spa
+}
+
+"""
+A single autocomplete entry for the destination search box. Four flavours:
+HOTEL (a specific property), CITY (e.g. "Paris"), STATE (e.g. "Telangana" —
+clicking narrows to that state's hotels), COUNTRY (e.g. "France").
+"""
+type DestinationSuggestion @shareable {
+  type: DestinationSuggestionType!
+  """ Bold label shown in the dropdown (hotel name, city, state, or country). """
+  label: String!
+  """ Secondary line — country for cities, address+city for hotels, etc. """
+  sublabel: String
+  """ Set when {@code type == HOTEL}; lets the UI deep-link to the hotel page. """
+  hotelId: ID
+  """ Set when {@code type == HOTEL}; for slug-based deep-linking. """
+  hotelSlug: String
+  """ Set when {@code type == CITY}; the destination string to pre-fill. """
+  city: String
+  """ Set when {@code type == STATE}; the state/region name to pre-fill. """
+  state: String
+  """ Set when {@code type == COUNTRY}; the country name to pre-fill. """
+  country: String
+  """ ISO 3166-1 alpha-2 code, when relevant — for filter narrowing. """
+  countryCode: String
+}
+
+enum DestinationSuggestionType {
+  HOTEL
+  CITY
+  STATE
+  COUNTRY
 }
 
 type Mutation {

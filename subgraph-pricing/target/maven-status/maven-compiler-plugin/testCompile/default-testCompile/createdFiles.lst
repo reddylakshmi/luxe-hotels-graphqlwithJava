@@ -1,4 +1,6 @@
 com/luxe/pricing/datasource/PricingMockDataSourceTest.class
+com/luxe/pricing/resolver/HotelAvailabilitySearchTest.class
 com/luxe/pricing/datasource/PricingBranchesTest.class
+com/luxe/pricing/datasource/FxConversionServiceTest.class
 com/luxe/pricing/resolver/PricingResolverQueriesTest.class
 com/luxe/pricing/resolver/PricingDataFetcherTest.class

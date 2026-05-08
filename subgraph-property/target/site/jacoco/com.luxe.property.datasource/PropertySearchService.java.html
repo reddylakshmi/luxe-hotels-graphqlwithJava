@@ -1,0 +1,420 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PropertySearchService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Property Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.property.datasource</a> &gt; <span class="el_source">PropertySearchService.java</span></div><h1>PropertySearchService.java</h1><pre class="source lang-java linenums">package com.luxe.property.datasource;
+
+import com.luxe.property.schema.types.Brand;
+import com.luxe.property.schema.types.DestinationSuggestion;
+import com.luxe.property.schema.types.Hotel;
+import com.luxe.property.schema.types.HotelFacets;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+/**
+ * Hotel search, facet computation, and destination autocomplete — extracted
+ * out of {@link PropertyMockDataSource} so the inventory store and the
+ * search logic each have a single responsibility. Same subgraph, same
+ * schema, same federation boundary; just a clean internal seam that makes
+ * future migration to a real search engine (Elasticsearch / Algolia /
+ * OpenSearch) straightforward — that day, this whole class becomes the
+ * outbound port of a new {@code subgraph-search} service.
+ *
+ * &lt;p&gt;Constructor takes &lt;em&gt;references&lt;/em&gt; to the live hotels and brands
+ * maps in the data source, so seed data updates are reflected immediately
+ * without copy-on-read overhead.
+ */
+public class PropertySearchService {
+
+    private final Map&lt;String, Hotel&gt; hotels;
+    private final Map&lt;String, Brand&gt; brands;
+
+<span class="fc" id="L37">    public PropertySearchService(Map&lt;String, Hotel&gt; hotels, Map&lt;String, Brand&gt; brands) {</span>
+<span class="fc" id="L38">        this.hotels = hotels;</span>
+<span class="fc" id="L39">        this.brands = brands;</span>
+<span class="fc" id="L40">    }</span>
+
+    // ── Search ───────────────────────────────────────────────────────────
+
+    public List&lt;Hotel&gt; searchHotels(Map&lt;String, Object&gt; filter, String sortBy) {
+<span class="fc" id="L45">        List&lt;Hotel&gt; result = new ArrayList&lt;&gt;(hotels.values());</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        if (filter != null) {</span>
+<span class="fc" id="L47">            String query = (String) filter.get(&quot;query&quot;);</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">            if (query != null) {</span>
+<span class="fc" id="L49">                String q = query.toLowerCase();</span>
+<span class="fc" id="L50">                result = result.stream().filter(h -&gt; {</span>
+<span class="fc" id="L51">                    var addr = h.getLocation().address();</span>
+<span class="fc" id="L52">                    String name        = h.getName().toLowerCase();</span>
+<span class="pc bpc" id="L53" title="1 of 2 branches missed.">                    String city        = addr.city() != null ? addr.city().toLowerCase() : &quot;&quot;;</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">                    String state       = addr.state() != null ? addr.state().toLowerCase() : &quot;&quot;;</span>
+<span class="pc bpc" id="L55" title="1 of 2 branches missed.">                    String countryName = addr.countryName() != null ? addr.countryName().toLowerCase() : &quot;&quot;;</span>
+<span class="pc bpc" id="L56" title="1 of 2 branches missed.">                    String countryCode = addr.countryCode() != null ? addr.countryCode().toLowerCase() : &quot;&quot;;</span>
+                    // Match the destination string against name, city, state,
+                    // country name (substring), or country code (exact). The
+                    // autocomplete fills the input with the display name when
+                    // the user picks a city/state/country suggestion, so all
+                    // four substring paths are load-bearing; country-code
+                    // match also accepts ?destination=FR style URLs.
+<span class="fc bfc" id="L63" title="All 2 branches covered.">                    return name.contains(q)</span>
+<span class="pc bpc" id="L64" title="1 of 2 branches missed.">                            || city.contains(q)</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">                            || state.contains(q)</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">                            || countryName.contains(q)</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">                            || countryCode.equals(q);</span>
+<span class="fc" id="L68">                }).collect(Collectors.toList());</span>
+            }
+            @SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L71">            List&lt;String&gt; ids = (List&lt;String&gt;) filter.get(&quot;ids&quot;);</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">            if (ids != null) {</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">                if (ids.isEmpty()) {</span>
+                    // Explicit empty list → match nothing. Distinct from null
+                    // (which means &quot;no id constraint&quot;).
+<span class="fc" id="L76">                    result = List.of();</span>
+                } else {
+<span class="fc" id="L78">                    Set&lt;String&gt; idSet = new HashSet&lt;&gt;(ids);</span>
+<span class="fc" id="L79">                    result = result.stream()</span>
+<span class="fc" id="L80">                            .filter(h -&gt; idSet.contains(h.getId()))</span>
+<span class="fc" id="L81">                            .collect(Collectors.toList());</span>
+                }
+            }
+            @SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L85">            List&lt;String&gt; brandIds = (List&lt;String&gt;) filter.get(&quot;brandIds&quot;);</span>
+<span class="fc bfc" id="L86" title="All 4 branches covered.">            if (brandIds != null &amp;&amp; !brandIds.isEmpty()) {</span>
+<span class="fc" id="L87">                result = result.stream().filter(h -&gt; brandIds.contains(h.getBrandId())).collect(Collectors.toList());</span>
+            }
+            @SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L90">            List&lt;String&gt; countryCodes = (List&lt;String&gt;) filter.get(&quot;countryCodes&quot;);</span>
+<span class="pc bpc" id="L91" title="1 of 4 branches missed.">            if (countryCodes != null &amp;&amp; !countryCodes.isEmpty()) {</span>
+<span class="fc" id="L92">                result = result.stream()</span>
+<span class="fc" id="L93">                        .filter(h -&gt; countryCodes.contains(h.getLocation().address().countryCode()))</span>
+<span class="fc" id="L94">                        .collect(Collectors.toList());</span>
+            }
+<span class="fc" id="L96">            Integer minStar = (Integer) filter.get(&quot;minStarRating&quot;);</span>
+<span class="fc bfc" id="L97" title="All 4 branches covered.">            if (minStar != null) result = result.stream().filter(h -&gt; h.getStarRating() &gt;= minStar).collect(Collectors.toList());</span>
+<span class="fc" id="L98">            Number minGuest = (Number) filter.get(&quot;minGuestRating&quot;);</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">            if (minGuest != null) {</span>
+<span class="fc" id="L100">                double threshold = minGuest.doubleValue();</span>
+<span class="fc" id="L101">                result = result.stream()</span>
+<span class="pc bpc" id="L102" title="1 of 4 branches missed.">                        .filter(h -&gt; h.getGuestRating() != null &amp;&amp; h.getGuestRating().overall() &gt;= threshold)</span>
+<span class="fc" id="L103">                        .collect(Collectors.toList());</span>
+            }
+<span class="fc bfc" id="L105" title="All 2 branches covered.">            if (Boolean.TRUE.equals(filter.get(&quot;hasSpa&quot;))) result = result.stream().filter(Hotel::isHasSpa).collect(Collectors.toList());</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">            if (Boolean.TRUE.equals(filter.get(&quot;hasPool&quot;))) result = result.stream().filter(Hotel::isHasPool).collect(Collectors.toList());</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">            if (Boolean.TRUE.equals(filter.get(&quot;hasGolf&quot;))) result = result.stream().filter(Hotel::isHasGolf).collect(Collectors.toList());</span>
+<span class="fc bfc" id="L108" title="All 2 branches covered.">            if (Boolean.TRUE.equals(filter.get(&quot;hasFreeBreakfast&quot;))) result = result.stream().filter(Hotel::isHasFreeBreakfast).collect(Collectors.toList());</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">            if (Boolean.TRUE.equals(filter.get(&quot;petsAllowed&quot;))) result = result.stream().filter(Hotel::isPetsAllowed).collect(Collectors.toList());</span>
+            // Price filter — uses an estimated USD-per-night derived from brand tier
+            // and a deterministic seed. Matches the pricing subgraph's mock rates
+            // closely enough for filter narrowing; the rate shown on the card still
+            // comes from the pricing subgraph's per-hotel availability.
+<span class="fc" id="L114">            Number minRate = (Number) filter.get(&quot;minNightlyRate&quot;);</span>
+<span class="fc" id="L115">            Number maxRate = (Number) filter.get(&quot;maxNightlyRate&quot;);</span>
+<span class="fc bfc" id="L116" title="All 4 branches covered.">            if (minRate != null || maxRate != null) {</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">                final double lo = minRate != null ? minRate.doubleValue() : Double.NEGATIVE_INFINITY;</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">                final double hi = maxRate != null ? maxRate.doubleValue() : Double.POSITIVE_INFINITY;</span>
+<span class="fc" id="L119">                result = result.stream().filter(h -&gt; {</span>
+<span class="fc" id="L120">                    double est = estimateNightlyRateUsd(h);</span>
+<span class="fc bfc" id="L121" title="All 4 branches covered.">                    return est &gt;= lo &amp;&amp; est &lt;= hi;</span>
+<span class="fc" id="L122">                }).collect(Collectors.toList());</span>
+            }
+            @SuppressWarnings(&quot;unchecked&quot;)
+<span class="fc" id="L125">            List&lt;Object&gt; tiers = (List&lt;Object&gt;) filter.get(&quot;brandTiers&quot;);</span>
+<span class="pc bpc" id="L126" title="1 of 4 branches missed.">            if (tiers != null &amp;&amp; !tiers.isEmpty()) {</span>
+<span class="fc" id="L127">                Set&lt;String&gt; tierNames = tiers.stream()</span>
+<span class="fc" id="L128">                        .filter(Objects::nonNull)</span>
+<span class="fc" id="L129">                        .map(Object::toString)</span>
+<span class="fc" id="L130">                        .collect(Collectors.toSet());</span>
+<span class="fc" id="L131">                result = result.stream()</span>
+<span class="fc" id="L132">                        .filter(h -&gt; {</span>
+<span class="fc" id="L133">                            Brand b = brands.get(h.getBrandId());</span>
+<span class="pc bpc" id="L134" title="1 of 4 branches missed.">                            return b != null &amp;&amp; tierNames.contains(b.getTier());</span>
+                        })
+<span class="fc" id="L136">                        .collect(Collectors.toList());</span>
+            }
+        }
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        if (sortBy != null) {</span>
+<span class="fc bfc" id="L140" title="All 9 branches covered.">            switch (sortBy) {</span>
+<span class="fc" id="L141">                case &quot;GUEST_RATING&quot; -&gt; result.sort((a, b) -&gt; Double.compare(</span>
+<span class="pc bpc" id="L142" title="1 of 2 branches missed.">                        b.getGuestRating() != null ? b.getGuestRating().overall() : 0,</span>
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">                        a.getGuestRating() != null ? a.getGuestRating().overall() : 0));</span>
+<span class="fc" id="L144">                case &quot;STAR_RATING&quot; -&gt; result.sort((a, b) -&gt; Integer.compare(b.getStarRating(), a.getStarRating()));</span>
+<span class="fc" id="L145">                case &quot;REVIEWS&quot; -&gt; result.sort((a, b) -&gt; Integer.compare(</span>
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">                        b.getGuestRating() != null ? b.getGuestRating().count() : 0,</span>
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">                        a.getGuestRating() != null ? a.getGuestRating().count() : 0));</span>
+<span class="fc" id="L148">                case &quot;CITY&quot; -&gt; result.sort(Comparator</span>
+<span class="fc" id="L149">                        .comparing((Hotel h) -&gt; h.getLocation().address().countryCode())</span>
+<span class="fc" id="L150">                        .thenComparing(h -&gt; h.getLocation().address().city())</span>
+<span class="fc" id="L151">                        .thenComparing(Hotel::getName));</span>
+<span class="fc" id="L152">                case &quot;BRAND&quot; -&gt; result.sort(Comparator</span>
+<span class="fc" id="L153">                        .comparing((Hotel h) -&gt; {</span>
+<span class="fc" id="L154">                            Brand br = brands.get(h.getBrandId());</span>
+<span class="pc bpc" id="L155" title="1 of 2 branches missed.">                            return br != null ? br.getName() : &quot;&quot;;</span>
+                        })
+<span class="fc" id="L157">                        .thenComparing(Hotel::getName));</span>
+<span class="fc" id="L158">                case &quot;PRICE_LOW_TO_HIGH&quot; -&gt; result.sort(</span>
+<span class="fc" id="L159">                        Comparator.comparingDouble(this::estimateNightlyRateUsd));</span>
+<span class="fc" id="L160">                case &quot;DISTANCE&quot; -&gt; sortByDistanceFromCentroid(result);</span>
+<span class="fc" id="L161">                case &quot;NAME&quot; -&gt; result.sort(Comparator.comparing(Hotel::getName));</span>
+                default -&gt; { /* unknown sortBy → leave default order */ }
+            }
+        }
+<span class="fc" id="L165">        return result;</span>
+    }
+
+    // ── Facets ───────────────────────────────────────────────────────────
+
+    public HotelFacets computeFacets(Map&lt;String, Object&gt; filter) {
+        // Apply the current filter EXCEPT the dimension being faceted, so
+        // each option's count reflects &quot;how many hotels remain if I check this
+        // additionally&quot; (the user-friendly drill-down semantic).
+<span class="fc" id="L174">        List&lt;Hotel&gt; baseSet = searchHotels(filter, null);</span>
+
+        // Per-brand
+<span class="fc" id="L177">        Map&lt;String, Integer&gt; brandCounts = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L178" title="All 2 branches covered.">        for (Hotel h : searchHotels(omit(filter, &quot;brandIds&quot;), null)) {</span>
+<span class="fc" id="L179">            brandCounts.merge(h.getBrandId(), 1, Integer::sum);</span>
+<span class="fc" id="L180">        }</span>
+<span class="fc" id="L181">        List&lt;HotelFacets.BrandFacet&gt; byBrand = brandCounts.entrySet().stream()</span>
+<span class="fc" id="L182">                .map(e -&gt; new HotelFacets.BrandFacet(e.getKey(), brands.get(e.getKey()), e.getValue()))</span>
+<span class="pc bpc" id="L183" title="1 of 2 branches missed.">                .filter(f -&gt; f.brand() != null)</span>
+<span class="fc" id="L184">                .sorted(Comparator</span>
+<span class="fc" id="L185">                        .&lt;HotelFacets.BrandFacet&gt;comparingInt(f -&gt; -f.count())</span>
+<span class="fc" id="L186">                        .thenComparing(f -&gt; f.brand().getName()))</span>
+<span class="fc" id="L187">                .toList();</span>
+
+        // Per-tier
+<span class="fc" id="L190">        Map&lt;String, Integer&gt; tierCounts = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">        for (Hotel h : searchHotels(omit(filter, &quot;brandTiers&quot;), null)) {</span>
+<span class="fc" id="L192">            Brand b = brands.get(h.getBrandId());</span>
+<span class="pc bpc" id="L193" title="2 of 4 branches missed.">            if (b != null &amp;&amp; b.getTier() != null) tierCounts.merge(b.getTier(), 1, Integer::sum);</span>
+<span class="fc" id="L194">        }</span>
+<span class="fc" id="L195">        List&lt;HotelFacets.TierFacet&gt; byTier = List.of(&quot;LUXURY&quot;, &quot;PREMIUM&quot;, &quot;SELECT&quot;).stream()</span>
+<span class="fc" id="L196">                .map(t -&gt; new HotelFacets.TierFacet(t, tierCounts.getOrDefault(t, 0)))</span>
+<span class="fc" id="L197">                .toList();</span>
+
+        // Per-city — use the BASE set (city is informational, not a filter dim).
+<span class="fc" id="L200">        Map&lt;String, int[]&gt; cityCounts = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L201">        Map&lt;String, String&gt; cityCountry = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L202" title="All 2 branches covered.">        for (Hotel h : baseSet) {</span>
+<span class="fc" id="L203">            String city = h.getLocation().address().city();</span>
+<span class="fc" id="L204">            String cc = h.getLocation().address().countryCode();</span>
+<span class="fc" id="L205">            cityCounts.computeIfAbsent(city, k -&gt; new int[1])[0]++;</span>
+<span class="fc" id="L206">            cityCountry.putIfAbsent(city, cc);</span>
+<span class="fc" id="L207">        }</span>
+<span class="fc" id="L208">        List&lt;HotelFacets.CityFacet&gt; byCity = cityCounts.entrySet().stream()</span>
+<span class="fc" id="L209">                .map(e -&gt; new HotelFacets.CityFacet(e.getKey(), cityCountry.get(e.getKey()), e.getValue()[0]))</span>
+<span class="fc" id="L210">                .sorted(Comparator</span>
+<span class="fc" id="L211">                        .&lt;HotelFacets.CityFacet&gt;comparingInt(c -&gt; -c.count())</span>
+<span class="fc" id="L212">                        .thenComparing(HotelFacets.CityFacet::city))</span>
+<span class="fc" id="L213">                .toList();</span>
+
+        // Per-amenity (each computed with everything else in filter applied,
+        // but the amenity dim itself omitted).
+<span class="fc" id="L217">        Map&lt;String, Object&gt; sansAmen = omit(filter, &quot;hasFreeBreakfast&quot;, &quot;hasPool&quot;, &quot;hasSpa&quot;, &quot;hasGolf&quot;, &quot;petsAllowed&quot;);</span>
+<span class="fc" id="L218">        List&lt;Hotel&gt; amenSet = searchHotels(sansAmen, null);</span>
+<span class="fc" id="L219">        int hasFreeBreakfast = (int) amenSet.stream().filter(Hotel::isHasFreeBreakfast).count();</span>
+<span class="fc" id="L220">        int hasPool = (int) amenSet.stream().filter(Hotel::isHasPool).count();</span>
+<span class="fc" id="L221">        int hasSpa = (int) amenSet.stream().filter(Hotel::isHasSpa).count();</span>
+<span class="fc" id="L222">        int hasGolf = (int) amenSet.stream().filter(Hotel::isHasGolf).count();</span>
+<span class="fc" id="L223">        int petsAllowed = (int) amenSet.stream().filter(Hotel::isPetsAllowed).count();</span>
+<span class="fc" id="L224">        HotelFacets.AmenityFacets amenities = new HotelFacets.AmenityFacets(</span>
+                hasFreeBreakfast, hasPool, hasSpa, hasGolf, petsAllowed);
+
+        // Per-guest-rating bucket — counts at each threshold (≥7, ≥8, ≥9).
+<span class="fc" id="L228">        List&lt;Hotel&gt; grBase = searchHotels(omit(filter, &quot;minGuestRating&quot;), null);</span>
+<span class="fc" id="L229">        List&lt;HotelFacets.GuestRatingBucket&gt; guestRating = List.of(9.0, 8.0, 7.0).stream()</span>
+<span class="fc" id="L230">                .map(min -&gt; new HotelFacets.GuestRatingBucket(</span>
+<span class="fc" id="L231">                        min,</span>
+<span class="fc" id="L232">                        (int) grBase.stream()</span>
+<span class="pc bpc" id="L233" title="1 of 4 branches missed.">                                .filter(h -&gt; h.getGuestRating() != null &amp;&amp; h.getGuestRating().overall() &gt;= min)</span>
+<span class="fc" id="L234">                                .count()))</span>
+<span class="fc" id="L235">                .toList();</span>
+
+<span class="fc" id="L237">        return new HotelFacets(baseSet.size(), byBrand, byTier, byCity, amenities, guestRating);</span>
+    }
+
+    // ── Destination autocomplete ─────────────────────────────────────────
+
+    public List&lt;DestinationSuggestion&gt; destinationSuggestions(String query, int limit) {
+<span class="fc bfc" id="L243" title="All 6 branches covered.">        if (query == null || query.isBlank() || limit &lt;= 0) return List.of();</span>
+<span class="fc" id="L244">        String q = query.trim().toLowerCase();</span>
+<span class="fc" id="L245">        int cap = Math.min(limit, 25);</span>
+
+        // Walk every hotel once; stash unique cities, states, and countries
+        // with their hotel counts as we go. We rank in two passes: prefix
+        // matches first (more relevant), substring matches second.
+<span class="fc" id="L250">        record CityKey(String city, String country, String countryCode) {}</span>
+<span class="fc" id="L251">        record StateKey(String state, String country, String countryCode) {}</span>
+<span class="fc" id="L252">        Map&lt;CityKey, Integer&gt; cityCounts = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L253">        Map&lt;StateKey, Integer&gt; stateCounts = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L254">        Map&lt;String, int[]&gt; countryCounts = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L255">        Map&lt;String, String&gt; countryCodeByName = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L256">        List&lt;Hotel&gt; hotelMatchesPrefix = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L257">        List&lt;Hotel&gt; hotelMatchesSubstring = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L259" title="All 2 branches covered.">        for (Hotel h : hotels.values()) {</span>
+<span class="fc" id="L260">            String name = h.getName().toLowerCase();</span>
+<span class="fc" id="L261">            String city = h.getLocation().address().city();</span>
+<span class="fc" id="L262">            String state = h.getLocation().address().state();</span>
+<span class="fc" id="L263">            String country = h.getLocation().address().countryName();</span>
+<span class="fc" id="L264">            String countryCode = h.getLocation().address().countryCode();</span>
+
+            // Tally cities + states + countries (every hotel contributes once).
+<span class="fc" id="L267">            cityCounts.merge(new CityKey(city, country, countryCode), 1, Integer::sum);</span>
+<span class="pc bpc" id="L268" title="1 of 4 branches missed.">            if (state != null &amp;&amp; !state.isBlank()) {</span>
+<span class="fc" id="L269">                stateCounts.merge(new StateKey(state, country, countryCode), 1, Integer::sum);</span>
+            }
+<span class="pc bpc" id="L271" title="1 of 2 branches missed.">            if (country != null) {</span>
+<span class="fc" id="L272">                countryCounts.computeIfAbsent(country, k -&gt; new int[1])[0]++;</span>
+<span class="fc" id="L273">                countryCodeByName.put(country, countryCode);</span>
+            }
+
+            // Hotel-level match.
+<span class="fc bfc" id="L277" title="All 2 branches covered.">            if (name.startsWith(q)) hotelMatchesPrefix.add(h);</span>
+<span class="fc bfc" id="L278" title="All 2 branches covered.">            else if (name.contains(q)) hotelMatchesSubstring.add(h);</span>
+<span class="fc" id="L279">        }</span>
+
+        // Cities matching the query (prefix &gt; substring).
+<span class="fc" id="L282">        List&lt;DestinationSuggestion&gt; cityPrefix = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L283">        List&lt;DestinationSuggestion&gt; citySubstring = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L284" title="All 2 branches covered.">        for (var entry : cityCounts.entrySet()) {</span>
+<span class="fc" id="L285">            String name = entry.getKey().city().toLowerCase();</span>
+<span class="fc" id="L286">            var s = DestinationSuggestion.city(</span>
+<span class="fc" id="L287">                    entry.getKey().city(), entry.getKey().country(),</span>
+<span class="fc" id="L288">                    entry.getKey().countryCode(), entry.getValue());</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">            if (name.startsWith(q)) cityPrefix.add(s);</span>
+<span class="fc bfc" id="L290" title="All 2 branches covered.">            else if (name.contains(q)) citySubstring.add(s);</span>
+<span class="fc" id="L291">        }</span>
+
+        // States matching the query (prefix &gt; substring).
+<span class="fc" id="L294">        List&lt;DestinationSuggestion&gt; statePrefix = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L295">        List&lt;DestinationSuggestion&gt; stateSubstring = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L296" title="All 2 branches covered.">        for (var entry : stateCounts.entrySet()) {</span>
+<span class="fc" id="L297">            String name = entry.getKey().state().toLowerCase();</span>
+<span class="fc" id="L298">            var s = DestinationSuggestion.state(</span>
+<span class="fc" id="L299">                    entry.getKey().state(), entry.getKey().country(),</span>
+<span class="fc" id="L300">                    entry.getKey().countryCode(), entry.getValue());</span>
+<span class="fc bfc" id="L301" title="All 2 branches covered.">            if (name.startsWith(q)) statePrefix.add(s);</span>
+<span class="fc bfc" id="L302" title="All 2 branches covered.">            else if (name.contains(q)) stateSubstring.add(s);</span>
+<span class="fc" id="L303">        }</span>
+
+        // Countries matching the query (prefix &gt; substring).
+<span class="fc" id="L306">        List&lt;DestinationSuggestion&gt; countryPrefix = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L307">        List&lt;DestinationSuggestion&gt; countrySubstring = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L308" title="All 2 branches covered.">        for (var entry : countryCounts.entrySet()) {</span>
+<span class="fc" id="L309">            String name = entry.getKey().toLowerCase();</span>
+<span class="fc" id="L310">            var s = DestinationSuggestion.country(</span>
+<span class="fc" id="L311">                    entry.getKey(), countryCodeByName.get(entry.getKey()), entry.getValue()[0]);</span>
+<span class="fc bfc" id="L312" title="All 2 branches covered.">            if (name.startsWith(q)) countryPrefix.add(s);</span>
+<span class="fc bfc" id="L313" title="All 2 branches covered.">            else if (name.contains(q)) countrySubstring.add(s);</span>
+<span class="fc" id="L314">        }</span>
+
+        // Final ranking: cities (specific intent) → states (regional intent)
+        // → countries (broadest) → hotels (specific). Prefix matches always
+        // come before substring matches within the same tier.
+<span class="fc" id="L319">        Comparator&lt;DestinationSuggestion&gt; byLabel =</span>
+<span class="fc" id="L320">                Comparator.comparing(DestinationSuggestion::label);</span>
+<span class="fc" id="L321">        cityPrefix.sort(byLabel);</span>
+<span class="fc" id="L322">        citySubstring.sort(byLabel);</span>
+<span class="fc" id="L323">        statePrefix.sort(byLabel);</span>
+<span class="fc" id="L324">        stateSubstring.sort(byLabel);</span>
+<span class="fc" id="L325">        countryPrefix.sort(byLabel);</span>
+<span class="fc" id="L326">        countrySubstring.sort(byLabel);</span>
+<span class="fc" id="L327">        hotelMatchesPrefix.sort(Comparator.comparing(Hotel::getName));</span>
+<span class="fc" id="L328">        hotelMatchesSubstring.sort(Comparator.comparing(Hotel::getName));</span>
+
+<span class="fc" id="L330">        List&lt;DestinationSuggestion&gt; out = new ArrayList&lt;&gt;(cap);</span>
+<span class="fc" id="L331">        appendUntilFull(out, cityPrefix, cap);</span>
+<span class="fc" id="L332">        appendUntilFull(out, statePrefix, cap);</span>
+<span class="fc" id="L333">        appendUntilFull(out, countryPrefix, cap);</span>
+<span class="fc bfc" id="L334" title="All 2 branches covered.">        for (Hotel h : hotelMatchesPrefix) {</span>
+<span class="pc bpc" id="L335" title="1 of 2 branches missed.">            if (out.size() &gt;= cap) break;</span>
+<span class="nc" id="L336">            out.add(DestinationSuggestion.hotel(h));</span>
+<span class="nc" id="L337">        }</span>
+<span class="fc" id="L338">        appendUntilFull(out, citySubstring, cap);</span>
+<span class="fc" id="L339">        appendUntilFull(out, stateSubstring, cap);</span>
+<span class="fc" id="L340">        appendUntilFull(out, countrySubstring, cap);</span>
+<span class="fc bfc" id="L341" title="All 2 branches covered.">        for (Hotel h : hotelMatchesSubstring) {</span>
+<span class="fc bfc" id="L342" title="All 2 branches covered.">            if (out.size() &gt;= cap) break;</span>
+<span class="fc" id="L343">            out.add(DestinationSuggestion.hotel(h));</span>
+<span class="fc" id="L344">        }</span>
+<span class="fc" id="L345">        return out;</span>
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────
+
+    /** Return a copy of {@code filter} with the given keys removed. Null-safe. */
+    static Map&lt;String, Object&gt; omit(Map&lt;String, Object&gt; filter, String... keys) {
+<span class="fc bfc" id="L352" title="All 2 branches covered.">        Map&lt;String, Object&gt; out = filter == null ? new HashMap&lt;&gt;() : new HashMap&lt;&gt;(filter);</span>
+<span class="fc bfc" id="L353" title="All 2 branches covered.">        for (String k : keys) out.remove(k);</span>
+<span class="fc" id="L354">        return out;</span>
+    }
+
+    /**
+     * Sort the result list ascending by haversine distance from the centroid
+     * of the matching hotels. When the user has a destination filter, the
+     * centroid effectively sits at the heart of the filtered cluster
+     * (e.g. central Paris when destination=Paris), so the closest match
+     * comes first — the standard &quot;Distance&quot; sort users expect.
+     */
+    static void sortByDistanceFromCentroid(List&lt;Hotel&gt; result) {
+<span class="pc bpc" id="L365" title="1 of 2 branches missed.">        if (result.size() &lt;= 1) return;</span>
+<span class="fc" id="L366">        double avgLat = result.stream()</span>
+<span class="fc" id="L367">                .mapToDouble(h -&gt; h.getLocation().coordinates().latitude())</span>
+<span class="fc" id="L368">                .average().orElse(0);</span>
+<span class="fc" id="L369">        double avgLng = result.stream()</span>
+<span class="fc" id="L370">                .mapToDouble(h -&gt; h.getLocation().coordinates().longitude())</span>
+<span class="fc" id="L371">                .average().orElse(0);</span>
+<span class="fc" id="L372">        result.sort(Comparator.comparingDouble(h -&gt; haversineKm(</span>
+<span class="fc" id="L373">                h.getLocation().coordinates().latitude(),</span>
+<span class="fc" id="L374">                h.getLocation().coordinates().longitude(),</span>
+                avgLat, avgLng)));
+<span class="fc" id="L376">    }</span>
+
+    /** Great-circle distance in kilometres between two lat/lng pairs. */
+    static double haversineKm(double lat1, double lng1, double lat2, double lng2) {
+<span class="fc" id="L380">        double R = 6371.0;</span>
+<span class="fc" id="L381">        double dLat = Math.toRadians(lat2 - lat1);</span>
+<span class="fc" id="L382">        double dLng = Math.toRadians(lng2 - lng1);</span>
+<span class="fc" id="L383">        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)</span>
+<span class="fc" id="L384">                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))</span>
+<span class="fc" id="L385">                * Math.sin(dLng / 2) * Math.sin(dLng / 2);</span>
+<span class="fc" id="L386">        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));</span>
+    }
+
+    /**
+     * Deterministic per-hotel price estimate in USD/night used for the price
+     * range filter. Buckets by brand tier with a seed-driven jitter so each
+     * hotel sits at a stable position inside its band.
+     *
+     *   LUXURY  : 400 – 1500
+     *   PREMIUM : 200 –  500
+     *   SELECT  : 100 –  250
+     */
+    double estimateNightlyRateUsd(Hotel h) {
+<span class="fc" id="L399">        Brand b = brands.get(h.getBrandId());</span>
+<span class="pc bpc" id="L400" title="1 of 2 branches missed.">        String tier = b != null ? b.getTier() : &quot;PREMIUM&quot;;</span>
+<span class="fc" id="L401">        int seed = Math.abs(h.getId().hashCode());</span>
+<span class="pc bpc" id="L402" title="1 of 4 branches missed.">        return switch (tier) {</span>
+<span class="fc" id="L403">            case &quot;LUXURY&quot;  -&gt; 400 + (seed % 1100);</span>
+<span class="fc" id="L404">            case &quot;PREMIUM&quot; -&gt; 200 + (seed %  300);</span>
+<span class="fc" id="L405">            case &quot;SELECT&quot;  -&gt; 100 + (seed %  150);</span>
+<span class="nc" id="L406">            default        -&gt; 250;</span>
+        };
+    }
+
+    private static void appendUntilFull(
+            List&lt;DestinationSuggestion&gt; sink,
+            List&lt;DestinationSuggestion&gt; from,
+            int cap) {
+<span class="fc bfc" id="L414" title="All 2 branches covered.">        for (var s : from) {</span>
+<span class="fc bfc" id="L415" title="All 2 branches covered.">            if (sink.size() &gt;= cap) return;</span>
+<span class="fc" id="L416">            sink.add(s);</span>
+<span class="fc" id="L417">        }</span>
+<span class="fc" id="L418">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

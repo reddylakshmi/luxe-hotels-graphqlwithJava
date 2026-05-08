@@ -3,6 +3,7 @@
 import com.luxe.meetings.schema.types.Hotel;
 
 import com.luxe.common.auth.AuthContext;
+import com.luxe.common.auth.AuthContextResolver;
 import com.luxe.common.error.NotFoundError;
 import com.luxe.common.error.ValidationError;
 import com.luxe.common.error.FieldError;
@@ -11,7 +12,6 @@ import com.luxe.meetings.datasource.MeetingsDataSource;
 import com.luxe.meetings.schema.types.*;
 import com.netflix.graphql.dgs.*;
 import graphql.schema.DataFetchingEnvironment;
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.HashMap;
 import java.util.List;
@@ -21,18 +21,15 @@ import java.util.Map;
 public class MeetingsDataFetcher {
 
     private final MeetingsDataSource dataSource;
+    private final AuthContextResolver authResolver;
 
-<span class="fc" id="L25">    public MeetingsDataFetcher(MeetingsDataSource dataSource) {</span>
-<span class="fc" id="L26">        this.dataSource = dataSource;</span>
-<span class="fc" id="L27">    }</span>
+<span class="fc" id="L26">    public MeetingsDataFetcher(MeetingsDataSource dataSource, AuthContextResolver authResolver) {</span>
+<span class="fc" id="L27">        this.dataSource = dataSource;</span>
+<span class="fc" id="L28">        this.authResolver = authResolver;</span>
+<span class="fc" id="L29">    }</span>
 
     private AuthContext getAuth(DataFetchingEnvironment dfe) {
-        try {
-<span class="fc" id="L31">            HttpServletRequest req = dfe.getGraphQlContext().get(HttpServletRequest.class);</span>
-<span class="pc bpc" id="L32" title="1 of 2 branches missed.">            if (req == null) return AuthContext.anonymous();</span>
-<span class="nc" id="L33">            AuthContext ctx = (AuthContext) req.getAttribute(&quot;authContext&quot;);</span>
-<span class="nc bnc" id="L34" title="All 2 branches missed.">            return ctx != null ? ctx : AuthContext.anonymous();</span>
-<span class="nc" id="L35">        } catch (Exception e) { return AuthContext.anonymous(); }</span>
+<span class="fc" id="L32">        return authResolver.resolve(dfe);</span>
     }
 
     // ── Queries ───────────────────────────────────────────────────────────────
@@ -40,70 +37,70 @@ public class MeetingsDataFetcher {
     @DgsQuery
     public List&lt;EventSpace&gt; eventSpaces(@InputArgument String hotelId,
                                           @InputArgument Map&lt;String, Object&gt; filter) {
-<span class="fc" id="L43">        return dataSource.findSpacesByHotel(hotelId, filter);</span>
+<span class="fc" id="L40">        return dataSource.findSpacesByHotel(hotelId, filter);</span>
     }
 
     @DgsQuery
     public EventSpace eventSpace(@InputArgument String id) {
-<span class="fc" id="L48">        return dataSource.findSpaceById(id).orElse(null);</span>
+<span class="fc" id="L45">        return dataSource.findSpaceById(id).orElse(null);</span>
     }
 
     @DgsQuery
     public Map&lt;String, Object&gt; searchEventSpaces(@InputArgument Map&lt;String, Object&gt; input) {
-<span class="fc" id="L53">        List&lt;EventSpace&gt; hits = dataSource.searchSpaces(input);</span>
-<span class="fc" id="L54">        List&lt;Map&lt;String, Object&gt;&gt; results = hits.stream()</span>
-<span class="fc" id="L55">                .&lt;Map&lt;String, Object&gt;&gt;map(s -&gt; Map.of(</span>
-<span class="fc" id="L56">                        &quot;hotel&quot;, Map.of(&quot;id&quot;, s.hotelId()),</span>
+<span class="fc" id="L50">        List&lt;EventSpace&gt; hits = dataSource.searchSpaces(input);</span>
+<span class="fc" id="L51">        List&lt;Map&lt;String, Object&gt;&gt; results = hits.stream()</span>
+<span class="fc" id="L52">                .&lt;Map&lt;String, Object&gt;&gt;map(s -&gt; Map.of(</span>
+<span class="fc" id="L53">                        &quot;hotel&quot;, Map.of(&quot;id&quot;, s.hotelId()),</span>
                         &quot;space&quot;, s,
-<span class="fc" id="L58">                        &quot;matchScore&quot;, scoreMatch(s, input),</span>
+<span class="fc" id="L55">                        &quot;matchScore&quot;, scoreMatch(s, input),</span>
                         &quot;notes&quot;, &quot;Match based on requested setup and attendee count&quot;))
-<span class="fc" id="L60">                .toList();</span>
-<span class="fc" id="L61">        return Map.of(</span>
+<span class="fc" id="L57">                .toList();</span>
+<span class="fc" id="L58">        return Map.of(</span>
                 &quot;results&quot;, results,
-<span class="fc" id="L63">                &quot;totalCount&quot;, hits.size());</span>
+<span class="fc" id="L60">                &quot;totalCount&quot;, hits.size());</span>
     }
 
     @SuppressWarnings(&quot;unchecked&quot;)
     private double scoreMatch(EventSpace s, Map&lt;String, Object&gt; input) {
-<span class="pc bpc" id="L68" title="1 of 2 branches missed.">        int attendees = input.get(&quot;attendees&quot;) != null</span>
-<span class="pc" id="L69">                ? ((Number) input.get(&quot;attendees&quot;)).intValue() : 0;</span>
-<span class="fc" id="L70">        String setup = (String) input.get(&quot;setup&quot;);</span>
-<span class="fc" id="L71">        return s.capacityStyles().stream()</span>
-<span class="fc bfc" id="L72" title="All 4 branches covered.">                .filter(c -&gt; setup == null || c.setup().equals(setup))</span>
-<span class="fc" id="L73">                .mapToDouble(c -&gt; Math.max(0.0, 1.0 - Math.abs(c.capacity() - attendees) / 1000.0))</span>
-<span class="fc" id="L74">                .max().orElse(0.0);</span>
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">        int attendees = input.get(&quot;attendees&quot;) != null</span>
+<span class="pc" id="L66">                ? ((Number) input.get(&quot;attendees&quot;)).intValue() : 0;</span>
+<span class="fc" id="L67">        String setup = (String) input.get(&quot;setup&quot;);</span>
+<span class="fc" id="L68">        return s.capacityStyles().stream()</span>
+<span class="fc bfc" id="L69" title="All 4 branches covered.">                .filter(c -&gt; setup == null || c.setup().equals(setup))</span>
+<span class="fc" id="L70">                .mapToDouble(c -&gt; Math.max(0.0, 1.0 - Math.abs(c.capacity() - attendees) / 1000.0))</span>
+<span class="fc" id="L71">                .max().orElse(0.0);</span>
     }
 
     @DgsQuery
     public List&lt;CateringMenu&gt; cateringMenus(@InputArgument String hotelId) {
-<span class="fc" id="L79">        return dataSource.findCateringMenus(hotelId);</span>
+<span class="fc" id="L76">        return dataSource.findCateringMenus(hotelId);</span>
     }
 
     @DgsQuery
     public RFP rfp(@InputArgument String id) {
-<span class="fc" id="L84">        return dataSource.findRFPById(id).orElse(null);</span>
+<span class="fc" id="L81">        return dataSource.findRFPById(id).orElse(null);</span>
     }
 
     @DgsQuery
     public Object myRFPs(@InputArgument String status,
                            @InputArgument Integer first, @InputArgument String after,
                            DataFetchingEnvironment dfe) {
-<span class="fc" id="L91">        AuthContext auth = getAuth(dfe);</span>
-<span class="nc" id="L92">        auth.requireAuth();</span>
-<span class="nc bnc" id="L93" title="All 2 branches missed.">        String email = auth.guestId() != null ? auth.guestId() + &quot;@example.com&quot; : &quot;unknown@example.com&quot;;</span>
+<span class="fc" id="L88">        AuthContext auth = getAuth(dfe);</span>
+<span class="fc" id="L89">        auth.requireAuth();</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">        String email = auth.guestId() != null ? auth.guestId() + &quot;@example.com&quot; : &quot;unknown@example.com&quot;;</span>
         // Mock: lookup uses contact email; tests can use known emails directly
-<span class="nc" id="L95">        List&lt;RFP&gt; all = dataSource.findRFPsByOrganizer(email, status);</span>
-<span class="nc bnc" id="L96" title="All 2 branches missed.">        Connection&lt;RFP&gt; conn = Connection.of(all, first != null ? first : 10, after);</span>
-<span class="nc" id="L97">        return Map.of(</span>
-<span class="nc" id="L98">                &quot;edges&quot;, conn.edges().stream()</span>
-<span class="nc" id="L99">                        .map(e -&gt; Map.of(&quot;node&quot;, e.node(), &quot;cursor&quot;, e.cursor())).toList(),</span>
-<span class="nc" id="L100">                &quot;pageInfo&quot;, pageInfo(conn),</span>
-<span class="nc" id="L101">                &quot;totalCount&quot;, conn.totalCount());</span>
+<span class="fc" id="L92">        List&lt;RFP&gt; all = dataSource.findRFPsByOrganizer(email, status);</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">        Connection&lt;RFP&gt; conn = Connection.of(all, first != null ? first : 10, after);</span>
+<span class="fc" id="L94">        return Map.of(</span>
+<span class="fc" id="L95">                &quot;edges&quot;, conn.edges().stream()</span>
+<span class="pc" id="L96">                        .map(e -&gt; Map.of(&quot;node&quot;, e.node(), &quot;cursor&quot;, e.cursor())).toList(),</span>
+<span class="fc" id="L97">                &quot;pageInfo&quot;, pageInfo(conn),</span>
+<span class="fc" id="L98">                &quot;totalCount&quot;, conn.totalCount());</span>
     }
 
     @DgsQuery
     public GroupBlock groupBlock(@InputArgument String id) {
-<span class="fc" id="L106">        return dataSource.findGroupBlockById(id).orElse(null);</span>
+<span class="fc" id="L103">        return dataSource.findGroupBlockById(id).orElse(null);</span>
     }
 
     // ── Mutations ─────────────────────────────────────────────────────────────
@@ -112,85 +109,85 @@ public class MeetingsDataFetcher {
     public Object submitRFP(@InputArgument Map&lt;String, Object&gt; input,
                               @InputArgument String idempotencyKey,
                               DataFetchingEnvironment dfe) {
-<span class="fc" id="L115">        AuthContext auth = getAuth(dfe);</span>
-<span class="nc" id="L116">        auth.requireAuth();</span>
-<span class="nc bnc" id="L117" title="All 4 branches missed.">        if (input.get(&quot;organizer&quot;) == null || input.get(&quot;eventName&quot;) == null</span>
-<span class="nc bnc" id="L118" title="All 4 branches missed.">                || input.get(&quot;startDate&quot;) == null || input.get(&quot;endDate&quot;) == null) {</span>
-<span class="nc" id="L119">            return new ValidationError(&quot;INVALID_INPUT&quot;,</span>
+<span class="fc" id="L112">        AuthContext auth = getAuth(dfe);</span>
+<span class="fc" id="L113">        auth.requireAuth();</span>
+<span class="pc bpc" id="L114" title="2 of 4 branches missed.">        if (input.get(&quot;organizer&quot;) == null || input.get(&quot;eventName&quot;) == null</span>
+<span class="pc bpc" id="L115" title="2 of 4 branches missed.">                || input.get(&quot;startDate&quot;) == null || input.get(&quot;endDate&quot;) == null) {</span>
+<span class="nc" id="L116">            return new ValidationError(&quot;INVALID_INPUT&quot;,</span>
                     &quot;organizer, eventName, startDate, endDate are required&quot;,
-<span class="nc" id="L121">                    List.of(new FieldError(&quot;organizer&quot;, &quot;Required&quot;)));</span>
+<span class="nc" id="L118">                    List.of(new FieldError(&quot;organizer&quot;, &quot;Required&quot;)));</span>
         }
-<span class="nc" id="L123">        String email = (String) input.getOrDefault(&quot;contactEmail&quot;, auth.guestId());</span>
-<span class="nc" id="L124">        return dataSource.submitRFP(input, email);</span>
+<span class="fc" id="L120">        String email = (String) input.getOrDefault(&quot;contactEmail&quot;, auth.guestId());</span>
+<span class="fc" id="L121">        return dataSource.submitRFP(input, email);</span>
     }
 
     @DgsMutation
     public Object updateRFP(@InputArgument String rfpId,
                               @InputArgument Map&lt;String, Object&gt; input,
                               DataFetchingEnvironment dfe) {
-<span class="nc" id="L131">        getAuth(dfe).requireAuth();</span>
-<span class="nc bnc" id="L132" title="All 2 branches missed.">        if (dataSource.findRFPById(rfpId).isEmpty())</span>
-<span class="nc" id="L133">            return new NotFoundError(&quot;RFP&quot;, rfpId);</span>
-<span class="nc" id="L134">        return dataSource.updateRFP(rfpId, input);</span>
+<span class="fc" id="L128">        getAuth(dfe).requireAuth();</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        if (dataSource.findRFPById(rfpId).isEmpty())</span>
+<span class="fc" id="L130">            return new NotFoundError(&quot;RFP&quot;, rfpId);</span>
+<span class="fc" id="L131">        return dataSource.updateRFP(rfpId, input);</span>
     }
 
     @DgsMutation
     public Object cancelRFP(@InputArgument String rfpId, @InputArgument String reason,
                               DataFetchingEnvironment dfe) {
-<span class="fc" id="L140">        AuthContext auth = getAuth(dfe);</span>
-<span class="nc" id="L141">        auth.requireAuth();</span>
-<span class="nc bnc" id="L142" title="All 2 branches missed.">        if (dataSource.findRFPById(rfpId).isEmpty())</span>
-<span class="nc" id="L143">            return new NotFoundError(&quot;RFP&quot;, rfpId);</span>
-<span class="nc" id="L144">        return dataSource.cancelRFP(rfpId, reason, auth.guestId());</span>
+<span class="fc" id="L137">        AuthContext auth = getAuth(dfe);</span>
+<span class="fc" id="L138">        auth.requireAuth();</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        if (dataSource.findRFPById(rfpId).isEmpty())</span>
+<span class="fc" id="L140">            return new NotFoundError(&quot;RFP&quot;, rfpId);</span>
+<span class="fc" id="L141">        return dataSource.cancelRFP(rfpId, reason, auth.guestId());</span>
     }
 
     @DgsMutation
     public Object bookGroupRoom(@InputArgument Map&lt;String, Object&gt; input,
                                   @InputArgument String idempotencyKey,
                                   DataFetchingEnvironment dfe) {
-<span class="nc" id="L151">        getAuth(dfe).requireAuth();</span>
-<span class="nc bnc" id="L152" title="All 4 branches missed.">        if (input.get(&quot;hotelId&quot;) == null || input.get(&quot;rooms&quot;) == null) {</span>
-<span class="nc" id="L153">            return new ValidationError(&quot;INVALID_INPUT&quot;,</span>
-<span class="nc" id="L154">                    &quot;hotelId and rooms are required&quot;, List.of());</span>
+<span class="fc" id="L148">        getAuth(dfe).requireAuth();</span>
+<span class="pc bpc" id="L149" title="2 of 4 branches missed.">        if (input.get(&quot;hotelId&quot;) == null || input.get(&quot;rooms&quot;) == null) {</span>
+<span class="nc" id="L150">            return new ValidationError(&quot;INVALID_INPUT&quot;,</span>
+<span class="nc" id="L151">                    &quot;hotelId and rooms are required&quot;, List.of());</span>
         }
-<span class="nc" id="L156">        return dataSource.createGroupBlock(input);</span>
+<span class="fc" id="L153">        return dataSource.createGroupBlock(input);</span>
     }
 
     // ── Federation ────────────────────────────────────────────────────────────
 
     @DgsData(parentType = &quot;Hotel&quot;, field = &quot;eventSpaces&quot;)
     public List&lt;EventSpace&gt; hotelEventSpaces(DataFetchingEnvironment dfe) {
-<span class="fc" id="L163">        Hotel hotel = dfe.getSource();</span>
-<span class="fc" id="L164">        Map&lt;String, Object&gt; filter = dfe.getArgument(&quot;filter&quot;);</span>
-<span class="fc" id="L165">        return dataSource.findSpacesByHotel(hotel.getId(), filter);</span>
+<span class="fc" id="L160">        Hotel hotel = dfe.getSource();</span>
+<span class="fc" id="L161">        Map&lt;String, Object&gt; filter = dfe.getArgument(&quot;filter&quot;);</span>
+<span class="fc" id="L162">        return dataSource.findSpacesByHotel(hotel.getId(), filter);</span>
     }
 
     @DgsEntityFetcher(name = &quot;EventSpace&quot;)
     public EventSpace fetchEventSpace(Map&lt;String, Object&gt; values) {
-<span class="fc" id="L170">        return dataSource.findSpaceById((String) values.get(&quot;id&quot;)).orElse(null);</span>
+<span class="fc" id="L167">        return dataSource.findSpaceById((String) values.get(&quot;id&quot;)).orElse(null);</span>
     }
 
     @DgsEntityFetcher(name = &quot;RFP&quot;)
     public RFP fetchRFP(Map&lt;String, Object&gt; values) {
-<span class="fc" id="L175">        return dataSource.findRFPById((String) values.get(&quot;id&quot;)).orElse(null);</span>
+<span class="fc" id="L172">        return dataSource.findRFPById((String) values.get(&quot;id&quot;)).orElse(null);</span>
     }
 
     @DgsEntityFetcher(name = &quot;GroupBlock&quot;)
     public GroupBlock fetchGroupBlock(Map&lt;String, Object&gt; values) {
-<span class="fc" id="L180">        return dataSource.findGroupBlockById((String) values.get(&quot;id&quot;)).orElse(null);</span>
+<span class="fc" id="L177">        return dataSource.findGroupBlockById((String) values.get(&quot;id&quot;)).orElse(null);</span>
     }
 
     private Map&lt;String, Object&gt; pageInfo(Connection&lt;?&gt; conn) {
-<span class="nc" id="L184">        HashMap&lt;String, Object&gt; m = new HashMap&lt;&gt;();</span>
-<span class="nc" id="L185">        m.put(&quot;hasNextPage&quot;, conn.pageInfo().hasNextPage());</span>
-<span class="nc" id="L186">        m.put(&quot;hasPreviousPage&quot;, conn.pageInfo().hasPreviousPage());</span>
-<span class="nc" id="L187">        m.put(&quot;startCursor&quot;, conn.pageInfo().startCursor());</span>
-<span class="nc" id="L188">        m.put(&quot;endCursor&quot;, conn.pageInfo().endCursor());</span>
-<span class="nc" id="L189">        return m;</span>
+<span class="fc" id="L181">        HashMap&lt;String, Object&gt; m = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L182">        m.put(&quot;hasNextPage&quot;, conn.pageInfo().hasNextPage());</span>
+<span class="fc" id="L183">        m.put(&quot;hasPreviousPage&quot;, conn.pageInfo().hasPreviousPage());</span>
+<span class="fc" id="L184">        m.put(&quot;startCursor&quot;, conn.pageInfo().startCursor());</span>
+<span class="fc" id="L185">        m.put(&quot;endCursor&quot;, conn.pageInfo().endCursor());</span>
+<span class="fc" id="L186">        return m;</span>
     }
     @DgsEntityFetcher(name = &quot;Hotel&quot;)
     public Hotel fetchHotelReference(Map&lt;String, Object&gt; values) {
-<span class="fc" id="L193">        return new Hotel((String) values.get(&quot;id&quot;));</span>
+<span class="fc" id="L190">        return new Hotel((String) values.get(&quot;id&quot;));</span>
     }
 
 }

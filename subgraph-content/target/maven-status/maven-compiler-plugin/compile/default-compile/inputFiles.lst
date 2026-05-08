@@ -2,6 +2,8 @@
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-content/src/main/java/com/luxe/content/config/ContentGraphQLConfig.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-content/src/main/java/com/luxe/content/datasource/ContentDataSource.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-content/src/main/java/com/luxe/content/datasource/ContentMockDataSource.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-content/src/main/java/com/luxe/content/datasource/ContentRestDataSource.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-content/src/main/java/com/luxe/content/datasource/RestDtos.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-content/src/main/java/com/luxe/content/resolver/ContentDataFetcher.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-content/src/main/java/com/luxe/content/schema/types/Article.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-content/src/main/java/com/luxe/content/schema/types/BrandStory.java

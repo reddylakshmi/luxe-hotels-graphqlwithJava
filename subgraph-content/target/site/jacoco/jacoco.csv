@@ -1,14 +1,32 @@
 GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
 Luxe Hotels - Content Subgraph,com.luxe.content.schema.types,LocalizedContent,14,79,2,2,0,10,2,6,1,5
-Luxe Hotels - Content Subgraph,com.luxe.content.schema.types,ContentCollection,32,46,1,1,8,12,9,4,8,4
 Luxe Hotels - Content Subgraph,com.luxe.content.schema.types,BrandStory,33,50,1,1,7,9,8,4,7,4
 Luxe Hotels - Content Subgraph,com.luxe.content.schema.types,TravelInspiration,60,64,1,1,13,16,14,5,13,5
 Luxe Hotels - Content Subgraph,com.luxe.content.schema.types,MediaAsset,3,30,0,0,1,1,1,1,1,1
 Luxe Hotels - Content Subgraph,com.luxe.content.schema.types,Article,56,86,5,1,10,20,13,9,10,9
+Luxe Hotels - Content Subgraph,com.luxe.content.schema.types,ContentCollection,32,46,1,1,8,12,9,4,8,4
 Luxe Hotels - Content Subgraph,com.luxe.content.schema.types,ContentAuthor,0,18,0,0,0,1,0,1,0,1
 Luxe Hotels - Content Subgraph,com.luxe.content.schema.types,DealSpotlight,54,67,1,1,10,17,12,6,11,6
 Luxe Hotels - Content Subgraph,com.luxe.content.schema.types,BrandStory.BrandPillar,10,35,1,1,2,9,3,4,2,4
 Luxe Hotels - Content Subgraph,com.luxe.content.schema.types,LocalizedContent.LocaleText,0,9,0,0,0,1,0,1,0,1
-Luxe Hotels - Content Subgraph,com.luxe.content.datasource,ContentMockDataSource,109,1194,21,27,9,234,24,41,8,33
-Luxe Hotels - Content Subgraph,com.luxe.content.resolver,ContentDataFetcher,136,48,4,2,21,9,11,6,8,6
+Luxe Hotels - Content Subgraph,com.luxe.content.datasource,ContentRestDataSource.new ParameterizedTypeReference() {...},3,0,0,0,1,0,1,0,1,0
+Luxe Hotels - Content Subgraph,com.luxe.content.datasource,ContentRestDataSource.new ParameterizedTypeReference() {...},3,0,0,0,1,0,1,0,1,0
+Luxe Hotels - Content Subgraph,com.luxe.content.datasource,RestDtos.DealSpotlightDto,45,0,0,0,1,0,1,0,1,0
+Luxe Hotels - Content Subgraph,com.luxe.content.datasource,ContentRestDataSource.new ParameterizedTypeReference() {...},3,0,0,0,1,0,1,0,1,0
+Luxe Hotels - Content Subgraph,com.luxe.content.datasource,ContentRestDataSource.new ParameterizedTypeReference() {...},3,0,0,0,1,0,1,0,1,0
+Luxe Hotels - Content Subgraph,com.luxe.content.datasource,ContentRestDataSource.new ParameterizedTypeReference() {...},3,0,0,0,1,0,1,0,1,0
+Luxe Hotels - Content Subgraph,com.luxe.content.datasource,ContentRestDataSource.new ParameterizedTypeReference() {...},3,0,0,0,1,0,1,0,1,0
+Luxe Hotels - Content Subgraph,com.luxe.content.datasource,RestDtos.BrandPillarDto,15,0,0,0,1,0,1,0,1,0
+Luxe Hotels - Content Subgraph,com.luxe.content.datasource,ContentRestDataSource.new ParameterizedTypeReference() {...},3,0,0,0,1,0,1,0,1,0
+Luxe Hotels - Content Subgraph,com.luxe.content.datasource,RestDtos.AuthorDto,18,0,0,0,1,0,1,0,1,0
+Luxe Hotels - Content Subgraph,com.luxe.content.datasource,RestDtos.MediaAssetDto,30,0,0,0,1,0,1,0,1,0
+Luxe Hotels - Content Subgraph,com.luxe.content.datasource,RestDtos.LocaleTextDto,9,0,0,0,1,0,1,0,1,0
+Luxe Hotels - Content Subgraph,com.luxe.content.datasource,RestDtos.BrandStoryDto,27,0,0,0,1,0,1,0,1,0
+Luxe Hotels - Content Subgraph,com.luxe.content.datasource,ContentRestDataSource,838,0,80,0,118,0,78,0,38,0
+Luxe Hotels - Content Subgraph,com.luxe.content.datasource,RestDtos.MoneyDto,9,0,0,0,1,0,1,0,1,0
+Luxe Hotels - Content Subgraph,com.luxe.content.datasource,RestDtos.ArticleDto,51,0,0,0,1,0,1,0,1,0
+Luxe Hotels - Content Subgraph,com.luxe.content.datasource,RestDtos.InspirationDto,45,0,0,0,1,0,1,0,1,0
+Luxe Hotels - Content Subgraph,com.luxe.content.datasource,ContentMockDataSource,99,1204,16,32,8,235,18,47,7,34
+Luxe Hotels - Content Subgraph,com.luxe.content.datasource,RestDtos.CollectionDto,30,0,0,0,1,0,1,0,1,0
+Luxe Hotels - Content Subgraph,com.luxe.content.resolver,ContentDataFetcher,37,147,1,5,6,24,4,13,3,11
 Luxe Hotels - Content Subgraph,com.luxe.content.config,ContentGraphQLConfig,0,19,0,0,0,3,0,2,0,2

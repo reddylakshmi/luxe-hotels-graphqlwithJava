@@ -19,6 +19,8 @@ com/luxe/reservations/schema/types/ReservationRateBreakdown$BillingLineItem.clas
 com/luxe/reservations/schema/types/DigitalKey.class
 com/luxe/reservations/schema/types/ReservationRateBreakdown$NightlyRate.class
 com/luxe/reservations/schema/types/ReservationRoom.class
+com/luxe/reservations/schema/types/ExpressCheckoutSuccess.class
+com/luxe/reservations/schema/types/MobileCheckInSuccess.class
 com/luxe/reservations/schema/types/ReservationCancellationPolicy.class
 com/luxe/reservations/schema/types/Reservation$GuestCount.class
 com/luxe/reservations/schema/types/ReservationRateBreakdown.class

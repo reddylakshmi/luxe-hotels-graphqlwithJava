@@ -121,7 +121,7 @@ public class Reservation implements HasId {
 
 <span class="nc" id="L122">    public GuestCount getGuestCount() { return new GuestCount(adults, children); }</span>
 <span class="fc" id="L123">    public ReservationRoom getRoom() { return room; }</span>
-<span class="nc" id="L124">    public ReservationRateBreakdown getRateBreakdown() { return rateBreakdown; }</span>
+<span class="fc" id="L124">    public ReservationRateBreakdown getRateBreakdown() { return rateBreakdown; }</span>
 <span class="nc" id="L125">    public List&lt;ReservationAddOn&gt; getAddOns() { return addOns; }</span>
 <span class="nc" id="L126">    public List&lt;SpecialRequest&gt; getSpecialRequests() { return specialRequests; }</span>
 <span class="fc" id="L127">    public PaymentSummary getPaymentSummary() { return paymentSummary; }</span>
@@ -132,16 +132,16 @@ public class Reservation implements HasId {
 <span class="nc" id="L132">    public ReservationCancellationPolicy getCancellationPolicy() { return cancellationPolicy; }</span>
 <span class="fc" id="L133">    public CancellationRecord getCancellation() { return cancellation; }</span>
 
-    public boolean isIsRefundable() {
-<span class="nc bnc" id="L136" title="All 4 branches missed.">        return cancellationPolicy != null &amp;&amp; &quot;FREE_CANCELLATION&quot;.equals(cancellationPolicy.type())</span>
-<span class="nc bnc" id="L137" title="All 2 branches missed.">                &amp;&amp; !isCancellationDeadlinePassed();</span>
+    public boolean getIsRefundable() {
+<span class="pc bpc" id="L136" title="2 of 4 branches missed.">        return cancellationPolicy != null &amp;&amp; &quot;FREE_CANCELLATION&quot;.equals(cancellationPolicy.type())</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">                &amp;&amp; !isCancellationDeadlinePassed();</span>
     }
 
     private boolean isCancellationDeadlinePassed() {
-<span class="nc bnc" id="L141" title="All 4 branches missed.">        if (cancellationPolicy == null || cancellationPolicy.deadlineHours() == null) return false;</span>
-<span class="nc" id="L142">        OffsetDateTime deadline = checkIn.atStartOfDay().atOffset(java.time.ZoneOffset.UTC)</span>
-<span class="nc" id="L143">                .minusHours(cancellationPolicy.deadlineHours());</span>
-<span class="nc" id="L144">        return OffsetDateTime.now().isAfter(deadline);</span>
+<span class="pc bpc" id="L141" title="2 of 4 branches missed.">        if (cancellationPolicy == null || cancellationPolicy.deadlineHours() == null) return false;</span>
+<span class="fc" id="L142">        OffsetDateTime deadline = checkIn.atStartOfDay().atOffset(java.time.ZoneOffset.UTC)</span>
+<span class="fc" id="L143">                .minusHours(cancellationPolicy.deadlineHours());</span>
+<span class="fc" id="L144">        return OffsetDateTime.now().isAfter(deadline);</span>
     }
 
     public OffsetDateTime getCancellationDeadline() {
@@ -150,14 +150,14 @@ public class Reservation implements HasId {
 <span class="nc" id="L150">                .minusHours(cancellationPolicy.deadlineHours());</span>
     }
 
-    public boolean isIsCanModify() {
-<span class="nc bnc" id="L154" title="All 4 branches missed.">        return &quot;CONFIRMED&quot;.equals(status) || &quot;MODIFIED&quot;.equals(status);</span>
+    public boolean isCanModify() {
+<span class="pc bpc" id="L154" title="1 of 4 branches missed.">        return &quot;CONFIRMED&quot;.equals(status) || &quot;MODIFIED&quot;.equals(status);</span>
     }
 
-    public boolean isIsCanCheckInOnline() {
-<span class="nc bnc" id="L158" title="All 4 branches missed.">        if (!&quot;CONFIRMED&quot;.equals(status) &amp;&amp; !&quot;MODIFIED&quot;.equals(status)) return false;</span>
-<span class="nc" id="L159">        long daysUntilCheckIn = LocalDate.now().until(checkIn).getDays();</span>
-<span class="nc bnc" id="L160" title="All 4 branches missed.">        return daysUntilCheckIn &gt;= 0 &amp;&amp; daysUntilCheckIn &lt;= 3;</span>
+    public boolean isCanCheckInOnline() {
+<span class="pc bpc" id="L158" title="1 of 4 branches missed.">        if (!&quot;CONFIRMED&quot;.equals(status) &amp;&amp; !&quot;MODIFIED&quot;.equals(status)) return false;</span>
+<span class="fc" id="L159">        long daysUntilCheckIn = LocalDate.now().until(checkIn).getDays();</span>
+<span class="pc bpc" id="L160" title="2 of 4 branches missed.">        return daysUntilCheckIn &gt;= 0 &amp;&amp; daysUntilCheckIn &lt;= 3;</span>
     }
 
 <span class="fc" id="L163">    public OffsetDateTime getCheckedInAt() { return checkedInAt; }</span>

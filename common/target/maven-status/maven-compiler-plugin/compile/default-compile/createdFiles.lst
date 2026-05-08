@@ -2,12 +2,14 @@ com/luxe/common/auth/JwtService.class
 com/luxe/common/error/AuthenticationError.class
 com/luxe/common/pagination/Edge.class
 com/luxe/common/error/PaymentDeclinedError.class
+com/luxe/common/config/GraphQLLoggingInstrumentation.class
 com/luxe/common/error/RateExpiredError.class
 com/luxe/common/auth/SecurityConfig.class
 com/luxe/common/error/ExternalServiceError.class
 com/luxe/common/auth/AuthRole.class
 com/luxe/common/error/InsufficientPointsError.class
 com/luxe/common/pagination/HasId.class
+com/luxe/common/config/LuxeBackendProperties.class
 com/luxe/common/error/FieldError.class
 com/luxe/common/error/SlotUnavailableError.class
 com/luxe/common/error/RoomUnavailableError.class

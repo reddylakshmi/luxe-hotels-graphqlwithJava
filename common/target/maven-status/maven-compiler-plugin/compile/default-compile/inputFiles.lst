@@ -7,6 +7,8 @@
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/common/src/main/java/com/luxe/common/auth/SubgraphAuthInterceptor.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/common/src/main/java/com/luxe/common/auth/UnauthorizedException.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/common/src/main/java/com/luxe/common/config/CommonGraphQLConfig.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/common/src/main/java/com/luxe/common/config/GraphQLLoggingInstrumentation.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/common/src/main/java/com/luxe/common/config/LuxeBackendProperties.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/common/src/main/java/com/luxe/common/error/AlreadyEnrolledError.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/common/src/main/java/com/luxe/common/error/AuthenticationError.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/common/src/main/java/com/luxe/common/error/AuthorizationError.java

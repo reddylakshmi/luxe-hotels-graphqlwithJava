@@ -10,327 +10,591 @@ import java.util.stream.Collectors;
 @Component
 public class PropertyMockDataSource implements PropertyDataSource {
 
-<span class="fc" id="L13">    private final Map&lt;String, Hotel&gt; hotels = new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L14">    private final Map&lt;String, Brand&gt; brands = new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L15">    private final Map&lt;String, RoomType&gt; roomTypes = new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L16">    private final Map&lt;String, Restaurant&gt; restaurants = new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L17">    private final Map&lt;String, Spa&gt; spas = new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L18">    private final Map&lt;String, Review&gt; reviews = new LinkedHashMap&lt;&gt;();</span>
+    /**
+     * India IT-corridor hotels that should appear on the home-page featured
+     * carousel alongside the global flagships (Paris, Tokyo, Dubai, London).
+     * Picked from the 17 India-seeded hotels for their tier and rating.
+     */
+<span class="fc" id="L18">    private static final Set&lt;String&gt; FEATURED_INDIA_HOTEL_IDS = Set.of(</span>
+            &quot;prop-india-bom-bkc&quot;,      // Maison Lumière Mumbai BKC — LUXURY, 9.4
+            &quot;prop-india-del-cyber&quot;,    // Maison Lumière Gurgaon Cyber City — LUXURY, 9.3
+            &quot;prop-india-hyd-hitec&quot;,    // Northstar Hyderabad HITEC City — 5★, 9.1
+            &quot;prop-india-blr-white&quot;     // Northstar Bengaluru Whitefield — 5★, 9.0
+    );
 
-<span class="fc" id="L20">    public PropertyMockDataSource() { initData(); }</span>
+<span class="fc" id="L25">    private final Map&lt;String, Hotel&gt; hotels = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L26">    private final Map&lt;String, Brand&gt; brands = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L27">    private final Map&lt;String, RoomType&gt; roomTypes = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L28">    private final Map&lt;String, Restaurant&gt; restaurants = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L29">    private final Map&lt;String, Spa&gt; spas = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L30">    private final Map&lt;String, Review&gt; reviews = new LinkedHashMap&lt;&gt;();</span>
+    /**
+     * Search, facet, and autocomplete logic — extracted out of this class
+     * so the inventory store and the search engine are each
+     * single-responsibility. Same subgraph (no federation change); the seam
+     * is the day a real search engine arrives.
+     */
+<span class="fc" id="L37">    private final PropertySearchService search = new PropertySearchService(hotels, brands);</span>
+
+<span class="fc" id="L39">    public PropertyMockDataSource() {</span>
+<span class="fc" id="L40">        initData();</span>
+        // Add 19 sibling brands and templated hotels around the 5 hand-crafted ones.
+<span class="fc" id="L42">        OffsetDateTime now = OffsetDateTime.now();</span>
+<span class="fc" id="L43">        PropertyDataGenerator.Out gen = PropertyDataGenerator.generate(now, rt -&gt; roomTypes.put(rt.getId(), rt));</span>
+<span class="fc" id="L44">        gen.brands().forEach(b -&gt; brands.put(b.getId(), b));</span>
+<span class="fc" id="L45">        gen.hotels().forEach(h -&gt; hotels.put(h.getId(), h));</span>
+<span class="fc" id="L46">    }</span>
 
     private static Amenity am(String id, String code, String name, String cat, String desc, boolean premium) {
-<span class="fc" id="L23">        return new Amenity(id, code, name, cat, desc, null, premium, null, null);</span>
+<span class="fc" id="L49">        return new Amenity(id, code, name, cat, desc, null, premium, null, null);</span>
     }
 
     private static MediaAsset media(String id, String url, String cat, boolean primary, int order) {
-<span class="fc" id="L27">        return new MediaAsset(id, url, url.replace(&quot;.jpg&quot;,&quot;_thumb.jpg&quot;), cat, null, null, primary, order);</span>
+<span class="fc" id="L53">        return new MediaAsset(id, url, url.replace(&quot;.jpg&quot;,&quot;_thumb.jpg&quot;), cat, null, null, primary, order);</span>
     }
 
     private void initData() {
-<span class="fc" id="L31">        OffsetDateTime now = OffsetDateTime.now();</span>
+<span class="fc" id="L57">        OffsetDateTime now = OffsetDateTime.now();</span>
 
-<span class="fc" id="L33">        Brand lux = new Brand(&quot;brand-lux-001&quot;,&quot;LUX&quot;,&quot;Luxe Collection&quot;,&quot;luxe-collection&quot;,&quot;LUXURY&quot;,</span>
+<span class="fc" id="L59">        Brand lux = new Brand(&quot;brand-lux-001&quot;,&quot;LUX&quot;,&quot;Luxe Collection&quot;,&quot;luxe-collection&quot;,&quot;LUXURY&quot;,</span>
                 &quot;Where Luxury Lives&quot;,&quot;The pinnacle of luxury hospitality.&quot;,
                 null,null,&quot;#C9A96E&quot;,3.0,4,
-<span class="fc" id="L36">                &quot;Carbon neutral by 2030.&quot;,now.minusYears(10),now);</span>
-<span class="fc" id="L37">        Brand prm = new Brand(&quot;brand-prm-001&quot;,&quot;PRM&quot;,&quot;Luxe Premium&quot;,&quot;luxe-premium&quot;,&quot;PREMIUM&quot;,</span>
+<span class="fc" id="L62">                &quot;Carbon neutral by 2030.&quot;,now.minusYears(10),now);</span>
+<span class="fc" id="L63">        Brand prm = new Brand(&quot;brand-prm-001&quot;,&quot;PRM&quot;,&quot;Luxe Premium&quot;,&quot;luxe-premium&quot;,&quot;PREMIUM&quot;,</span>
                 &quot;Premium Comfort, Every Stay&quot;,&quot;Elevated comfort for discerning travellers.&quot;,
                 null,null,&quot;#4A6FA5&quot;,2.0,1,
-<span class="fc" id="L40">                &quot;Green-certified properties.&quot;,now.minusYears(5),now);</span>
-<span class="fc" id="L41">        brands.put(lux.getId(), lux);</span>
-<span class="fc" id="L42">        brands.put(prm.getId(), prm);</span>
+<span class="fc" id="L66">                &quot;Green-certified properties.&quot;,now.minusYears(5),now);</span>
+<span class="fc" id="L67">        brands.put(lux.getId(), lux);</span>
+<span class="fc" id="L68">        brands.put(prm.getId(), prm);</span>
 
-<span class="fc" id="L44">        Amenity pool  = am(&quot;am-pool&quot;,&quot;POOL&quot;,&quot;Infinity Pool&quot;,&quot;POOL&quot;,&quot;Heated infinity pool.&quot;,false);</span>
-<span class="fc" id="L45">        Amenity spa   = am(&quot;am-spa&quot;,&quot;SPA&quot;,&quot;Luxury Spa&quot;,&quot;SPA&quot;,&quot;Full-service luxury spa.&quot;,true);</span>
-<span class="fc" id="L46">        Amenity gym   = am(&quot;am-gym&quot;,&quot;GYM&quot;,&quot;Fitness Centre&quot;,&quot;FITNESS&quot;,&quot;24h fitness centre.&quot;,false);</span>
-<span class="fc" id="L47">        Amenity wifi  = am(&quot;am-wifi&quot;,&quot;WIFI&quot;,&quot;Free WiFi&quot;,&quot;CONNECTIVITY&quot;,&quot;High-speed WiFi throughout.&quot;,false);</span>
-<span class="fc" id="L48">        Amenity valet = am(&quot;am-valet&quot;,&quot;VALET&quot;,&quot;Valet Parking&quot;,&quot;PARKING&quot;,&quot;24h valet parking.&quot;,true);</span>
-<span class="fc" id="L49">        Amenity conc  = am(&quot;am-conc&quot;,&quot;CONC&quot;,&quot;24h Concierge&quot;,&quot;BUSINESS&quot;,&quot;Around-the-clock concierge.&quot;,false);</span>
+<span class="fc" id="L70">        Amenity pool  = am(&quot;am-pool&quot;,&quot;POOL&quot;,&quot;Infinity Pool&quot;,&quot;POOL&quot;,&quot;Heated infinity pool.&quot;,false);</span>
+<span class="fc" id="L71">        Amenity spa   = am(&quot;am-spa&quot;,&quot;SPA&quot;,&quot;Luxury Spa&quot;,&quot;SPA&quot;,&quot;Full-service luxury spa.&quot;,true);</span>
+<span class="fc" id="L72">        Amenity gym   = am(&quot;am-gym&quot;,&quot;GYM&quot;,&quot;Fitness Centre&quot;,&quot;FITNESS&quot;,&quot;24h fitness centre.&quot;,false);</span>
+<span class="fc" id="L73">        Amenity wifi  = am(&quot;am-wifi&quot;,&quot;WIFI&quot;,&quot;Free WiFi&quot;,&quot;CONNECTIVITY&quot;,&quot;High-speed WiFi throughout.&quot;,false);</span>
+<span class="fc" id="L74">        Amenity valet = am(&quot;am-valet&quot;,&quot;VALET&quot;,&quot;Valet Parking&quot;,&quot;PARKING&quot;,&quot;24h valet parking.&quot;,true);</span>
+<span class="fc" id="L75">        Amenity conc  = am(&quot;am-conc&quot;,&quot;CONC&quot;,&quot;24h Concierge&quot;,&quot;BUSINESS&quot;,&quot;Around-the-clock concierge.&quot;,false);</span>
 
         // ── Paris ─────────────────────────────────────────────────────────────
-<span class="fc" id="L52">        Spa parisSpa = new Spa(&quot;spa-paris-001&quot;,&quot;prop-paris-001&quot;,&quot;Palais Spa &amp; Wellness&quot;,</span>
-<span class="fc" id="L53">                LocalizedContent.of(&quot;Award-winning spa blending Parisian elegance with ancient wellness traditions.&quot;),</span>
+<span class="fc" id="L78">        Spa parisSpa = new Spa(&quot;spa-paris-001&quot;,&quot;prop-paris-001&quot;,&quot;Palais Spa &amp; Wellness&quot;,</span>
+<span class="fc" id="L79">                LocalizedContent.of(&quot;Award-winning spa blending Parisian elegance with ancient wellness traditions.&quot;),</span>
                 &quot;06:00–22:00&quot;,true);
-<span class="fc" id="L55">        spas.put(parisSpa.id(), parisSpa);</span>
-<span class="fc" id="L56">        Restaurant parisRest = new Restaurant(&quot;rest-paris-001&quot;,&quot;prop-paris-001&quot;,&quot;Le Jardin d'Or&quot;,</span>
-<span class="fc" id="L57">                List.of(&quot;Modern French&quot;,&quot;Haute Cuisine&quot;),</span>
-<span class="fc" id="L58">                LocalizedContent.of(&quot;Three-Michelin-starred restaurant helmed by Chef Julien Marchand.&quot;),</span>
+<span class="fc" id="L81">        spas.put(parisSpa.id(), parisSpa);</span>
+<span class="fc" id="L82">        Restaurant parisRest = new Restaurant(&quot;rest-paris-001&quot;,&quot;prop-paris-001&quot;,&quot;Le Jardin d'Or&quot;,</span>
+<span class="fc" id="L83">                List.of(&quot;Modern French&quot;,&quot;Haute Cuisine&quot;),</span>
+<span class="fc" id="L84">                LocalizedContent.of(&quot;Three-Michelin-starred restaurant helmed by Chef Julien Marchand.&quot;),</span>
                 &quot;Smart Casual&quot;,&quot;12:00–14:30 | 19:00–22:30&quot;,&quot;€€€€&quot;,true,true);
-<span class="fc" id="L60">        restaurants.put(parisRest.id(), parisRest);</span>
+<span class="fc" id="L86">        restaurants.put(parisRest.id(), parisRest);</span>
 
-<span class="fc" id="L62">        Hotel paris = new Hotel(&quot;prop-paris-001&quot;,&quot;brand-lux-001&quot;,&quot;LUX&quot;,&quot;PAR001&quot;,</span>
+<span class="fc" id="L88">        Hotel paris = new Hotel(&quot;prop-paris-001&quot;,&quot;brand-lux-001&quot;,&quot;LUX&quot;,&quot;PAR001&quot;,</span>
                 &quot;The Grand Palais Paris&quot;,&quot;grand-palais-paris&quot;,&quot;ACTIVE&quot;,
-<span class="fc" id="L64">                1910,2022,8,185,5,</span>
+<span class="fc" id="L90">                1910,2022,8,185,5,</span>
                 new GuestRating(9.4,2847,new RatingBreakdown(1980,612,201,42,12),
-<span class="fc" id="L66">                        List.of(new TravelerTypeRating(&quot;Couples&quot;,9.6,1200),new TravelerTypeRating(&quot;Business&quot;,9.2,800))),</span>
+<span class="fc" id="L92">                        List.of(new TravelerTypeRating(&quot;Couples&quot;,9.6,1200),new TravelerTypeRating(&quot;Business&quot;,9.2,800))),</span>
                 new HotelLocation(
                         new Address(&quot;5 Avenue Montaigne&quot;,null,&quot;Paris&quot;,&quot;Île-de-France&quot;,&quot;75008&quot;,&quot;FR&quot;,&quot;France&quot;),
                         new Coordinates(48.8674,2.3065),&quot;Europe/Paris&quot;,
-<span class="fc" id="L70">                        new AirportInfo(&quot;CDG&quot;,&quot;Paris Charles de Gaulle&quot;,34.0,45),null),</span>
+<span class="fc" id="L96">                        new AirportInfo(&quot;CDG&quot;,&quot;Paris Charles de Gaulle&quot;,34.0,45),null),</span>
                 new HotelContact(&quot;+33-1-5567-8900&quot;,&quot;paris@luxehotels.com&quot;,&quot;https://paris.luxehotels.com&quot;,&quot;+33-1-5567-8901&quot;,null),
-<span class="fc" id="L72">                LocalizedContent.of(&quot;An iconic palace hotel on Avenue Montaigne. Since 1910, The Grand Palais Paris has defined the art of luxury hospitality.&quot;),</span>
+<span class="fc" id="L98">                LocalizedContent.of(&quot;An iconic palace hotel on Avenue Montaigne. Since 1910, The Grand Palais Paris has defined the art of luxury hospitality.&quot;),</span>
                 new HotelPolicies(
                         new HotelPolicies.CheckInPolicy(&quot;15:00&quot;,new HotelPolicies.EarlyLatePolicy(true,&quot;EUR 50&quot;,true)),
                         new HotelPolicies.CheckOutPolicy(&quot;12:00&quot;,new HotelPolicies.EarlyLatePolicy(true,&quot;EUR 50&quot;,true)),
-<span class="fc" id="L76">                        new HotelPolicies.CancellationPolicy(48,&quot;Free cancellation up to 48h before arrival.&quot;),</span>
+<span class="fc" id="L102">                        new HotelPolicies.CancellationPolicy(48,&quot;Free cancellation up to 48h before arrival.&quot;),</span>
                         new HotelPolicies.PetPolicy(false,null,&quot;No pets allowed.&quot;),&quot;Non-smoking throughout.&quot;,&quot;Children of all ages welcome.&quot;),
-<span class="fc" id="L78">                List.of(pool,spa,gym,wifi,valet,conc),new ArrayList&lt;&gt;(),</span>
-<span class="fc" id="L79">                List.of(parisRest),parisSpa,null,</span>
-<span class="fc" id="L80">                List.of(media(&quot;m-par-1&quot;,&quot;https://cdn.luxe.com/paris/exterior.jpg&quot;,&quot;EXTERIOR&quot;,true,1),</span>
-<span class="fc" id="L81">                        media(&quot;m-par-2&quot;,&quot;https://cdn.luxe.com/paris/lobby.jpg&quot;,&quot;INTERIOR&quot;,false,2)),</span>
-<span class="fc" id="L82">                List.of(new Attraction(&quot;a-par-1&quot;,&quot;Eiffel Tower&quot;,&quot;Landmark&quot;,1.8,4.9),new Attraction(&quot;a-par-2&quot;,&quot;Louvre Museum&quot;,&quot;Museum&quot;,2.1,4.8)),</span>
+<span class="fc" id="L104">                List.of(pool,spa,gym,wifi,valet,conc),new ArrayList&lt;&gt;(),</span>
+<span class="fc" id="L105">                List.of(parisRest),parisSpa,null,</span>
+<span class="fc" id="L106">                List.of(media(&quot;m-par-1&quot;,MediaUrls.legacyHotelImageUrl(&quot;paris&quot;, &quot;exterior.jpg&quot;),&quot;EXTERIOR&quot;,true,1),</span>
+<span class="fc" id="L107">                        media(&quot;m-par-2&quot;,MediaUrls.legacyHotelImageUrl(&quot;paris&quot;, &quot;lobby.jpg&quot;),&quot;INTERIOR&quot;,false,2)),</span>
+<span class="fc" id="L108">                List.of(new Attraction(&quot;a-par-1&quot;,&quot;Eiffel Tower&quot;,&quot;Landmark&quot;,1.8,4.9),new Attraction(&quot;a-par-2&quot;,&quot;Louvre Museum&quot;,&quot;Museum&quot;,2.1,4.8)),</span>
                 new ParkingInfo(true,&quot;Underground&quot;,true,&quot;EUR 65/day&quot;,&quot;EUR 45/day&quot;,true),
-<span class="fc" id="L84">                new SustainabilityInfo(92,List.of(new SustainabilityInfo.SustainabilityCertification(&quot;Green Globe&quot;,&quot;Green Globe International&quot;,2023)),true,80,65),</span>
-<span class="fc" id="L85">                List.of(new Award(&quot;Best Luxury Hotel Paris 2024&quot;,&quot;Condé Nast Traveller&quot;,2024),new Award(&quot;Forbes Five-Star&quot;,&quot;Forbes Travel Guide&quot;,2024)),</span>
+<span class="fc" id="L110">                new SustainabilityInfo(92,List.of(new SustainabilityInfo.SustainabilityCertification(&quot;Green Globe&quot;,&quot;Green Globe International&quot;,2023)),true,80,65),</span>
+<span class="fc" id="L111">                List.of(new Award(&quot;Best Luxury Hotel Paris 2024&quot;,&quot;Condé Nast Traveller&quot;,2024),new Award(&quot;Forbes Five-Star&quot;,&quot;Forbes Travel Guide&quot;,2024)),</span>
                 true,now);
-<span class="fc" id="L87">        hotels.put(paris.getId(), paris);</span>
+<span class="fc" id="L113">        hotels.put(paris.getId(), paris);</span>
 
         // ── Tokyo ─────────────────────────────────────────────────────────────
-<span class="fc" id="L90">        Spa tokyoSpa = new Spa(&quot;spa-tokyo-001&quot;,&quot;prop-tokyo-001&quot;,&quot;Ikigai Wellness Sanctuary&quot;,</span>
-<span class="fc" id="L91">                LocalizedContent.of(&quot;Ancient Japanese healing meets modern wellness science.&quot;),&quot;07:00–23:00&quot;,true);</span>
-<span class="fc" id="L92">        spas.put(tokyoSpa.id(), tokyoSpa);</span>
-<span class="fc" id="L93">        Restaurant tokyoRest = new Restaurant(&quot;rest-tokyo-001&quot;,&quot;prop-tokyo-001&quot;,&quot;Hana&quot;,</span>
-<span class="fc" id="L94">                List.of(&quot;Kaiseki&quot;,&quot;Modern Japanese&quot;),LocalizedContent.of(&quot;Multi-course kaiseki with seasonal ingredients.&quot;),</span>
+<span class="fc" id="L116">        Spa tokyoSpa = new Spa(&quot;spa-tokyo-001&quot;,&quot;prop-tokyo-001&quot;,&quot;Ikigai Wellness Sanctuary&quot;,</span>
+<span class="fc" id="L117">                LocalizedContent.of(&quot;Ancient Japanese healing meets modern wellness science.&quot;),&quot;07:00–23:00&quot;,true);</span>
+<span class="fc" id="L118">        spas.put(tokyoSpa.id(), tokyoSpa);</span>
+<span class="fc" id="L119">        Restaurant tokyoRest = new Restaurant(&quot;rest-tokyo-001&quot;,&quot;prop-tokyo-001&quot;,&quot;Hana&quot;,</span>
+<span class="fc" id="L120">                List.of(&quot;Kaiseki&quot;,&quot;Modern Japanese&quot;),LocalizedContent.of(&quot;Multi-course kaiseki with seasonal ingredients.&quot;),</span>
                 &quot;Formal&quot;,&quot;18:00–22:00&quot;,&quot;¥¥¥¥&quot;,true,true);
-<span class="fc" id="L96">        restaurants.put(tokyoRest.id(), tokyoRest);</span>
+<span class="fc" id="L122">        restaurants.put(tokyoRest.id(), tokyoRest);</span>
 
-<span class="fc" id="L98">        Hotel tokyo = new Hotel(&quot;prop-tokyo-001&quot;,&quot;brand-lux-001&quot;,&quot;LUX&quot;,&quot;TYO001&quot;,</span>
+<span class="fc" id="L124">        Hotel tokyo = new Hotel(&quot;prop-tokyo-001&quot;,&quot;brand-lux-001&quot;,&quot;LUX&quot;,&quot;TYO001&quot;,</span>
                 &quot;Luxe Tokyo Imperial&quot;,&quot;luxe-tokyo-imperial&quot;,&quot;ACTIVE&quot;,
-<span class="fc" id="L100">                2005,2021,35,247,5,</span>
+<span class="fc" id="L126">                2005,2021,35,247,5,</span>
                 new GuestRating(9.6,3102,new RatingBreakdown(2400,520,142,30,10),
-<span class="fc" id="L102">                        List.of(new TravelerTypeRating(&quot;Couples&quot;,9.7,1400),new TravelerTypeRating(&quot;Business&quot;,9.5,900))),</span>
+<span class="fc" id="L128">                        List.of(new TravelerTypeRating(&quot;Couples&quot;,9.7,1400),new TravelerTypeRating(&quot;Business&quot;,9.5,900))),</span>
                 new HotelLocation(
                         new Address(&quot;1-1 Marunouchi&quot;,null,&quot;Tokyo&quot;,null,&quot;100-0005&quot;,&quot;JP&quot;,&quot;Japan&quot;),
                         new Coordinates(35.6812,139.7671),&quot;Asia/Tokyo&quot;,
-<span class="fc" id="L106">                        new AirportInfo(&quot;HND&quot;,&quot;Tokyo Haneda&quot;,18.0,35),null),</span>
+<span class="fc" id="L132">                        new AirportInfo(&quot;HND&quot;,&quot;Tokyo Haneda&quot;,18.0,35),null),</span>
                 new HotelContact(&quot;+81-3-5224-1111&quot;,&quot;tokyo@luxehotels.com&quot;,&quot;https://tokyo.luxehotels.com&quot;,&quot;+81-3-5224-1112&quot;,null),
-<span class="fc" id="L108">                LocalizedContent.of(&quot;Overlooking the Imperial Palace Gardens, Luxe Tokyo Imperial blends Japanese aesthetics with contemporary luxury.&quot;),</span>
-<span class="fc" id="L109">                null,List.of(pool,spa,gym,wifi,conc),new ArrayList&lt;&gt;(),</span>
-<span class="fc" id="L110">                List.of(tokyoRest),tokyoSpa,null,</span>
-<span class="fc" id="L111">                List.of(media(&quot;m-tok-1&quot;,&quot;https://cdn.luxe.com/tokyo/exterior.jpg&quot;,&quot;EXTERIOR&quot;,true,1)),</span>
-<span class="fc" id="L112">                List.of(new Attraction(&quot;a-tok-1&quot;,&quot;Imperial Palace&quot;,&quot;Landmark&quot;,0.3,4.8)),</span>
+<span class="fc" id="L134">                LocalizedContent.of(&quot;Overlooking the Imperial Palace Gardens, Luxe Tokyo Imperial blends Japanese aesthetics with contemporary luxury.&quot;),</span>
+<span class="fc" id="L135">                null,List.of(pool,spa,gym,wifi,conc),new ArrayList&lt;&gt;(),</span>
+<span class="fc" id="L136">                List.of(tokyoRest),tokyoSpa,null,</span>
+<span class="fc" id="L137">                List.of(media(&quot;m-tok-1&quot;,MediaUrls.legacyHotelImageUrl(&quot;tokyo&quot;, &quot;exterior.jpg&quot;),&quot;EXTERIOR&quot;,true,1)),</span>
+<span class="fc" id="L138">                List.of(new Attraction(&quot;a-tok-1&quot;,&quot;Imperial Palace&quot;,&quot;Landmark&quot;,0.3,4.8)),</span>
                 new ParkingInfo(true,&quot;Underground&quot;,true,&quot;JPY 5000/day&quot;,null,true),
-<span class="fc" id="L114">                new SustainabilityInfo(88,List.of(),true,70,80),</span>
-<span class="fc" id="L115">                List.of(new Award(&quot;Best Hotel Japan 2024&quot;,&quot;Travel + Leisure&quot;,2024)),true,now);</span>
-<span class="fc" id="L116">        hotels.put(tokyo.getId(), tokyo);</span>
+<span class="fc" id="L140">                new SustainabilityInfo(88,List.of(),true,70,80),</span>
+<span class="fc" id="L141">                List.of(new Award(&quot;Best Hotel Japan 2024&quot;,&quot;Travel + Leisure&quot;,2024)),true,now);</span>
+<span class="fc" id="L142">        hotels.put(tokyo.getId(), tokyo);</span>
 
         // ── Dubai ─────────────────────────────────────────────────────────────
-<span class="fc" id="L119">        Spa dubaiSpa = new Spa(&quot;spa-dubai-001&quot;,&quot;prop-dubai-001&quot;,&quot;Zenith Spa&quot;,</span>
-<span class="fc" id="L120">                LocalizedContent.of(&quot;3,000 sqm sanctuary inspired by Arabian wellness traditions.&quot;),&quot;06:00–23:00&quot;,true);</span>
-<span class="fc" id="L121">        spas.put(dubaiSpa.id(), dubaiSpa);</span>
-<span class="fc" id="L122">        Restaurant dubaiRest = new Restaurant(&quot;rest-dubai-001&quot;,&quot;prop-dubai-001&quot;,&quot;Saffron&quot;,</span>
-<span class="fc" id="L123">                List.of(&quot;Contemporary Middle Eastern&quot;),LocalizedContent.of(&quot;Panoramic views of the Burj Khalifa.&quot;),</span>
+<span class="fc" id="L145">        Spa dubaiSpa = new Spa(&quot;spa-dubai-001&quot;,&quot;prop-dubai-001&quot;,&quot;Zenith Spa&quot;,</span>
+<span class="fc" id="L146">                LocalizedContent.of(&quot;3,000 sqm sanctuary inspired by Arabian wellness traditions.&quot;),&quot;06:00–23:00&quot;,true);</span>
+<span class="fc" id="L147">        spas.put(dubaiSpa.id(), dubaiSpa);</span>
+<span class="fc" id="L148">        Restaurant dubaiRest = new Restaurant(&quot;rest-dubai-001&quot;,&quot;prop-dubai-001&quot;,&quot;Saffron&quot;,</span>
+<span class="fc" id="L149">                List.of(&quot;Contemporary Middle Eastern&quot;),LocalizedContent.of(&quot;Panoramic views of the Burj Khalifa.&quot;),</span>
                 &quot;Smart Casual&quot;,&quot;07:00–23:00&quot;,&quot;AED AED AED&quot;,false,true);
-<span class="fc" id="L125">        restaurants.put(dubaiRest.id(), dubaiRest);</span>
+<span class="fc" id="L151">        restaurants.put(dubaiRest.id(), dubaiRest);</span>
 
-<span class="fc" id="L127">        Hotel dubai = new Hotel(&quot;prop-dubai-001&quot;,&quot;brand-lux-001&quot;,&quot;LUX&quot;,&quot;DXB001&quot;,</span>
+<span class="fc" id="L153">        Hotel dubai = new Hotel(&quot;prop-dubai-001&quot;,&quot;brand-lux-001&quot;,&quot;LUX&quot;,&quot;DXB001&quot;,</span>
                 &quot;Luxe Dubai Palace&quot;,&quot;luxe-dubai-palace&quot;,&quot;ACTIVE&quot;,
-<span class="fc" id="L129">                2018,null,72,420,5,</span>
+<span class="fc" id="L155">                2018,null,72,420,5,</span>
                 new GuestRating(9.3,2210,new RatingBreakdown(1650,410,110,30,10),
-<span class="fc" id="L131">                        List.of(new TravelerTypeRating(&quot;Couples&quot;,9.4,1100))),</span>
+<span class="fc" id="L157">                        List.of(new TravelerTypeRating(&quot;Couples&quot;,9.4,1100))),</span>
                 new HotelLocation(
                         new Address(&quot;Sheikh Zayed Road&quot;,null,&quot;Dubai&quot;,null,null,&quot;AE&quot;,&quot;United Arab Emirates&quot;),
                         new Coordinates(25.1972,55.2744),&quot;Asia/Dubai&quot;,
-<span class="fc" id="L135">                        new AirportInfo(&quot;DXB&quot;,&quot;Dubai International&quot;,15.0,20),null),</span>
+<span class="fc" id="L161">                        new AirportInfo(&quot;DXB&quot;,&quot;Dubai International&quot;,15.0,20),null),</span>
                 new HotelContact(&quot;+971-4-555-8000&quot;,&quot;dubai@luxehotels.com&quot;,&quot;https://dubai.luxehotels.com&quot;,&quot;+971-4-555-8001&quot;,&quot;+971-50-555-8000&quot;),
-<span class="fc" id="L137">                LocalizedContent.of(&quot;A modern palace rising above Downtown Dubai with unrivalled views of the Burj Khalifa.&quot;),</span>
-<span class="fc" id="L138">                null,List.of(pool,spa,gym,wifi,valet,conc),new ArrayList&lt;&gt;(),</span>
-<span class="fc" id="L139">                List.of(dubaiRest),dubaiSpa,null,</span>
-<span class="fc" id="L140">                List.of(media(&quot;m-dub-1&quot;,&quot;https://cdn.luxe.com/dubai/exterior.jpg&quot;,&quot;EXTERIOR&quot;,true,1)),</span>
-<span class="fc" id="L141">                List.of(new Attraction(&quot;a-dub-1&quot;,&quot;Burj Khalifa&quot;,&quot;Landmark&quot;,0.5,4.9)),</span>
+<span class="fc" id="L163">                LocalizedContent.of(&quot;A modern palace rising above Downtown Dubai with unrivalled views of the Burj Khalifa.&quot;),</span>
+<span class="fc" id="L164">                null,List.of(pool,spa,gym,wifi,valet,conc),new ArrayList&lt;&gt;(),</span>
+<span class="fc" id="L165">                List.of(dubaiRest),dubaiSpa,null,</span>
+<span class="fc" id="L166">                List.of(media(&quot;m-dub-1&quot;,MediaUrls.legacyHotelImageUrl(&quot;dubai&quot;, &quot;exterior.jpg&quot;),&quot;EXTERIOR&quot;,true,1)),</span>
+<span class="fc" id="L167">                List.of(new Attraction(&quot;a-dub-1&quot;,&quot;Burj Khalifa&quot;,&quot;Landmark&quot;,0.5,4.9)),</span>
                 new ParkingInfo(true,&quot;Multi-storey&quot;,true,&quot;AED 120/day&quot;,null,true),
-<span class="fc" id="L143">                new SustainabilityInfo(78,List.of(),false,30,40),</span>
-<span class="fc" id="L144">                List.of(new Award(&quot;Best Luxury Hotel UAE 2024&quot;,&quot;World Travel Awards&quot;,2024)),true,now);</span>
-<span class="fc" id="L145">        hotels.put(dubai.getId(), dubai);</span>
+<span class="fc" id="L169">                new SustainabilityInfo(78,List.of(),false,30,40),</span>
+<span class="fc" id="L170">                List.of(new Award(&quot;Best Luxury Hotel UAE 2024&quot;,&quot;World Travel Awards&quot;,2024)),true,now);</span>
+<span class="fc" id="L171">        hotels.put(dubai.getId(), dubai);</span>
 
         // ── NYC ───────────────────────────────────────────────────────────────
-<span class="fc" id="L148">        Spa nycSpa = new Spa(&quot;spa-nyc-001&quot;,&quot;prop-nyc-001&quot;,&quot;The Luxe Spa New York&quot;,</span>
-<span class="fc" id="L149">                LocalizedContent.of(&quot;A serene urban escape featuring New York-exclusive treatments.&quot;),&quot;06:30–22:00&quot;,true);</span>
-<span class="fc" id="L150">        spas.put(nycSpa.id(), nycSpa);</span>
-<span class="fc" id="L151">        Restaurant nycRest = new Restaurant(&quot;rest-nyc-001&quot;,&quot;prop-nyc-001&quot;,&quot;Park &amp; Fifth&quot;,</span>
-<span class="fc" id="L152">                List.of(&quot;Contemporary American&quot;),LocalizedContent.of(&quot;New York's celebrated steakhouse with Central Park views.&quot;),</span>
+<span class="fc" id="L174">        Spa nycSpa = new Spa(&quot;spa-nyc-001&quot;,&quot;prop-nyc-001&quot;,&quot;The Luxe Spa New York&quot;,</span>
+<span class="fc" id="L175">                LocalizedContent.of(&quot;A serene urban escape featuring New York-exclusive treatments.&quot;),&quot;06:30–22:00&quot;,true);</span>
+<span class="fc" id="L176">        spas.put(nycSpa.id(), nycSpa);</span>
+<span class="fc" id="L177">        Restaurant nycRest = new Restaurant(&quot;rest-nyc-001&quot;,&quot;prop-nyc-001&quot;,&quot;Park &amp; Fifth&quot;,</span>
+<span class="fc" id="L178">                List.of(&quot;Contemporary American&quot;),LocalizedContent.of(&quot;New York's celebrated steakhouse with Central Park views.&quot;),</span>
                 &quot;Smart Casual&quot;,&quot;07:00–23:00&quot;,&quot;$$$$&quot;,false,true);
-<span class="fc" id="L154">        restaurants.put(nycRest.id(), nycRest);</span>
+<span class="fc" id="L180">        restaurants.put(nycRest.id(), nycRest);</span>
 
-<span class="fc" id="L156">        Hotel nyc = new Hotel(&quot;prop-nyc-001&quot;,&quot;brand-prm-001&quot;,&quot;PRM&quot;,&quot;NYC001&quot;,</span>
+<span class="fc" id="L182">        Hotel nyc = new Hotel(&quot;prop-nyc-001&quot;,&quot;brand-prm-001&quot;,&quot;PRM&quot;,&quot;NYC001&quot;,</span>
                 &quot;The Luxe New York&quot;,&quot;luxe-new-york&quot;,&quot;ACTIVE&quot;,
-<span class="fc" id="L158">                1998,2020,42,320,5,</span>
+<span class="fc" id="L184">                1998,2020,42,320,5,</span>
                 new GuestRating(9.1,1875,new RatingBreakdown(1350,380,110,25,10),
-<span class="fc" id="L160">                        List.of(new TravelerTypeRating(&quot;Business&quot;,9.3,900))),</span>
+<span class="fc" id="L186">                        List.of(new TravelerTypeRating(&quot;Business&quot;,9.3,900))),</span>
                 new HotelLocation(
                         new Address(&quot;768 Fifth Avenue&quot;,null,&quot;New York&quot;,&quot;NY&quot;,&quot;10019&quot;,&quot;US&quot;,&quot;United States&quot;),
                         new Coordinates(40.7648,-73.9734),&quot;America/New_York&quot;,
-<span class="fc" id="L164">                        new AirportInfo(&quot;JFK&quot;,&quot;John F. Kennedy International&quot;,24.0,45),null),</span>
+<span class="fc" id="L190">                        new AirportInfo(&quot;JFK&quot;,&quot;John F. Kennedy International&quot;,24.0,45),null),</span>
                 new HotelContact(&quot;+1-212-555-9000&quot;,&quot;nyc@luxehotels.com&quot;,&quot;https://nyc.luxehotels.com&quot;,&quot;+1-212-555-9001&quot;,null),
-<span class="fc" id="L166">                LocalizedContent.of(&quot;Commanding Fifth Avenue and Central Park South — the city's most coveted address since 1998.&quot;),</span>
-<span class="fc" id="L167">                null,List.of(gym,wifi,valet,conc),new ArrayList&lt;&gt;(),</span>
-<span class="fc" id="L168">                List.of(nycRest),nycSpa,null,</span>
-<span class="fc" id="L169">                List.of(media(&quot;m-nyc-1&quot;,&quot;https://cdn.luxe.com/nyc/exterior.jpg&quot;,&quot;EXTERIOR&quot;,true,1)),</span>
-<span class="fc" id="L170">                List.of(new Attraction(&quot;a-nyc-1&quot;,&quot;Central Park&quot;,&quot;Park&quot;,0.1,4.9)),</span>
+<span class="fc" id="L192">                LocalizedContent.of(&quot;Commanding Fifth Avenue and Central Park South — the city's most coveted address since 1998.&quot;),</span>
+<span class="fc" id="L193">                null,List.of(gym,wifi,valet,conc),new ArrayList&lt;&gt;(),</span>
+<span class="fc" id="L194">                List.of(nycRest),nycSpa,null,</span>
+<span class="fc" id="L195">                List.of(media(&quot;m-nyc-1&quot;,MediaUrls.legacyHotelImageUrl(&quot;nyc&quot;, &quot;exterior.jpg&quot;),&quot;EXTERIOR&quot;,true,1)),</span>
+<span class="fc" id="L196">                List.of(new Attraction(&quot;a-nyc-1&quot;,&quot;Central Park&quot;,&quot;Park&quot;,0.1,4.9)),</span>
                 new ParkingInfo(true,&quot;Valet only&quot;,true,&quot;USD 95/day&quot;,null,false),
-<span class="fc" id="L172">                new SustainabilityInfo(82,List.of(new SustainabilityInfo.SustainabilityCertification(&quot;LEED Gold&quot;,&quot;USGBC&quot;,2022)),true,60,50),</span>
-<span class="fc" id="L173">                List.of(new Award(&quot;Best Hotel New York 2024&quot;,&quot;Condé Nast Traveller&quot;,2024)),false,now);</span>
-<span class="fc" id="L174">        hotels.put(nyc.getId(), nyc);</span>
+<span class="fc" id="L198">                new SustainabilityInfo(82,List.of(new SustainabilityInfo.SustainabilityCertification(&quot;LEED Gold&quot;,&quot;USGBC&quot;,2022)),true,60,50),</span>
+<span class="fc" id="L199">                List.of(new Award(&quot;Best Hotel New York 2024&quot;,&quot;Condé Nast Traveller&quot;,2024)),false,now);</span>
+<span class="fc" id="L200">        hotels.put(nyc.getId(), nyc);</span>
 
         // ── London ────────────────────────────────────────────────────────────
-<span class="fc" id="L177">        Spa londonSpa = new Spa(&quot;spa-london-001&quot;,&quot;prop-london-001&quot;,&quot;The Mayfair Spa&quot;,</span>
-<span class="fc" id="L178">                LocalizedContent.of(&quot;A discreet Mayfair sanctuary offering world-class treatments.&quot;),&quot;07:00–21:00&quot;,true);</span>
-<span class="fc" id="L179">        spas.put(londonSpa.id(), londonSpa);</span>
-<span class="fc" id="L180">        Restaurant londonRest = new Restaurant(&quot;rest-london-001&quot;,&quot;prop-london-001&quot;,&quot;The Garden Room&quot;,</span>
-<span class="fc" id="L181">                List.of(&quot;Modern British&quot;),LocalizedContent.of(&quot;Seasonal British cuisine from our own kitchen garden.&quot;),</span>
+<span class="fc" id="L203">        Spa londonSpa = new Spa(&quot;spa-london-001&quot;,&quot;prop-london-001&quot;,&quot;The Mayfair Spa&quot;,</span>
+<span class="fc" id="L204">                LocalizedContent.of(&quot;A discreet Mayfair sanctuary offering world-class treatments.&quot;),&quot;07:00–21:00&quot;,true);</span>
+<span class="fc" id="L205">        spas.put(londonSpa.id(), londonSpa);</span>
+<span class="fc" id="L206">        Restaurant londonRest = new Restaurant(&quot;rest-london-001&quot;,&quot;prop-london-001&quot;,&quot;The Garden Room&quot;,</span>
+<span class="fc" id="L207">                List.of(&quot;Modern British&quot;),LocalizedContent.of(&quot;Seasonal British cuisine from our own kitchen garden.&quot;),</span>
                 &quot;Smart Casual&quot;,&quot;07:00–22:30&quot;,&quot;££££&quot;,false,true);
-<span class="fc" id="L183">        restaurants.put(londonRest.id(), londonRest);</span>
+<span class="fc" id="L209">        restaurants.put(londonRest.id(), londonRest);</span>
 
-<span class="fc" id="L185">        Hotel london = new Hotel(&quot;prop-london-001&quot;,&quot;brand-lux-001&quot;,&quot;LUX&quot;,&quot;LON001&quot;,</span>
+<span class="fc" id="L211">        Hotel london = new Hotel(&quot;prop-london-001&quot;,&quot;brand-lux-001&quot;,&quot;LUX&quot;,&quot;LON001&quot;,</span>
                 &quot;The Luxe London Mayfair&quot;,&quot;luxe-london-mayfair&quot;,&quot;ACTIVE&quot;,
-<span class="fc" id="L187">                1924,2019,7,152,5,</span>
+<span class="fc" id="L213">                1924,2019,7,152,5,</span>
                 new GuestRating(9.5,2430,new RatingBreakdown(1900,380,120,20,10),
-<span class="fc" id="L189">                        List.of(new TravelerTypeRating(&quot;Couples&quot;,9.6,1200))),</span>
+<span class="fc" id="L215">                        List.of(new TravelerTypeRating(&quot;Couples&quot;,9.6,1200))),</span>
                 new HotelLocation(
                         new Address(&quot;45 Park Lane&quot;,null,&quot;London&quot;,&quot;England&quot;,&quot;W1K 1PN&quot;,&quot;GB&quot;,&quot;United Kingdom&quot;),
                         new Coordinates(51.5045,-0.1522),&quot;Europe/London&quot;,
-<span class="fc" id="L193">                        new AirportInfo(&quot;LHR&quot;,&quot;London Heathrow&quot;,24.0,50),null),</span>
+<span class="fc" id="L219">                        new AirportInfo(&quot;LHR&quot;,&quot;London Heathrow&quot;,24.0,50),null),</span>
                 new HotelContact(&quot;+44-20-7629-8888&quot;,&quot;london@luxehotels.com&quot;,&quot;https://london.luxehotels.com&quot;,&quot;+44-20-7629-8889&quot;,null),
-<span class="fc" id="L195">                LocalizedContent.of(&quot;A landmark of British elegance overlooking Hyde Park, preferred by royalty and statesmen since 1924.&quot;),</span>
-<span class="fc" id="L196">                null,List.of(spa,gym,wifi,conc),new ArrayList&lt;&gt;(),</span>
-<span class="fc" id="L197">                List.of(londonRest),londonSpa,null,</span>
-<span class="fc" id="L198">                List.of(media(&quot;m-lon-1&quot;,&quot;https://cdn.luxe.com/london/exterior.jpg&quot;,&quot;EXTERIOR&quot;,true,1)),</span>
-<span class="fc" id="L199">                List.of(new Attraction(&quot;a-lon-1&quot;,&quot;Hyde Park&quot;,&quot;Park&quot;,0.1,4.8)),</span>
+<span class="fc" id="L221">                LocalizedContent.of(&quot;A landmark of British elegance overlooking Hyde Park, preferred by royalty and statesmen since 1924.&quot;),</span>
+<span class="fc" id="L222">                null,List.of(spa,gym,wifi,conc),new ArrayList&lt;&gt;(),</span>
+<span class="fc" id="L223">                List.of(londonRest),londonSpa,null,</span>
+<span class="fc" id="L224">                List.of(media(&quot;m-lon-1&quot;,MediaUrls.legacyHotelImageUrl(&quot;london&quot;, &quot;exterior.jpg&quot;),&quot;EXTERIOR&quot;,true,1)),</span>
+<span class="fc" id="L225">                List.of(new Attraction(&quot;a-lon-1&quot;,&quot;Hyde Park&quot;,&quot;Park&quot;,0.1,4.8)),</span>
                 new ParkingInfo(true,&quot;Valet&quot;,true,&quot;GBP 75/day&quot;,null,false),
-<span class="fc" id="L201">                new SustainabilityInfo(86,List.of(new SustainabilityInfo.SustainabilityCertification(&quot;Green Tourism Gold&quot;,&quot;Green Tourism&quot;,2023)),true,75,60),</span>
-<span class="fc" id="L202">                List.of(new Award(&quot;Best Hotel London 2024&quot;,&quot;Travel + Leisure&quot;,2024),new Award(&quot;Forbes Five-Star&quot;,&quot;Forbes Travel Guide&quot;,2024)),</span>
+<span class="fc" id="L227">                new SustainabilityInfo(86,List.of(new SustainabilityInfo.SustainabilityCertification(&quot;Green Tourism Gold&quot;,&quot;Green Tourism&quot;,2023)),true,75,60),</span>
+<span class="fc" id="L228">                List.of(new Award(&quot;Best Hotel London 2024&quot;,&quot;Travel + Leisure&quot;,2024),new Award(&quot;Forbes Five-Star&quot;,&quot;Forbes Travel Guide&quot;,2024)),</span>
                 true,now);
-<span class="fc" id="L204">        hotels.put(london.getId(), london);</span>
+<span class="fc" id="L230">        hotels.put(london.getId(), london);</span>
+
+        // ── India IT-corridor hotels ──────────────────────────────────────────
+        // Hand-curated business hotels next to the major IT business parks in
+        // Hyderabad, Delhi NCR, Bangalore, Mumbai, Chennai, Pune and Vizag.
+        // Brands referenced here (NST, MAI, SOL, MQS, CRD, WAY) are created
+        // moments later by PropertyDataGenerator, so the brand lookup at
+        // search/facet time succeeds.
+<span class="fc" id="L238">        addIndiaHotels(now, pool, spa, gym, wifi, valet, conc);</span>
 
         // ── Room Types ────────────────────────────────────────────────────────
-<span class="fc" id="L207">        addRoom(&quot;rt-paris-deluxe&quot;,&quot;prop-paris-001&quot;,&quot;DLX&quot;,&quot;Deluxe Room&quot;,&quot;DELUXE&quot;,</span>
+<span class="fc" id="L241">        addRoom(&quot;rt-paris-deluxe&quot;,&quot;prop-paris-001&quot;,&quot;DLX&quot;,&quot;Deluxe Room&quot;,&quot;DELUXE&quot;,</span>
                 &quot;Elegant room with Haussmann views.&quot;,45.0,new OccupancyLimit(2,1,3),
-<span class="fc" id="L209">                List.of(new BedConfiguration(&quot;KING&quot;,1)),&quot;City View&quot;,&quot;3-5&quot;,</span>
-<span class="fc" id="L210">                List.of(&quot;Nespresso&quot;,&quot;Marble bathroom&quot;,&quot;Hermès amenities&quot;),false,false);</span>
-<span class="fc" id="L211">        addRoom(&quot;rt-paris-suite&quot;,&quot;prop-paris-001&quot;,&quot;JRS&quot;,&quot;Junior Suite&quot;,&quot;JUNIOR_SUITE&quot;,</span>
+<span class="fc" id="L243">                List.of(new BedConfiguration(&quot;KING&quot;,1)),&quot;City View&quot;,&quot;3-5&quot;,</span>
+<span class="fc" id="L244">                List.of(&quot;Nespresso&quot;,&quot;Marble bathroom&quot;,&quot;Hermès amenities&quot;),false,false);</span>
+<span class="fc" id="L245">        addRoom(&quot;rt-paris-suite&quot;,&quot;prop-paris-001&quot;,&quot;JRS&quot;,&quot;Junior Suite&quot;,&quot;JUNIOR_SUITE&quot;,</span>
                 &quot;Spacious suite with Eiffel Tower views.&quot;,80.0,new OccupancyLimit(2,2,4),
-<span class="fc" id="L213">                List.of(new BedConfiguration(&quot;KING&quot;,1)),&quot;Eiffel Tower View&quot;,&quot;6-8&quot;,</span>
-<span class="fc" id="L214">                List.of(&quot;Separate living room&quot;,&quot;Butler service&quot;,&quot;Walk-in wardrobe&quot;),false,true);</span>
-<span class="fc" id="L215">        addRoom(&quot;rt-tokyo-deluxe&quot;,&quot;prop-tokyo-001&quot;,&quot;DLX&quot;,&quot;Deluxe Room&quot;,&quot;DELUXE&quot;,</span>
+<span class="fc" id="L247">                List.of(new BedConfiguration(&quot;KING&quot;,1)),&quot;Eiffel Tower View&quot;,&quot;6-8&quot;,</span>
+<span class="fc" id="L248">                List.of(&quot;Separate living room&quot;,&quot;Butler service&quot;,&quot;Walk-in wardrobe&quot;),false,true);</span>
+<span class="fc" id="L249">        addRoom(&quot;rt-tokyo-deluxe&quot;,&quot;prop-tokyo-001&quot;,&quot;DLX&quot;,&quot;Deluxe Room&quot;,&quot;DELUXE&quot;,</span>
                 &quot;Contemporary Japanese-inspired room.&quot;,38.0,new OccupancyLimit(2,1,3),
-<span class="fc" id="L217">                List.of(new BedConfiguration(&quot;KING&quot;,1)),&quot;Garden View&quot;,&quot;10-20&quot;,</span>
-<span class="fc" id="L218">                List.of(&quot;Japanese soaking tub&quot;,&quot;Tokyo skyline view&quot;),false,false);</span>
-<span class="fc" id="L219">        addRoom(&quot;rt-tokyo-suite&quot;,&quot;prop-tokyo-001&quot;,&quot;STE&quot;,&quot;Imperial Suite&quot;,&quot;SUITE&quot;,</span>
+<span class="fc" id="L251">                List.of(new BedConfiguration(&quot;KING&quot;,1)),&quot;Garden View&quot;,&quot;10-20&quot;,</span>
+<span class="fc" id="L252">                List.of(&quot;Japanese soaking tub&quot;,&quot;Tokyo skyline view&quot;),false,false);</span>
+<span class="fc" id="L253">        addRoom(&quot;rt-tokyo-suite&quot;,&quot;prop-tokyo-001&quot;,&quot;STE&quot;,&quot;Imperial Suite&quot;,&quot;SUITE&quot;,</span>
                 &quot;Panoramic Tokyo views with private terrace.&quot;,120.0,new OccupancyLimit(2,2,4),
-<span class="fc" id="L221">                List.of(new BedConfiguration(&quot;KING&quot;,1)),&quot;Tokyo Panorama&quot;,&quot;30-35&quot;,</span>
-<span class="fc" id="L222">                List.of(&quot;Private terrace&quot;,&quot;Grand piano&quot;,&quot;Personal butler&quot;),false,false);</span>
-<span class="fc" id="L223">        addRoom(&quot;rt-dubai-deluxe&quot;,&quot;prop-dubai-001&quot;,&quot;DLX&quot;,&quot;Deluxe Room&quot;,&quot;DELUXE&quot;,</span>
+<span class="fc" id="L255">                List.of(new BedConfiguration(&quot;KING&quot;,1)),&quot;Tokyo Panorama&quot;,&quot;30-35&quot;,</span>
+<span class="fc" id="L256">                List.of(&quot;Private terrace&quot;,&quot;Grand piano&quot;,&quot;Personal butler&quot;),false,false);</span>
+<span class="fc" id="L257">        addRoom(&quot;rt-dubai-deluxe&quot;,&quot;prop-dubai-001&quot;,&quot;DLX&quot;,&quot;Deluxe Room&quot;,&quot;DELUXE&quot;,</span>
                 &quot;Luxurious room with Burj Khalifa views.&quot;,52.0,new OccupancyLimit(2,1,3),
-<span class="fc" id="L225">                List.of(new BedConfiguration(&quot;KING&quot;,1)),&quot;Burj Khalifa View&quot;,&quot;20-40&quot;,</span>
-<span class="fc" id="L226">                List.of(&quot;Rain shower&quot;,&quot;Smart home system&quot;),false,false);</span>
-<span class="fc" id="L227">        addRoom(&quot;rt-nyc-deluxe&quot;,&quot;prop-nyc-001&quot;,&quot;DLX&quot;,&quot;Central Park View Room&quot;,&quot;DELUXE&quot;,</span>
+<span class="fc" id="L259">                List.of(new BedConfiguration(&quot;KING&quot;,1)),&quot;Burj Khalifa View&quot;,&quot;20-40&quot;,</span>
+<span class="fc" id="L260">                List.of(&quot;Rain shower&quot;,&quot;Smart home system&quot;),false,false);</span>
+<span class="fc" id="L261">        addRoom(&quot;rt-nyc-deluxe&quot;,&quot;prop-nyc-001&quot;,&quot;DLX&quot;,&quot;Central Park View Room&quot;,&quot;DELUXE&quot;,</span>
                 &quot;Sophisticated room with Central Park views.&quot;,40.0,new OccupancyLimit(2,1,3),
-<span class="fc" id="L229">                List.of(new BedConfiguration(&quot;KING&quot;,1)),&quot;Central Park View&quot;,&quot;15-30&quot;,</span>
-<span class="fc" id="L230">                List.of(&quot;Park panorama&quot;,&quot;Marble bathroom&quot;),false,false);</span>
-<span class="fc" id="L231">        addRoom(&quot;rt-london-deluxe&quot;,&quot;prop-london-001&quot;,&quot;DLX&quot;,&quot;Hyde Park Deluxe&quot;,&quot;DELUXE&quot;,</span>
+<span class="fc" id="L263">                List.of(new BedConfiguration(&quot;KING&quot;,1)),&quot;Central Park View&quot;,&quot;15-30&quot;,</span>
+<span class="fc" id="L264">                List.of(&quot;Park panorama&quot;,&quot;Marble bathroom&quot;),false,false);</span>
+<span class="fc" id="L265">        addRoom(&quot;rt-london-deluxe&quot;,&quot;prop-london-001&quot;,&quot;DLX&quot;,&quot;Hyde Park Deluxe&quot;,&quot;DELUXE&quot;,</span>
                 &quot;Elegant room with Hyde Park views.&quot;,42.0,new OccupancyLimit(2,1,3),
-<span class="fc" id="L233">                List.of(new BedConfiguration(&quot;KING&quot;,1)),&quot;Hyde Park View&quot;,&quot;2-7&quot;,</span>
-<span class="fc" id="L234">                List.of(&quot;Penhaligon's amenities&quot;,&quot;Roll-top bath&quot;),false,false);</span>
+<span class="fc" id="L267">                List.of(new BedConfiguration(&quot;KING&quot;,1)),&quot;Hyde Park View&quot;,&quot;2-7&quot;,</span>
+<span class="fc" id="L268">                List.of(&quot;Penhaligon's amenities&quot;,&quot;Roll-top bath&quot;),false,false);</span>
 
         // ── Reviews ───────────────────────────────────────────────────────────
-<span class="fc" id="L237">        addReview(&quot;rev-001&quot;,&quot;prop-paris-001&quot;,&quot;Sophia C.&quot;,&quot;2025-03&quot;,9.8,</span>
-<span class="fc" id="L238">                new CategoryRatings(10.0,9.8,9.5,9.0,9.9,9.7),</span>
+<span class="fc" id="L271">        addReview(&quot;rev-001&quot;,&quot;prop-paris-001&quot;,&quot;Sophia C.&quot;,&quot;2025-03&quot;,9.8,</span>
+<span class="fc" id="L272">                new CategoryRatings(10.0,9.8,9.5,9.0,9.9,9.7),</span>
                 &quot;Absolutely magnificent&quot;,&quot;The Grand Palais Paris exceeded every expectation. Service is unrivalled.&quot;,&quot;en&quot;,true,142);
-<span class="fc" id="L240">        addReview(&quot;rev-002&quot;,&quot;prop-tokyo-001&quot;,&quot;Yuki T.&quot;,&quot;2025-04&quot;,9.9,</span>
-<span class="fc" id="L241">                new CategoryRatings(10.0,10.0,9.8,9.5,10.0,9.8),</span>
+<span class="fc" id="L274">        addReview(&quot;rev-002&quot;,&quot;prop-tokyo-001&quot;,&quot;Yuki T.&quot;,&quot;2025-04&quot;,9.9,</span>
+<span class="fc" id="L275">                new CategoryRatings(10.0,10.0,9.8,9.5,10.0,9.8),</span>
                 &quot;Best hotel in Tokyo&quot;,&quot;Perfection in every detail. The kaiseki dinner was transcendent.&quot;,&quot;en&quot;,true,201);
-<span class="fc" id="L243">        addReview(&quot;rev-003&quot;,&quot;prop-london-001&quot;,&quot;Diana O.&quot;,&quot;2025-01&quot;,9.6,</span>
-<span class="fc" id="L244">                new CategoryRatings(9.8,9.7,9.5,8.8,9.7,9.5),</span>
+<span class="fc" id="L277">        addReview(&quot;rev-003&quot;,&quot;prop-london-001&quot;,&quot;Diana O.&quot;,&quot;2025-01&quot;,9.6,</span>
+<span class="fc" id="L278">                new CategoryRatings(9.8,9.7,9.5,8.8,9.7,9.5),</span>
                 &quot;London's finest&quot;,&quot;The Mayfair Spa and afternoon tea are worth the visit alone.&quot;,&quot;en&quot;,true,117);
-<span class="fc" id="L246">        addReview(&quot;rev-004&quot;,&quot;prop-dubai-001&quot;,&quot;Fatima A.&quot;,&quot;2025-03&quot;,9.3,</span>
-<span class="fc" id="L247">                new CategoryRatings(9.5,9.4,9.0,8.5,9.5,9.2),</span>
+<span class="fc" id="L280">        addReview(&quot;rev-004&quot;,&quot;prop-dubai-001&quot;,&quot;Fatima A.&quot;,&quot;2025-03&quot;,9.3,</span>
+<span class="fc" id="L281">                new CategoryRatings(9.5,9.4,9.0,8.5,9.5,9.2),</span>
                 &quot;Stunning in every way&quot;,&quot;The views of the Burj Khalifa from our suite were breathtaking.&quot;,&quot;en&quot;,true,88);
-<span class="fc" id="L249">    }</span>
+<span class="fc" id="L283">    }</span>
+
+    /**
+     * Seed a batch of IT-corridor business hotels across major Indian cities.
+     * Each hotel is positioned in (or adjacent to) the city's main IT business
+     * district — HITEC City, Cyber City, Whitefield, BKC, OMR, Hinjewadi,
+     * Rushikonda — so a search for the city or the IT park name surfaces them.
+     */
+    private void addIndiaHotels(OffsetDateTime now,
+                                Amenity pool, Amenity spaAm, Amenity gym,
+                                Amenity wifi, Amenity valet, Amenity conc) {
+        // Free breakfast is a near-universal feature for Indian business hotels;
+        // declare it here so isHasFreeBreakfast() flips on for hotels that include it.
+<span class="fc" id="L296">        Amenity breakfast = am(&quot;am-bfst&quot;,&quot;BREAKFAST&quot;,&quot;Free Breakfast&quot;,&quot;DINING&quot;,&quot;Daily breakfast included&quot;,false);</span>
+<span class="fc" id="L297">        List&lt;Amenity&gt; fiveStar  = List.of(pool, spaAm, gym, wifi, valet, conc, breakfast);</span>
+<span class="fc" id="L298">        List&lt;Amenity&gt; fourStar  = List.of(pool, gym, wifi, valet, conc, breakfast);</span>
+<span class="fc" id="L299">        List&lt;Amenity&gt; threeStar = List.of(gym, wifi, conc, breakfast);</span>
+
+<span class="fc" id="L301">        record Seed(String id, String brandId, String brandCode,</span>
+                    String name, String slug, String area,
+                    String line1, String city, String state, String postal,
+                    double lat, double lng,
+                    int starRating, int rooms, double rating, int reviewCount,
+                    int openedYear, int floors,
+                    String airport, String airportName, double airportKm, int airportMin,
+                    List&lt;Amenity&gt; amen) {}
+
+        // (lat, lng) values target the IT district itself, not the city centre.
+<span class="fc" id="L311">        List&lt;Seed&gt; seeds = List.of(</span>
+                // ── Hyderabad ─────────────────────────────────────────────
+                new Seed(&quot;prop-india-hyd-hitec&quot;, &quot;brand-nst-001&quot;, &quot;NST&quot;,
+                        &quot;Northstar Hyderabad HITEC City&quot;, &quot;northstar-hyderabad-hitec-city&quot;, &quot;HITEC City&quot;,
+                        &quot;Plot 17, Cyber Towers Road&quot;, &quot;Hyderabad&quot;, &quot;Telangana&quot;, &quot;500081&quot;,
+                        17.4485, 78.3908, 5, 248, 9.1, 1450, 2014, 17,
+                        &quot;HYD&quot;, &quot;Rajiv Gandhi International&quot;, 30.0, 55, fiveStar),
+                new Seed(&quot;prop-india-hyd-gachi&quot;, &quot;brand-sol-001&quot;, &quot;SOL&quot;,
+                        &quot;Solstice Hyderabad Gachibowli&quot;, &quot;solstice-hyderabad-gachibowli&quot;, &quot;Gachibowli&quot;,
+                        &quot;Financial District, ISB Road&quot;, &quot;Hyderabad&quot;, &quot;Telangana&quot;, &quot;500032&quot;,
+                        17.4144, 78.3489, 4, 198, 8.7, 980, 2017, 14,
+                        &quot;HYD&quot;, &quot;Rajiv Gandhi International&quot;, 27.0, 50, fourStar),
+                new Seed(&quot;prop-india-hyd-madha&quot;, &quot;brand-mqs-001&quot;, &quot;MQS&quot;,
+                        &quot;Marquis Hyderabad Madhapur&quot;, &quot;marquis-hyderabad-madhapur&quot;, &quot;Madhapur&quot;,
+                        &quot;Image Gardens Road, Madhapur&quot;, &quot;Hyderabad&quot;, &quot;Telangana&quot;, &quot;500081&quot;,
+                        17.4486, 78.3915, 4, 156, 8.5, 720, 2019, 11,
+                        &quot;HYD&quot;, &quot;Rajiv Gandhi International&quot;, 32.0, 60, fourStar),
+
+                // ── Delhi NCR ─────────────────────────────────────────────
+                new Seed(&quot;prop-india-del-cyber&quot;, &quot;brand-mai-001&quot;, &quot;MAI&quot;,
+                        &quot;Maison Lumière Gurgaon Cyber City&quot;, &quot;maison-lumiere-gurgaon-cyber-city&quot;, &quot;Cyber City&quot;,
+                        &quot;DLF Cyber City, Phase III&quot;, &quot;Gurgaon&quot;, &quot;Haryana&quot;, &quot;122002&quot;,
+                        28.4945, 77.0866, 5, 312, 9.3, 1820, 2012, 22,
+                        &quot;DEL&quot;, &quot;Indira Gandhi International&quot;, 18.0, 40, fiveStar),
+                new Seed(&quot;prop-india-del-dlf2&quot;, &quot;brand-nst-001&quot;, &quot;NST&quot;,
+                        &quot;Northstar Gurgaon DLF Phase II&quot;, &quot;northstar-gurgaon-dlf-phase-2&quot;, &quot;DLF Phase II&quot;,
+                        &quot;Golf Course Road, DLF Phase II&quot;, &quot;Gurgaon&quot;, &quot;Haryana&quot;, &quot;122002&quot;,
+                        28.4733, 77.0735, 4, 220, 8.9, 1140, 2015, 16,
+                        &quot;DEL&quot;, &quot;Indira Gandhi International&quot;, 22.0, 50, fourStar),
+                new Seed(&quot;prop-india-del-noida&quot;, &quot;brand-crd-001&quot;, &quot;CRD&quot;,
+                        &quot;Cardinal Noida Sector 62&quot;, &quot;cardinal-noida-sector-62&quot;, &quot;Noida Sector 62&quot;,
+                        &quot;C-25, Sector 62&quot;, &quot;Noida&quot;, &quot;Uttar Pradesh&quot;, &quot;201309&quot;,
+                        28.6285, 77.3635, 3, 142, 8.3, 640, 2018, 10,
+                        &quot;DEL&quot;, &quot;Indira Gandhi International&quot;, 38.0, 75, threeStar),
+
+                // ── Bangalore ─────────────────────────────────────────────
+                new Seed(&quot;prop-india-blr-white&quot;, &quot;brand-nst-001&quot;, &quot;NST&quot;,
+                        &quot;Northstar Bengaluru Whitefield&quot;, &quot;northstar-bengaluru-whitefield&quot;, &quot;Whitefield&quot;,
+                        &quot;ITPL Main Road, Whitefield&quot;, &quot;Bangalore&quot;, &quot;Karnataka&quot;, &quot;560066&quot;,
+                        12.9698, 77.7500, 5, 268, 9.0, 1380, 2013, 18,
+                        &quot;BLR&quot;, &quot;Kempegowda International&quot;, 47.0, 75, fiveStar),
+                new Seed(&quot;prop-india-blr-ecity&quot;, &quot;brand-sol-001&quot;, &quot;SOL&quot;,
+                        &quot;Solstice Bengaluru Electronic City&quot;, &quot;solstice-bengaluru-electronic-city&quot;, &quot;Electronic City&quot;,
+                        &quot;Hosur Road, Phase 1&quot;, &quot;Bangalore&quot;, &quot;Karnataka&quot;, &quot;560100&quot;,
+                        12.8456, 77.6603, 4, 204, 8.8, 1020, 2016, 13,
+                        &quot;BLR&quot;, &quot;Kempegowda International&quot;, 60.0, 90, fourStar),
+                new Seed(&quot;prop-india-blr-orr&quot;, &quot;brand-mqs-001&quot;, &quot;MQS&quot;,
+                        &quot;Marquis Bengaluru ORR Marathahalli&quot;, &quot;marquis-bengaluru-orr-marathahalli&quot;, &quot;Outer Ring Road&quot;,
+                        &quot;Outer Ring Road, Marathahalli&quot;, &quot;Bangalore&quot;, &quot;Karnataka&quot;, &quot;560037&quot;,
+                        12.9591, 77.6974, 4, 174, 8.6, 860, 2018, 12,
+                        &quot;BLR&quot;, &quot;Kempegowda International&quot;, 42.0, 70, fourStar),
+
+                // ── Mumbai ────────────────────────────────────────────────
+                new Seed(&quot;prop-india-bom-bkc&quot;, &quot;brand-mai-001&quot;, &quot;MAI&quot;,
+                        &quot;Maison Lumière Mumbai BKC&quot;, &quot;maison-lumiere-mumbai-bkc&quot;, &quot;Bandra Kurla Complex&quot;,
+                        &quot;G-Block, Bandra Kurla Complex&quot;, &quot;Mumbai&quot;, &quot;Maharashtra&quot;, &quot;400051&quot;,
+                        19.0596, 72.8656, 5, 286, 9.4, 2010, 2011, 26,
+                        &quot;BOM&quot;, &quot;Chhatrapati Shivaji International&quot;, 6.0, 18, fiveStar),
+                new Seed(&quot;prop-india-bom-powai&quot;, &quot;brand-nst-001&quot;, &quot;NST&quot;,
+                        &quot;Northstar Mumbai Powai&quot;, &quot;northstar-mumbai-powai&quot;, &quot;Powai&quot;,
+                        &quot;Hiranandani Gardens, Powai&quot;, &quot;Mumbai&quot;, &quot;Maharashtra&quot;, &quot;400076&quot;,
+                        19.1197, 72.9090, 4, 232, 8.9, 1290, 2014, 19,
+                        &quot;BOM&quot;, &quot;Chhatrapati Shivaji International&quot;, 9.0, 25, fourStar),
+
+                // ── Chennai ───────────────────────────────────────────────
+                new Seed(&quot;prop-india-maa-omr&quot;, &quot;brand-nst-001&quot;, &quot;NST&quot;,
+                        &quot;Northstar Chennai OMR Sholinganallur&quot;, &quot;northstar-chennai-omr-sholinganallur&quot;, &quot;OMR&quot;,
+                        &quot;Old Mahabalipuram Road, Sholinganallur&quot;, &quot;Chennai&quot;, &quot;Tamil Nadu&quot;, &quot;600119&quot;,
+                        12.9011, 80.2270, 5, 256, 8.9, 1210, 2014, 16,
+                        &quot;MAA&quot;, &quot;Chennai International&quot;, 28.0, 55, fiveStar),
+                new Seed(&quot;prop-india-maa-taram&quot;, &quot;brand-way-001&quot;, &quot;WAY&quot;,
+                        &quot;Wayfarer Chennai Taramani Tidel Park&quot;, &quot;wayfarer-chennai-taramani-tidel-park&quot;, &quot;Taramani&quot;,
+                        &quot;CSIR Road, Taramani&quot;, &quot;Chennai&quot;, &quot;Tamil Nadu&quot;, &quot;600113&quot;,
+                        12.9854, 80.2425, 3, 138, 8.2, 580, 2019, 9,
+                        &quot;MAA&quot;, &quot;Chennai International&quot;, 14.0, 30, threeStar),
+
+                // ── Pune ──────────────────────────────────────────────────
+                new Seed(&quot;prop-india-pnq-hinje&quot;, &quot;brand-nst-001&quot;, &quot;NST&quot;,
+                        &quot;Northstar Pune Hinjewadi&quot;, &quot;northstar-pune-hinjewadi&quot;, &quot;Hinjewadi Phase 1&quot;,
+                        &quot;Rajiv Gandhi Infotech Park, Hinjewadi&quot;, &quot;Pune&quot;, &quot;Maharashtra&quot;, &quot;411057&quot;,
+                        18.5912, 73.7389, 4, 210, 8.8, 990, 2015, 14,
+                        &quot;PNQ&quot;, &quot;Pune International&quot;, 24.0, 50, fourStar),
+                new Seed(&quot;prop-india-pnq-khara&quot;, &quot;brand-sol-001&quot;, &quot;SOL&quot;,
+                        &quot;Solstice Pune Kharadi&quot;, &quot;solstice-pune-kharadi&quot;, &quot;Kharadi&quot;,
+                        &quot;EON IT Park, Kharadi&quot;, &quot;Pune&quot;, &quot;Maharashtra&quot;, &quot;411014&quot;,
+                        18.5515, 73.9425, 4, 188, 8.7, 870, 2017, 13,
+                        &quot;PNQ&quot;, &quot;Pune International&quot;, 8.0, 20, fourStar),
+
+                // ── Visakhapatnam ─────────────────────────────────────────
+                new Seed(&quot;prop-india-vtz-rushi&quot;, &quot;brand-nst-001&quot;, &quot;NST&quot;,
+                        &quot;Northstar Visakhapatnam Rushikonda&quot;, &quot;northstar-visakhapatnam-rushikonda&quot;, &quot;Rushikonda IT SEZ&quot;,
+                        &quot;Rushikonda IT SEZ Road&quot;, &quot;Visakhapatnam&quot;, &quot;Andhra Pradesh&quot;, &quot;530045&quot;,
+                        17.7706, 83.3829, 4, 162, 8.6, 540, 2018, 11,
+                        &quot;VTZ&quot;, &quot;Visakhapatnam International&quot;, 22.0, 45, fourStar),
+                new Seed(&quot;prop-india-vtz-madhu&quot;, &quot;brand-crd-001&quot;, &quot;CRD&quot;,
+                        &quot;Cardinal Visakhapatnam Madhurawada&quot;, &quot;cardinal-visakhapatnam-madhurawada&quot;, &quot;Madhurawada&quot;,
+                        &quot;NH-16, Madhurawada&quot;, &quot;Visakhapatnam&quot;, &quot;Andhra Pradesh&quot;, &quot;530048&quot;,
+                        17.8160, 83.3700, 3, 124, 8.1, 380, 2020, 8,
+                        &quot;VTZ&quot;, &quot;Visakhapatnam International&quot;, 18.0, 40, threeStar)
+        );
+
+<span class="fc bfc" id="L412" title="All 2 branches covered.">        for (Seed s : seeds) {</span>
+<span class="fc" id="L413">            buildIndiaHotel(s.id(), s.brandId(), s.brandCode(), s.name(), s.slug(), s.area(),</span>
+<span class="fc" id="L414">                    s.line1(), s.city(), s.state(), s.postal(), s.lat(), s.lng(),</span>
+<span class="fc" id="L415">                    s.starRating(), s.rooms(), s.rating(), s.reviewCount(), s.openedYear(), s.floors(),</span>
+<span class="fc" id="L416">                    s.airport(), s.airportName(), s.airportKm(), s.airportMin(), s.amen(), now);</span>
+<span class="fc" id="L417">        }</span>
+<span class="fc" id="L418">    }</span>
+
+    private void buildIndiaHotel(String id, String brandId, String brandCode,
+                                           String name, String slug, String area,
+                                           String line1, String city, String state, String postal,
+                                           double lat, double lng,
+                                           int starRating, int rooms, double rating, int reviewCount,
+                                           int openedYear, int floors,
+                                           String airport, String airportName, double airportKm, int airportMin,
+                                           List&lt;Amenity&gt; amen, OffsetDateTime now) {
+
+<span class="fc" id="L429">        boolean hasSpaAm = amen.stream().anyMatch(a -&gt; &quot;SPA&quot;.equals(a.getCategory()));</span>
+<span class="fc bfc" id="L430" title="All 2 branches covered.">        Spa spaObj = hasSpaAm</span>
+<span class="fc" id="L431">                ? new Spa(&quot;spa-&quot; + id, id, name + &quot; Spa&quot;,</span>
+<span class="fc" id="L432">                LocalizedContent.of(&quot;In-house spa serving the IT-corridor traveller.&quot;),</span>
+                &quot;07:00–22:00&quot;, true)
+<span class="fc" id="L434">                : null;</span>
+<span class="fc bfc" id="L435" title="All 2 branches covered.">        if (spaObj != null) spas.put(spaObj.id(), spaObj);</span>
+
+<span class="fc" id="L437">        Restaurant rest = new Restaurant(&quot;rest-&quot; + id, id, area + &quot; Kitchen&quot;,</span>
+<span class="fc" id="L438">                List.of(&quot;Indian&quot;, &quot;Pan-Asian&quot;),</span>
+<span class="fc" id="L439">                LocalizedContent.of(&quot;All-day dining steps from the office tower lobby.&quot;),</span>
+                &quot;Smart Casual&quot;, &quot;06:30–23:00&quot;,
+<span class="fc bfc" id="L441" title="All 4 branches covered.">                starRating == 5 ? &quot;INR ₹₹₹₹&quot; : starRating == 4 ? &quot;INR ₹₹₹&quot; : &quot;INR ₹₹&quot;,</span>
+                false, true);
+<span class="fc" id="L443">        restaurants.put(rest.id(), rest);</span>
+
+<span class="fc" id="L445">        HotelLocation loc = new HotelLocation(</span>
+                new Address(line1, area, city, state, postal, &quot;IN&quot;, &quot;India&quot;),
+                new Coordinates(lat, lng), &quot;Asia/Kolkata&quot;,
+<span class="fc" id="L448">                new AirportInfo(airport, airportName, airportKm, airportMin), null);</span>
+
+<span class="fc" id="L450">        int phoneSuffix = Math.abs(id.hashCode());</span>
+<span class="fc" id="L451">        HotelContact contact = new HotelContact(</span>
+<span class="fc" id="L452">                &quot;+91-&quot; + (40 + phoneSuffix % 49) + &quot;-&quot; + String.format(&quot;%07d&quot;, phoneSuffix % 9_999_999),</span>
+                slug + &quot;@luxehotels.com&quot;,
+                &quot;https://&quot; + slug + &quot;.luxehotels.com&quot;, null, null);
+
+<span class="fc" id="L456">        HotelPolicies policies = new HotelPolicies(</span>
+                new HotelPolicies.CheckInPolicy(&quot;14:00&quot;, new HotelPolicies.EarlyLatePolicy(true, &quot;INR 500&quot;, true)),
+                new HotelPolicies.CheckOutPolicy(&quot;12:00&quot;, new HotelPolicies.EarlyLatePolicy(true, &quot;INR 500&quot;, true)),
+<span class="fc" id="L459">                new HotelPolicies.CancellationPolicy(48, &quot;Free cancellation up to 48h before arrival.&quot;),</span>
+                new HotelPolicies.PetPolicy(false, null, &quot;No pets allowed.&quot;),
+                &quot;Non-smoking throughout.&quot;, &quot;Children of all ages welcome.&quot;);
+
+<span class="fc" id="L463">        Hotel h = new Hotel(id, brandId, brandCode,</span>
+<span class="fc" id="L464">                &quot;IN&quot; + String.format(&quot;%03d&quot;, Math.abs(id.hashCode()) % 999 + 1),</span>
+                name, slug, &quot;ACTIVE&quot;,
+<span class="fc" id="L466">                openedYear, null, floors, rooms, starRating,</span>
+                new GuestRating(rating, reviewCount,
+                        new RatingBreakdown(reviewCount * 7 / 10, reviewCount * 2 / 10,
+                                reviewCount / 20, reviewCount / 50, reviewCount / 100),
+<span class="fc" id="L470">                        List.of(new TravelerTypeRating(&quot;Business&quot;, Math.min(10.0, rating + 0.1), reviewCount / 2))),</span>
+                loc, contact,
+<span class="fc" id="L472">                LocalizedContent.of(name + &quot; — a business stay in &quot; + area + &quot;, &quot;</span>
+                        + city + &quot;'s major IT business district. Steps from corporate campuses, with workstations, fast WiFi, and a 24h business lounge.&quot;),
+                policies,
+                amen, new ArrayList&lt;&gt;(),
+<span class="fc" id="L476">                List.of(rest), spaObj, null,</span>
+<span class="fc" id="L477">                List.of(media(&quot;m-&quot; + id + &quot;-1&quot;, MediaUrls.indiaHotelImageUrl(slug, &quot;exterior.jpg&quot;), &quot;EXTERIOR&quot;, true, 1),</span>
+<span class="fc" id="L478">                        media(&quot;m-&quot; + id + &quot;-2&quot;, MediaUrls.indiaHotelImageUrl(slug, &quot;lobby.jpg&quot;),    &quot;INTERIOR&quot;, false, 2)),</span>
+<span class="fc" id="L479">                List.of(new Attraction(&quot;a-&quot; + id + &quot;-1&quot;, area + &quot; IT Park&quot;, &quot;Business district&quot;, 0.3, 4.6)),</span>
+                new ParkingInfo(true, &quot;Multi-storey&quot;, true, &quot;INR 250/day&quot;, &quot;INR 200/day&quot;, true),
+<span class="fc" id="L481">                new SustainabilityInfo(80, List.of(), true, 60, 55),</span>
+<span class="fc" id="L482">                List.of(),</span>
+<span class="fc" id="L483">                FEATURED_INDIA_HOTEL_IDS.contains(id), now);</span>
+<span class="fc" id="L484">        hotels.put(h.getId(), h);</span>
+
+<span class="fc" id="L486">        addRoom(id + &quot;-rm-dlx&quot;, id, &quot;DLX&quot;, &quot;Deluxe Room&quot;, &quot;DELUXE&quot;,</span>
+                &quot;Comfortable room with workstation — ideal for IT-corridor business stays.&quot;,
+                32.0, new OccupancyLimit(2, 1, 3),
+<span class="fc" id="L489">                List.of(new BedConfiguration(&quot;KING&quot;, 1)), &quot;City view&quot;, &quot;5-15&quot;,</span>
+<span class="fc" id="L490">                List.of(&quot;Workstation&quot;, &quot;High-speed WiFi&quot;, &quot;Laundry&quot;), false, false);</span>
+<span class="fc" id="L491">        addRoom(id + &quot;-rm-exe&quot;, id, &quot;EXE&quot;, &quot;Executive Room&quot;, &quot;PREMIER&quot;,</span>
+                &quot;Executive room with lounge access — for extended business trips.&quot;,
+                42.0, new OccupancyLimit(2, 1, 3),
+<span class="fc" id="L494">                List.of(new BedConfiguration(&quot;KING&quot;, 1)), &quot;Skyline view&quot;, &quot;12-20&quot;,</span>
+<span class="fc" id="L495">                List.of(&quot;Executive lounge&quot;, &quot;Welcome amenities&quot;), false, false);</span>
+<span class="fc bfc" id="L496" title="All 2 branches covered.">        if (starRating == 5) {</span>
+<span class="fc" id="L497">            addRoom(id + &quot;-rm-ste&quot;, id, &quot;STE&quot;, &quot;Junior Suite&quot;, &quot;JUNIOR_SUITE&quot;,</span>
+                    &quot;Suite with separate living area for in-room client meetings.&quot;,
+                    65.0, new OccupancyLimit(3, 2, 4),
+<span class="fc" id="L500">                    List.of(new BedConfiguration(&quot;KING&quot;, 1), new BedConfiguration(&quot;SOFA_BED&quot;, 1)),</span>
+                    &quot;Premium view&quot;, &quot;15-25&quot;,
+<span class="fc" id="L502">                    List.of(&quot;Living area&quot;, &quot;Meeting space&quot;), false, true);</span>
+        }
+<span class="fc" id="L504">    }</span>
 
     private void addRoom(String id, String hotelId, String code, String name, String category,
                          String desc, double sqm, OccupancyLimit occ, List&lt;BedConfiguration&gt; beds,
                          String view, String floor, List&lt;String&gt; highlights, boolean smoking, boolean connecting) {
-<span class="fc" id="L254">        RoomType rt = new RoomType(id, hotelId, code, name, category,</span>
-<span class="fc" id="L255">                LocalizedContent.of(desc), sqm, occ, beds, view, floor, List.of(),</span>
-<span class="fc" id="L256">                List.of(media(id+&quot;-img&quot;,&quot;https://cdn.luxe.com/rooms/&quot;+id+&quot;.jpg&quot;,&quot;ROOM&quot;,true,1)),</span>
-<span class="fc" id="L257">                List.of(), highlights, smoking, connecting);</span>
-<span class="fc" id="L258">        roomTypes.put(id, rt);</span>
-<span class="fc" id="L259">        Hotel h = hotels.get(hotelId);</span>
-<span class="pc bpc" id="L260" title="1 of 2 branches missed.">        if (h != null) h.getRoomTypes().add(rt);</span>
-<span class="fc" id="L261">    }</span>
+<span class="fc" id="L509">        RoomType rt = new RoomType(id, hotelId, code, name, category,</span>
+<span class="fc" id="L510">                LocalizedContent.of(desc), sqm, occ, beds, view, floor, List.of(),</span>
+<span class="fc" id="L511">                List.of(media(id+&quot;-img&quot;, MediaUrls.roomImageUrl(id), &quot;ROOM&quot;, true, 1)),</span>
+<span class="fc" id="L512">                List.of(), highlights, smoking, connecting);</span>
+<span class="fc" id="L513">        roomTypes.put(id, rt);</span>
+<span class="fc" id="L514">        Hotel h = hotels.get(hotelId);</span>
+<span class="pc bpc" id="L515" title="1 of 2 branches missed.">        if (h != null) h.getRoomTypes().add(rt);</span>
+<span class="fc" id="L516">    }</span>
 
     private void addReview(String id, String hotelId, String guestName, String stayDate,
                             double rating, CategoryRatings cats, String title, String body,
                             String lang, boolean verified, int helpful) {
-<span class="fc" id="L266">        reviews.put(id, new Review(id, hotelId, guestName, stayDate, rating, cats, title, body, lang, verified, helpful, null));</span>
-<span class="fc" id="L267">    }</span>
+<span class="fc" id="L521">        reviews.put(id, new Review(id, hotelId, guestName, stayDate, rating, cats, title, body, lang, verified, helpful, null));</span>
+<span class="fc" id="L522">    }</span>
 
-<span class="fc" id="L269">    @Override public Optional&lt;Hotel&gt; getHotelById(String id) { return Optional.ofNullable(hotels.get(id)); }</span>
+<span class="fc" id="L524">    @Override public Optional&lt;Hotel&gt; getHotelById(String id) { return Optional.ofNullable(hotels.get(id)); }</span>
     @Override public Optional&lt;Hotel&gt; getHotelBySlug(String slug) {
-<span class="fc" id="L271">        return hotels.values().stream().filter(h -&gt; slug.equals(h.getSlug())).findFirst();</span>
+<span class="fc" id="L526">        return hotels.values().stream().filter(h -&gt; slug.equals(h.getSlug())).findFirst();</span>
     }
     @Override public List&lt;Hotel&gt; searchHotels(Map&lt;String, Object&gt; filter, String sortBy) {
-<span class="fc" id="L274">        List&lt;Hotel&gt; result = new ArrayList&lt;&gt;(hotels.values());</span>
-<span class="fc bfc" id="L275" title="All 2 branches covered.">        if (filter != null) {</span>
-<span class="fc" id="L276">            String query = (String) filter.get(&quot;query&quot;);</span>
-<span class="fc bfc" id="L277" title="All 2 branches covered.">            if (query != null) { String q = query.toLowerCase();</span>
-<span class="fc bfc" id="L278" title="All 2 branches covered.">                result = result.stream().filter(h -&gt; h.getName().toLowerCase().contains(q)</span>
-<span class="pc bpc" id="L279" title="1 of 2 branches missed.">                        || h.getLocation().address().city().toLowerCase().contains(q)).collect(Collectors.toList()); }</span>
-<span class="fc" id="L280">            Integer minStar = (Integer) filter.get(&quot;minStarRating&quot;);</span>
-<span class="pc bpc" id="L281" title="1 of 4 branches missed.">            if (minStar != null) result = result.stream().filter(h -&gt; h.getStarRating() &gt;= minStar).collect(Collectors.toList());</span>
-<span class="pc bpc" id="L282" title="1 of 2 branches missed.">            if (Boolean.TRUE.equals(filter.get(&quot;hasSpa&quot;))) result = result.stream().filter(Hotel::isHasSpa).collect(Collectors.toList());</span>
-<span class="pc bpc" id="L283" title="1 of 2 branches missed.">            if (Boolean.TRUE.equals(filter.get(&quot;hasPool&quot;))) result = result.stream().filter(Hotel::isHasPool).collect(Collectors.toList());</span>
-        }
-<span class="fc bfc" id="L285" title="All 2 branches covered.">        if (&quot;GUEST_RATING&quot;.equals(sortBy)) result.sort((a, b) -&gt; Double.compare(</span>
-<span class="pc bpc" id="L286" title="1 of 2 branches missed.">                b.getGuestRating() != null ? b.getGuestRating().overall() : 0,</span>
-<span class="pc bpc" id="L287" title="1 of 2 branches missed.">                a.getGuestRating() != null ? a.getGuestRating().overall() : 0));</span>
-<span class="fc bfc" id="L288" title="All 2 branches covered.">        else if (&quot;NAME&quot;.equals(sortBy)) result.sort(Comparator.comparing(Hotel::getName));</span>
-<span class="fc" id="L289">        return result;</span>
+<span class="fc" id="L529">        return search.searchHotels(filter, sortBy);</span>
     }
+
+    @Override
+    public HotelFacets computeFacets(Map&lt;String, Object&gt; filter) {
+<span class="fc" id="L534">        return search.computeFacets(filter);</span>
+    }
+
     @Override public List&lt;Hotel&gt; getFeaturedHotels(String brandTier, String countryCode, int limit) {
-<span class="fc" id="L292">        return hotels.values().stream().filter(Hotel::getIsFeatured)</span>
-<span class="fc bfc" id="L293" title="All 4 branches covered.">                .filter(h -&gt; countryCode == null || countryCode.equals(h.getLocation().address().countryCode()))</span>
-<span class="fc" id="L294">                .limit(limit).collect(Collectors.toList());</span>
+<span class="fc" id="L538">        return hotels.values().stream().filter(Hotel::getIsFeatured)</span>
+<span class="fc bfc" id="L539" title="All 4 branches covered.">                .filter(h -&gt; countryCode == null || countryCode.equals(h.getLocation().address().countryCode()))</span>
+<span class="fc" id="L540">                .limit(limit).collect(Collectors.toList());</span>
     }
-<span class="fc" id="L296">    @Override public Optional&lt;Brand&gt; getBrandById(String id) { return Optional.ofNullable(brands.get(id)); }</span>
+
+    @Override
+    public List&lt;com.luxe.property.schema.types.DestinationSuggestion&gt; destinationSuggestions(String query, int limit) {
+<span class="fc" id="L545">        return search.destinationSuggestions(query, limit);</span>
+    }
+
+    /**
+     * Test seam: the price-range filter uses the search service's tier-based
+     * USD estimate; existing tests want to compare the same numbers when
+     * verifying the {@code PRICE_LOW_TO_HIGH} sort. Package-private so
+     * production callers go through {@code searchHotels(filter, &quot;PRICE_LOW_TO_HIGH&quot;)}
+     * instead of reaching across the seam.
+     */
+    double estimateNightlyRateUsd(Hotel h) {
+<span class="fc" id="L556">        return search.estimateNightlyRateUsd(h);</span>
+    }
+
+<span class="fc" id="L559">    @Override public Optional&lt;Brand&gt; getBrandById(String id) { return Optional.ofNullable(brands.get(id)); }</span>
     @Override public Optional&lt;Brand&gt; getBrandByCode(String code) {
-<span class="fc" id="L298">        return brands.values().stream().filter(b -&gt; code.equals(b.getCode())).findFirst();</span>
+<span class="fc" id="L561">        return brands.values().stream().filter(b -&gt; code.equals(b.getCode())).findFirst();</span>
     }
     @Override public List&lt;Brand&gt; getAllBrands(String tier) {
-<span class="pc bpc" id="L301" title="3 of 4 branches missed.">        return brands.values().stream().filter(b -&gt; tier == null || tier.equals(b.getTier())).collect(Collectors.toList());</span>
+<span class="pc bpc" id="L564" title="3 of 4 branches missed.">        return brands.values().stream().filter(b -&gt; tier == null || tier.equals(b.getTier())).collect(Collectors.toList());</span>
     }
-<span class="nc" id="L303">    @Override public Optional&lt;RoomType&gt; getRoomTypeById(String id) { return Optional.ofNullable(roomTypes.get(id)); }</span>
+<span class="nc" id="L566">    @Override public Optional&lt;RoomType&gt; getRoomTypeById(String id) { return Optional.ofNullable(roomTypes.get(id)); }</span>
     @Override public List&lt;RoomType&gt; getRoomTypesByHotelId(String hotelId) {
-<span class="fc" id="L305">        return roomTypes.values().stream().filter(r -&gt; hotelId.equals(r.getHotelId())).collect(Collectors.toList());</span>
+<span class="fc" id="L568">        return roomTypes.values().stream().filter(r -&gt; hotelId.equals(r.getHotelId())).collect(Collectors.toList());</span>
     }
-<span class="nc" id="L307">    @Override public Optional&lt;Restaurant&gt; getRestaurantById(String id) { return Optional.ofNullable(restaurants.get(id)); }</span>
-<span class="nc" id="L308">    @Override public Optional&lt;Spa&gt; getSpaById(String id) { return Optional.ofNullable(spas.get(id)); }</span>
+<span class="nc" id="L570">    @Override public Optional&lt;Restaurant&gt; getRestaurantById(String id) { return Optional.ofNullable(restaurants.get(id)); }</span>
+<span class="nc" id="L571">    @Override public Optional&lt;Spa&gt; getSpaById(String id) { return Optional.ofNullable(spas.get(id)); }</span>
     @Override public List&lt;Review&gt; getReviewsByHotelId(String hotelId, String sortBy) {
-<span class="fc" id="L310">        List&lt;Review&gt; result = reviews.values().stream().filter(r -&gt; hotelId.equals(r.getHotelId())).collect(Collectors.toList());</span>
-<span class="pc bpc" id="L311" title="1 of 2 branches missed.">        if (&quot;HIGHEST_RATED&quot;.equals(sortBy)) result.sort((a,b) -&gt; Double.compare(b.getOverallRating(),a.getOverallRating()));</span>
-<span class="pc bpc" id="L312" title="1 of 2 branches missed.">        else if (&quot;MOST_HELPFUL&quot;.equals(sortBy)) result.sort((a,b) -&gt; b.getHelpfulCount()-a.getHelpfulCount());</span>
-<span class="fc" id="L313">        return result;</span>
+<span class="fc" id="L573">        List&lt;Review&gt; result = reviews.values().stream().filter(r -&gt; hotelId.equals(r.getHotelId())).collect(Collectors.toList());</span>
+<span class="pc bpc" id="L574" title="1 of 2 branches missed.">        if (&quot;HIGHEST_RATED&quot;.equals(sortBy)) result.sort((a,b) -&gt; Double.compare(b.getOverallRating(),a.getOverallRating()));</span>
+<span class="pc bpc" id="L575" title="1 of 2 branches missed.">        else if (&quot;MOST_HELPFUL&quot;.equals(sortBy)) result.sort((a,b) -&gt; b.getHelpfulCount()-a.getHelpfulCount());</span>
+<span class="fc" id="L576">        return result;</span>
     }
-<span class="fc" id="L315">    @Override public Optional&lt;Review&gt; getReviewById(String id) { return Optional.ofNullable(reviews.get(id)); }</span>
+<span class="fc" id="L578">    @Override public Optional&lt;Review&gt; getReviewById(String id) { return Optional.ofNullable(reviews.get(id)); }</span>
     @Override public Review submitReview(String hotelId, String guestName, double overallRating,
                                          Map&lt;String,Object&gt; cats, String title, String body, String stayDate) {
-<span class="fc" id="L318">        CategoryRatings cr = null;</span>
-<span class="fc bfc" id="L319" title="All 2 branches covered.">        if (cats != null) cr = new CategoryRatings(</span>
-<span class="fc bfc" id="L320" title="All 2 branches covered.">                cats.get(&quot;cleanliness&quot;) instanceof Number n ? n.doubleValue() : null,</span>
-<span class="fc bfc" id="L321" title="All 2 branches covered.">                cats.get(&quot;service&quot;) instanceof Number n ? n.doubleValue() : null,</span>
-<span class="pc bpc" id="L322" title="1 of 2 branches missed.">                cats.get(&quot;location&quot;) instanceof Number n ? n.doubleValue() : null,</span>
-<span class="pc bpc" id="L323" title="1 of 2 branches missed.">                cats.get(&quot;value&quot;) instanceof Number n ? n.doubleValue() : null,</span>
-<span class="pc bpc" id="L324" title="1 of 2 branches missed.">                cats.get(&quot;comfort&quot;) instanceof Number n ? n.doubleValue() : null, null);</span>
-<span class="fc" id="L325">        String id = &quot;rev-&quot; + UUID.randomUUID().toString().substring(0,8);</span>
-<span class="fc" id="L326">        Review r = new Review(id, hotelId, guestName, stayDate, overallRating, cr, title, body, &quot;en&quot;, false, 0, null);</span>
-<span class="fc" id="L327">        reviews.put(id, r);</span>
-<span class="fc" id="L328">        return r;</span>
+<span class="fc" id="L581">        CategoryRatings cr = null;</span>
+<span class="fc bfc" id="L582" title="All 2 branches covered.">        if (cats != null) cr = new CategoryRatings(</span>
+<span class="fc bfc" id="L583" title="All 2 branches covered.">                cats.get(&quot;cleanliness&quot;) instanceof Number n ? n.doubleValue() : null,</span>
+<span class="fc bfc" id="L584" title="All 2 branches covered.">                cats.get(&quot;service&quot;) instanceof Number n ? n.doubleValue() : null,</span>
+<span class="pc bpc" id="L585" title="1 of 2 branches missed.">                cats.get(&quot;location&quot;) instanceof Number n ? n.doubleValue() : null,</span>
+<span class="pc bpc" id="L586" title="1 of 2 branches missed.">                cats.get(&quot;value&quot;) instanceof Number n ? n.doubleValue() : null,</span>
+<span class="pc bpc" id="L587" title="1 of 2 branches missed.">                cats.get(&quot;comfort&quot;) instanceof Number n ? n.doubleValue() : null, null);</span>
+<span class="fc" id="L588">        String id = &quot;rev-&quot; + UUID.randomUUID().toString().substring(0,8);</span>
+<span class="fc" id="L589">        Review r = new Review(id, hotelId, guestName, stayDate, overallRating, cr, title, body, &quot;en&quot;, false, 0, null);</span>
+<span class="fc" id="L590">        reviews.put(id, r);</span>
+<span class="fc" id="L591">        return r;</span>
     }
     @Override public Optional&lt;Review&gt; markReviewHelpful(String reviewId) {
-<span class="fc" id="L331">        Review r = reviews.get(reviewId);</span>
-<span class="fc bfc" id="L332" title="All 2 branches covered.">        if (r != null) r.incrementHelpful();</span>
-<span class="fc" id="L333">        return Optional.ofNullable(r);</span>
+<span class="fc" id="L594">        Review r = reviews.get(reviewId);</span>
+<span class="fc bfc" id="L595" title="All 2 branches covered.">        if (r != null) r.incrementHelpful();</span>
+<span class="fc" id="L596">        return Optional.ofNullable(r);</span>
     }
+
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

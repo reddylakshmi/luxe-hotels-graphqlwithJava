@@ -1,0 +1,589 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PropertyDataGenerator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Property Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.property.datasource</a> &gt; <span class="el_source">PropertyDataGenerator.java</span></div><h1>PropertyDataGenerator.java</h1><pre class="source lang-java linenums">package com.luxe.property.datasource;
+
+import com.luxe.property.schema.types.*;
+
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+
+/**
+ * Procedurally generates the bulk of the chain's properties so the demo can
+ * showcase a multi-brand, multi-country portfolio without thousands of lines
+ * of hand-typed data. Output is deterministic — every startup produces the
+ * same hotels — so links across other subgraphs keep resolving.
+ *
+ * The 5 rich hotels seeded by {@link PropertyMockDataSource} (Paris, London,
+ * Tokyo, Dubai, NYC under the {@code Luxe Collection} brand) are intentionally
+ * left in place; this generator adds 19 sibling brands with templated hotels
+ * around them.
+ */
+<span class="nc" id="L24">final class PropertyDataGenerator {</span>
+
+<span class="fc" id="L26">    record Out(List&lt;Brand&gt; brands, List&lt;Hotel&gt; hotels, List&lt;RoomType&gt; rooms) {}</span>
+
+    /** Brand archetypes. Tier counts: 4 LUXURY (in addition to LUX) + 8 PREMIUM + 7 SELECT = 19. */
+<span class="fc" id="L29">    private record BrandSpec(String code, String name, String slug, String tier,</span>
+                              String tagline, String accent, double pointsMultiplier) {}
+
+<span class="fc" id="L32">    private static final List&lt;BrandSpec&gt; BRANDS = List.of(</span>
+            // LUXURY ─────────────────────────────────────────────
+            new BrandSpec(&quot;MAI&quot;, &quot;Maison Lumière&quot;,     &quot;maison-lumiere&quot;,      &quot;LUXURY&quot;,  &quot;French art-de-vivre at hotel scale.&quot;,        &quot;#8E5A3F&quot;, 3.0),
+            new BrandSpec(&quot;ATL&quot;, &quot;Atelier Hotels&quot;,     &quot;atelier-hotels&quot;,      &quot;LUXURY&quot;,  &quot;Design-forward urban boutique luxury.&quot;,      &quot;#2E2A26&quot;, 3.0),
+            new BrandSpec(&quot;AUR&quot;, &quot;Aurelia Resorts&quot;,    &quot;aurelia-resorts&quot;,     &quot;LUXURY&quot;,  &quot;Mediterranean coastal sanctuaries.&quot;,         &quot;#B89B7A&quot;, 3.0),
+            new BrandSpec(&quot;RGL&quot;, &quot;Regalia Grand&quot;,      &quot;regalia-grand&quot;,       &quot;LUXURY&quot;,  &quot;Classic grand hotels of the world.&quot;,         &quot;#5A3D2B&quot;, 3.0),
+
+            // PREMIUM ────────────────────────────────────────────
+            new BrandSpec(&quot;SOL&quot;, &quot;Solstice Hotels&quot;,    &quot;solstice-hotels&quot;,     &quot;PREMIUM&quot;, &quot;Elevated comfort, refined service.&quot;,         &quot;#D8A656&quot;, 2.0),
+            new BrandSpec(&quot;HRT&quot;, &quot;Heritage Mansions&quot;,  &quot;heritage-mansions&quot;,   &quot;PREMIUM&quot;, &quot;Historic homes, contemporary stays.&quot;,        &quot;#4F3A29&quot;, 2.0),
+            new BrandSpec(&quot;EMB&quot;, &quot;Ember &amp; Oak&quot;,        &quot;ember-and-oak&quot;,       &quot;PREMIUM&quot;, &quot;Lodge-style retreats and hideaways.&quot;,        &quot;#7A4A2A&quot;, 2.0),
+            new BrandSpec(&quot;VRD&quot;, &quot;Verdé Collection&quot;,   &quot;verde-collection&quot;,    &quot;PREMIUM&quot;, &quot;Eco-premium, regenerative travel.&quot;,          &quot;#4F6B47&quot;, 2.5),
+            new BrandSpec(&quot;NST&quot;, &quot;Northstar Hotels&quot;,   &quot;northstar-hotels&quot;,    &quot;PREMIUM&quot;, &quot;Urban sophistication for the modern traveller.&quot;, &quot;#3E5066&quot;, 2.0),
+            new BrandSpec(&quot;PVL&quot;, &quot;Pavilion Resorts&quot;,   &quot;pavilion-resorts&quot;,    &quot;PREMIUM&quot;, &quot;Tropical resorts and beach escapes.&quot;,        &quot;#C77B4F&quot;, 2.0),
+            new BrandSpec(&quot;ISO&quot;, &quot;Isola Living&quot;,       &quot;isola-living&quot;,        &quot;PREMIUM&quot;, &quot;Italian island-life inspired stays.&quot;,        &quot;#8B5742&quot;, 2.0),
+            new BrandSpec(&quot;MNT&quot;, &quot;Montane Lodges&quot;,     &quot;montane-lodges&quot;,      &quot;PREMIUM&quot;, &quot;Mountain lodges and alpine retreats.&quot;,       &quot;#5C6E5E&quot;, 2.0),
+
+            // SELECT ─────────────────────────────────────────────
+            new BrandSpec(&quot;MQS&quot;, &quot;Marquis Lifestyle&quot;,  &quot;marquis-lifestyle&quot;,   &quot;SELECT&quot;,  &quot;Modern lifestyle hotels for discerning travellers.&quot;, &quot;#8C7B6B&quot;, 1.5),
+            new BrandSpec(&quot;LUM&quot;, &quot;Lume Living&quot;,        &quot;lume-living&quot;,         &quot;SELECT&quot;,  &quot;Wellness-focused select-service stays.&quot;,     &quot;#B8B0A3&quot;, 1.5),
+            new BrandSpec(&quot;QLB&quot;, &quot;Quill Boutique&quot;,     &quot;quill-boutique&quot;,      &quot;SELECT&quot;,  &quot;Literary boutique hotels in walkable neighbourhoods.&quot;, &quot;#5C4A3D&quot;, 1.5),
+            new BrandSpec(&quot;WAY&quot;, &quot;Wayfarer Hotels&quot;,    &quot;wayfarer-hotels&quot;,     &quot;SELECT&quot;,  &quot;Smart hotels for the world's wayfarers.&quot;,    &quot;#7B6450&quot;, 1.0),
+            new BrandSpec(&quot;CRD&quot;, &quot;Cardinal Inns&quot;,      &quot;cardinal-inns&quot;,       &quot;SELECT&quot;,  &quot;Reliable mid-scale comfort, everywhere you go.&quot;, &quot;#9C3D3D&quot;, 1.0),
+            new BrandSpec(&quot;HRH&quot;, &quot;Hearth Residences&quot;,  &quot;hearth-residences&quot;,   &quot;SELECT&quot;,  &quot;Long-stay residences that feel like home.&quot;,  &quot;#6B5840&quot;, 1.0),
+            new BrandSpec(&quot;WST&quot;, &quot;Westwind Studios&quot;,   &quot;westwind-studios&quot;,    &quot;SELECT&quot;,  &quot;Smart urban studios for short or long stays.&quot;, &quot;#8C9A8C&quot;, 1.0)
+    );
+
+    /** Major cities per country, with rough lat/lng for the hotel coordinates. */
+<span class="fc" id="L60">    private record CitySeed(String name, double lat, double lng, String tz) {}</span>
+<span class="fc" id="L61">    private record CountrySeed(String code, String name, String region, String currency, List&lt;CitySeed&gt; cities) {}</span>
+
+<span class="fc" id="L63">    private static CitySeed c(String name, double lat, double lng, String tz) { return new CitySeed(name, lat, lng, tz); }</span>
+
+<span class="fc" id="L65">    private static final List&lt;CountrySeed&gt; COUNTRIES = List.of(</span>
+            // North America
+<span class="fc" id="L67">            new CountrySeed(&quot;US&quot;, &quot;United States&quot;,          &quot;North America&quot;,  &quot;USD&quot;, List.of(</span>
+<span class="fc" id="L68">                    c(&quot;New York&quot;,      40.7128, -74.0060, &quot;America/New_York&quot;),</span>
+<span class="fc" id="L69">                    c(&quot;Los Angeles&quot;,   34.0522, -118.2437, &quot;America/Los_Angeles&quot;),</span>
+<span class="fc" id="L70">                    c(&quot;Chicago&quot;,       41.8781, -87.6298, &quot;America/Chicago&quot;),</span>
+<span class="fc" id="L71">                    c(&quot;Miami&quot;,         25.7617, -80.1918, &quot;America/New_York&quot;),</span>
+<span class="fc" id="L72">                    c(&quot;San Francisco&quot;, 37.7749, -122.4194, &quot;America/Los_Angeles&quot;),</span>
+<span class="fc" id="L73">                    c(&quot;Boston&quot;,        42.3601, -71.0589, &quot;America/New_York&quot;),</span>
+<span class="fc" id="L74">                    c(&quot;Seattle&quot;,       47.6062, -122.3321, &quot;America/Los_Angeles&quot;),</span>
+<span class="fc" id="L75">                    c(&quot;Las Vegas&quot;,     36.1699, -115.1398, &quot;America/Los_Angeles&quot;))),</span>
+<span class="fc" id="L76">            new CountrySeed(&quot;CA&quot;, &quot;Canada&quot;,                 &quot;North America&quot;,  &quot;CAD&quot;, List.of(</span>
+<span class="fc" id="L77">                    c(&quot;Toronto&quot;,       43.6532, -79.3832,  &quot;America/Toronto&quot;),</span>
+<span class="fc" id="L78">                    c(&quot;Vancouver&quot;,     49.2827, -123.1207, &quot;America/Vancouver&quot;),</span>
+<span class="fc" id="L79">                    c(&quot;Montréal&quot;,      45.5019, -73.5674,  &quot;America/Toronto&quot;),</span>
+<span class="fc" id="L80">                    c(&quot;Calgary&quot;,       51.0447, -114.0719, &quot;America/Edmonton&quot;))),</span>
+<span class="fc" id="L81">            new CountrySeed(&quot;MX&quot;, &quot;Mexico&quot;,                 &quot;North America&quot;,  &quot;MXN&quot;, List.of(</span>
+<span class="fc" id="L82">                    c(&quot;Mexico City&quot;,   19.4326, -99.1332,  &quot;America/Mexico_City&quot;),</span>
+<span class="fc" id="L83">                    c(&quot;Cancún&quot;,        21.1619, -86.8515,  &quot;America/Cancun&quot;),</span>
+<span class="fc" id="L84">                    c(&quot;Tulum&quot;,         20.2114, -87.4654,  &quot;America/Cancun&quot;))),</span>
+
+            // Western Europe
+<span class="fc" id="L87">            new CountrySeed(&quot;GB&quot;, &quot;United Kingdom&quot;,         &quot;Western Europe&quot;, &quot;GBP&quot;, List.of(</span>
+<span class="fc" id="L88">                    c(&quot;London&quot;,        51.5074, -0.1278,   &quot;Europe/London&quot;),</span>
+<span class="fc" id="L89">                    c(&quot;Edinburgh&quot;,     55.9533, -3.1883,   &quot;Europe/London&quot;),</span>
+<span class="fc" id="L90">                    c(&quot;Manchester&quot;,    53.4808, -2.2426,   &quot;Europe/London&quot;),</span>
+<span class="fc" id="L91">                    c(&quot;Bath&quot;,          51.3811, -2.3590,   &quot;Europe/London&quot;))),</span>
+<span class="fc" id="L92">            new CountrySeed(&quot;FR&quot;, &quot;France&quot;,                 &quot;Western Europe&quot;, &quot;EUR&quot;, List.of(</span>
+<span class="fc" id="L93">                    c(&quot;Paris&quot;,         48.8566, 2.3522,    &quot;Europe/Paris&quot;),</span>
+<span class="fc" id="L94">                    c(&quot;Cannes&quot;,        43.5528, 7.0174,    &quot;Europe/Paris&quot;),</span>
+<span class="fc" id="L95">                    c(&quot;Nice&quot;,          43.7102, 7.2620,    &quot;Europe/Paris&quot;),</span>
+<span class="fc" id="L96">                    c(&quot;Bordeaux&quot;,      44.8378, -0.5792,   &quot;Europe/Paris&quot;),</span>
+<span class="fc" id="L97">                    c(&quot;Lyon&quot;,          45.7640, 4.8357,    &quot;Europe/Paris&quot;))),</span>
+<span class="fc" id="L98">            new CountrySeed(&quot;DE&quot;, &quot;Germany&quot;,                &quot;Western Europe&quot;, &quot;EUR&quot;, List.of(</span>
+<span class="fc" id="L99">                    c(&quot;Berlin&quot;,        52.5200, 13.4050,   &quot;Europe/Berlin&quot;),</span>
+<span class="fc" id="L100">                    c(&quot;Munich&quot;,        48.1351, 11.5820,   &quot;Europe/Berlin&quot;),</span>
+<span class="fc" id="L101">                    c(&quot;Hamburg&quot;,       53.5511, 9.9937,    &quot;Europe/Berlin&quot;),</span>
+<span class="fc" id="L102">                    c(&quot;Frankfurt&quot;,     50.1109, 8.6821,    &quot;Europe/Berlin&quot;))),</span>
+<span class="fc" id="L103">            new CountrySeed(&quot;IT&quot;, &quot;Italy&quot;,                  &quot;Western Europe&quot;, &quot;EUR&quot;, List.of(</span>
+<span class="fc" id="L104">                    c(&quot;Rome&quot;,          41.9028, 12.4964,   &quot;Europe/Rome&quot;),</span>
+<span class="fc" id="L105">                    c(&quot;Milan&quot;,         45.4642, 9.1900,    &quot;Europe/Rome&quot;),</span>
+<span class="fc" id="L106">                    c(&quot;Venice&quot;,        45.4408, 12.3155,   &quot;Europe/Rome&quot;),</span>
+<span class="fc" id="L107">                    c(&quot;Florence&quot;,      43.7696, 11.2558,   &quot;Europe/Rome&quot;),</span>
+<span class="fc" id="L108">                    c(&quot;Capri&quot;,         40.5532, 14.2222,   &quot;Europe/Rome&quot;))),</span>
+<span class="fc" id="L109">            new CountrySeed(&quot;ES&quot;, &quot;Spain&quot;,                  &quot;Western Europe&quot;, &quot;EUR&quot;, List.of(</span>
+<span class="fc" id="L110">                    c(&quot;Madrid&quot;,        40.4168, -3.7038,   &quot;Europe/Madrid&quot;),</span>
+<span class="fc" id="L111">                    c(&quot;Barcelona&quot;,     41.3851, 2.1734,    &quot;Europe/Madrid&quot;),</span>
+<span class="fc" id="L112">                    c(&quot;Mallorca&quot;,      39.6953, 3.0176,    &quot;Europe/Madrid&quot;),</span>
+<span class="fc" id="L113">                    c(&quot;Marbella&quot;,      36.5101, -4.8826,   &quot;Europe/Madrid&quot;))),</span>
+<span class="fc" id="L114">            new CountrySeed(&quot;PT&quot;, &quot;Portugal&quot;,               &quot;Western Europe&quot;, &quot;EUR&quot;, List.of(</span>
+<span class="fc" id="L115">                    c(&quot;Lisbon&quot;,        38.7223, -9.1393,   &quot;Europe/Lisbon&quot;),</span>
+<span class="fc" id="L116">                    c(&quot;Porto&quot;,         41.1579, -8.6291,   &quot;Europe/Lisbon&quot;),</span>
+<span class="fc" id="L117">                    c(&quot;Madeira&quot;,       32.7607, -16.9595,  &quot;Atlantic/Madeira&quot;))),</span>
+<span class="fc" id="L118">            new CountrySeed(&quot;NL&quot;, &quot;Netherlands&quot;,            &quot;Western Europe&quot;, &quot;EUR&quot;, List.of(</span>
+<span class="fc" id="L119">                    c(&quot;Amsterdam&quot;,     52.3676, 4.9041,    &quot;Europe/Amsterdam&quot;),</span>
+<span class="fc" id="L120">                    c(&quot;The Hague&quot;,     52.0705, 4.3007,    &quot;Europe/Amsterdam&quot;))),</span>
+<span class="fc" id="L121">            new CountrySeed(&quot;BE&quot;, &quot;Belgium&quot;,                &quot;Western Europe&quot;, &quot;EUR&quot;, List.of(</span>
+<span class="fc" id="L122">                    c(&quot;Brussels&quot;,      50.8503, 4.3517,    &quot;Europe/Brussels&quot;),</span>
+<span class="fc" id="L123">                    c(&quot;Antwerp&quot;,       51.2194, 4.4025,    &quot;Europe/Brussels&quot;))),</span>
+<span class="fc" id="L124">            new CountrySeed(&quot;CH&quot;, &quot;Switzerland&quot;,            &quot;Western Europe&quot;, &quot;CHF&quot;, List.of(</span>
+<span class="fc" id="L125">                    c(&quot;Zurich&quot;,        47.3769, 8.5417,    &quot;Europe/Zurich&quot;),</span>
+<span class="fc" id="L126">                    c(&quot;Geneva&quot;,        46.2044, 6.1432,    &quot;Europe/Zurich&quot;),</span>
+<span class="fc" id="L127">                    c(&quot;St. Moritz&quot;,    46.4980, 9.8333,    &quot;Europe/Zurich&quot;),</span>
+<span class="fc" id="L128">                    c(&quot;Zermatt&quot;,       46.0207, 7.7491,    &quot;Europe/Zurich&quot;))),</span>
+<span class="fc" id="L129">            new CountrySeed(&quot;AT&quot;, &quot;Austria&quot;,                &quot;Western Europe&quot;, &quot;EUR&quot;, List.of(</span>
+<span class="fc" id="L130">                    c(&quot;Vienna&quot;,        48.2082, 16.3738,   &quot;Europe/Vienna&quot;),</span>
+<span class="fc" id="L131">                    c(&quot;Salzburg&quot;,      47.8095, 13.0550,   &quot;Europe/Vienna&quot;))),</span>
+<span class="fc" id="L132">            new CountrySeed(&quot;IE&quot;, &quot;Ireland&quot;,                &quot;Western Europe&quot;, &quot;EUR&quot;, List.of(</span>
+<span class="fc" id="L133">                    c(&quot;Dublin&quot;,        53.3498, -6.2603,   &quot;Europe/Dublin&quot;),</span>
+<span class="fc" id="L134">                    c(&quot;Galway&quot;,        53.2707, -9.0568,   &quot;Europe/Dublin&quot;))),</span>
+
+            // Northern Europe
+<span class="fc" id="L137">            new CountrySeed(&quot;SE&quot;, &quot;Sweden&quot;,                 &quot;Northern Europe&quot;,&quot;SEK&quot;, List.of(</span>
+<span class="fc" id="L138">                    c(&quot;Stockholm&quot;,     59.3293, 18.0686,   &quot;Europe/Stockholm&quot;),</span>
+<span class="fc" id="L139">                    c(&quot;Gothenburg&quot;,    57.7089, 11.9746,   &quot;Europe/Stockholm&quot;))),</span>
+<span class="fc" id="L140">            new CountrySeed(&quot;NO&quot;, &quot;Norway&quot;,                 &quot;Northern Europe&quot;,&quot;NOK&quot;, List.of(</span>
+<span class="fc" id="L141">                    c(&quot;Oslo&quot;,          59.9139, 10.7522,   &quot;Europe/Oslo&quot;),</span>
+<span class="fc" id="L142">                    c(&quot;Bergen&quot;,        60.3913, 5.3221,    &quot;Europe/Oslo&quot;))),</span>
+<span class="fc" id="L143">            new CountrySeed(&quot;DK&quot;, &quot;Denmark&quot;,                &quot;Northern Europe&quot;,&quot;DKK&quot;, List.of(</span>
+<span class="fc" id="L144">                    c(&quot;Copenhagen&quot;,    55.6761, 12.5683,   &quot;Europe/Copenhagen&quot;))),</span>
+<span class="fc" id="L145">            new CountrySeed(&quot;FI&quot;, &quot;Finland&quot;,                &quot;Northern Europe&quot;,&quot;EUR&quot;, List.of(</span>
+<span class="fc" id="L146">                    c(&quot;Helsinki&quot;,      60.1699, 24.9384,   &quot;Europe/Helsinki&quot;))),</span>
+<span class="fc" id="L147">            new CountrySeed(&quot;IS&quot;, &quot;Iceland&quot;,                &quot;Northern Europe&quot;,&quot;ISK&quot;, List.of(</span>
+<span class="fc" id="L148">                    c(&quot;Reykjavík&quot;,     64.1466, -21.9426,  &quot;Atlantic/Reykjavik&quot;))),</span>
+
+            // Southern / Eastern Europe
+<span class="fc" id="L151">            new CountrySeed(&quot;GR&quot;, &quot;Greece&quot;,                 &quot;Southern Europe&quot;,&quot;EUR&quot;, List.of(</span>
+<span class="fc" id="L152">                    c(&quot;Athens&quot;,        37.9838, 23.7275,   &quot;Europe/Athens&quot;),</span>
+<span class="fc" id="L153">                    c(&quot;Mykonos&quot;,       37.4467, 25.3289,   &quot;Europe/Athens&quot;),</span>
+<span class="fc" id="L154">                    c(&quot;Santorini&quot;,     36.3932, 25.4615,   &quot;Europe/Athens&quot;))),</span>
+<span class="fc" id="L155">            new CountrySeed(&quot;HR&quot;, &quot;Croatia&quot;,                &quot;Southern Europe&quot;,&quot;EUR&quot;, List.of(</span>
+<span class="fc" id="L156">                    c(&quot;Dubrovnik&quot;,     42.6507, 18.0944,   &quot;Europe/Zagreb&quot;),</span>
+<span class="fc" id="L157">                    c(&quot;Split&quot;,         43.5081, 16.4402,   &quot;Europe/Zagreb&quot;))),</span>
+<span class="fc" id="L158">            new CountrySeed(&quot;PL&quot;, &quot;Poland&quot;,                 &quot;Eastern Europe&quot;, &quot;PLN&quot;, List.of(</span>
+<span class="fc" id="L159">                    c(&quot;Warsaw&quot;,        52.2297, 21.0122,   &quot;Europe/Warsaw&quot;),</span>
+<span class="fc" id="L160">                    c(&quot;Kraków&quot;,        50.0647, 19.9450,   &quot;Europe/Warsaw&quot;))),</span>
+<span class="fc" id="L161">            new CountrySeed(&quot;CZ&quot;, &quot;Czechia&quot;,                &quot;Eastern Europe&quot;, &quot;CZK&quot;, List.of(</span>
+<span class="fc" id="L162">                    c(&quot;Prague&quot;,        50.0755, 14.4378,   &quot;Europe/Prague&quot;))),</span>
+<span class="fc" id="L163">            new CountrySeed(&quot;HU&quot;, &quot;Hungary&quot;,                &quot;Eastern Europe&quot;, &quot;HUF&quot;, List.of(</span>
+<span class="fc" id="L164">                    c(&quot;Budapest&quot;,      47.4979, 19.0402,   &quot;Europe/Budapest&quot;))),</span>
+
+            // East / Southeast Asia
+<span class="fc" id="L167">            new CountrySeed(&quot;JP&quot;, &quot;Japan&quot;,                  &quot;East Asia&quot;,      &quot;JPY&quot;, List.of(</span>
+<span class="fc" id="L168">                    c(&quot;Tokyo&quot;,         35.6762, 139.6503,  &quot;Asia/Tokyo&quot;),</span>
+<span class="fc" id="L169">                    c(&quot;Kyoto&quot;,         35.0116, 135.7681,  &quot;Asia/Tokyo&quot;),</span>
+<span class="fc" id="L170">                    c(&quot;Osaka&quot;,         34.6937, 135.5023,  &quot;Asia/Tokyo&quot;))),</span>
+<span class="fc" id="L171">            new CountrySeed(&quot;KR&quot;, &quot;South Korea&quot;,            &quot;East Asia&quot;,      &quot;KRW&quot;, List.of(</span>
+<span class="fc" id="L172">                    c(&quot;Seoul&quot;,         37.5665, 126.9780,  &quot;Asia/Seoul&quot;),</span>
+<span class="fc" id="L173">                    c(&quot;Busan&quot;,         35.1796, 129.0756,  &quot;Asia/Seoul&quot;))),</span>
+<span class="fc" id="L174">            new CountrySeed(&quot;CN&quot;, &quot;China&quot;,                  &quot;East Asia&quot;,      &quot;CNY&quot;, List.of(</span>
+<span class="fc" id="L175">                    c(&quot;Shanghai&quot;,      31.2304, 121.4737,  &quot;Asia/Shanghai&quot;),</span>
+<span class="fc" id="L176">                    c(&quot;Beijing&quot;,       39.9042, 116.4074,  &quot;Asia/Shanghai&quot;),</span>
+<span class="fc" id="L177">                    c(&quot;Chengdu&quot;,       30.5728, 104.0668,  &quot;Asia/Shanghai&quot;))),</span>
+<span class="fc" id="L178">            new CountrySeed(&quot;HK&quot;, &quot;Hong Kong&quot;,              &quot;East Asia&quot;,      &quot;HKD&quot;, List.of(</span>
+<span class="fc" id="L179">                    c(&quot;Hong Kong&quot;,     22.3193, 114.1694,  &quot;Asia/Hong_Kong&quot;))),</span>
+<span class="fc" id="L180">            new CountrySeed(&quot;TW&quot;, &quot;Taiwan&quot;,                 &quot;East Asia&quot;,      &quot;TWD&quot;, List.of(</span>
+<span class="fc" id="L181">                    c(&quot;Taipei&quot;,        25.0330, 121.5654,  &quot;Asia/Taipei&quot;))),</span>
+<span class="fc" id="L182">            new CountrySeed(&quot;SG&quot;, &quot;Singapore&quot;,              &quot;Southeast Asia&quot;, &quot;SGD&quot;, List.of(</span>
+<span class="fc" id="L183">                    c(&quot;Singapore&quot;,     1.3521,  103.8198,  &quot;Asia/Singapore&quot;))),</span>
+<span class="fc" id="L184">            new CountrySeed(&quot;TH&quot;, &quot;Thailand&quot;,               &quot;Southeast Asia&quot;, &quot;THB&quot;, List.of(</span>
+<span class="fc" id="L185">                    c(&quot;Bangkok&quot;,       13.7563, 100.5018,  &quot;Asia/Bangkok&quot;),</span>
+<span class="fc" id="L186">                    c(&quot;Phuket&quot;,         7.8804, 98.3923,   &quot;Asia/Bangkok&quot;),</span>
+<span class="fc" id="L187">                    c(&quot;Chiang Mai&quot;,    18.7883, 98.9853,   &quot;Asia/Bangkok&quot;))),</span>
+<span class="fc" id="L188">            new CountrySeed(&quot;MY&quot;, &quot;Malaysia&quot;,               &quot;Southeast Asia&quot;, &quot;MYR&quot;, List.of(</span>
+<span class="fc" id="L189">                    c(&quot;Kuala Lumpur&quot;,  3.1390,  101.6869,  &quot;Asia/Kuala_Lumpur&quot;),</span>
+<span class="fc" id="L190">                    c(&quot;Penang&quot;,        5.4164,  100.3327,  &quot;Asia/Kuala_Lumpur&quot;))),</span>
+<span class="fc" id="L191">            new CountrySeed(&quot;ID&quot;, &quot;Indonesia&quot;,              &quot;Southeast Asia&quot;, &quot;IDR&quot;, List.of(</span>
+<span class="fc" id="L192">                    c(&quot;Jakarta&quot;,       -6.2088, 106.8456,  &quot;Asia/Jakarta&quot;),</span>
+<span class="fc" id="L193">                    c(&quot;Bali&quot;,          -8.4095, 115.1889,  &quot;Asia/Makassar&quot;))),</span>
+<span class="fc" id="L194">            new CountrySeed(&quot;VN&quot;, &quot;Vietnam&quot;,                &quot;Southeast Asia&quot;, &quot;VND&quot;, List.of(</span>
+<span class="fc" id="L195">                    c(&quot;Hanoi&quot;,         21.0285, 105.8542,  &quot;Asia/Ho_Chi_Minh&quot;),</span>
+<span class="fc" id="L196">                    c(&quot;Ho Chi Minh&quot;,   10.8231, 106.6297,  &quot;Asia/Ho_Chi_Minh&quot;),</span>
+<span class="fc" id="L197">                    c(&quot;Da Nang&quot;,       16.0544, 108.2022,  &quot;Asia/Ho_Chi_Minh&quot;))),</span>
+<span class="fc" id="L198">            new CountrySeed(&quot;PH&quot;, &quot;Philippines&quot;,            &quot;Southeast Asia&quot;, &quot;PHP&quot;, List.of(</span>
+<span class="fc" id="L199">                    c(&quot;Manila&quot;,        14.5995, 120.9842,  &quot;Asia/Manila&quot;),</span>
+<span class="fc" id="L200">                    c(&quot;Cebu&quot;,          10.3157, 123.8854,  &quot;Asia/Manila&quot;))),</span>
+
+            // South Asia
+<span class="fc" id="L203">            new CountrySeed(&quot;IN&quot;, &quot;India&quot;,                  &quot;South Asia&quot;,     &quot;INR&quot;, List.of(</span>
+<span class="fc" id="L204">                    c(&quot;Mumbai&quot;,        19.0760, 72.8777,   &quot;Asia/Kolkata&quot;),</span>
+<span class="fc" id="L205">                    c(&quot;Delhi&quot;,         28.7041, 77.1025,   &quot;Asia/Kolkata&quot;),</span>
+<span class="fc" id="L206">                    c(&quot;Bangalore&quot;,     12.9716, 77.5946,   &quot;Asia/Kolkata&quot;),</span>
+<span class="fc" id="L207">                    c(&quot;Goa&quot;,           15.2993, 74.1240,   &quot;Asia/Kolkata&quot;),</span>
+<span class="fc" id="L208">                    c(&quot;Jaipur&quot;,        26.9124, 75.7873,   &quot;Asia/Kolkata&quot;))),</span>
+<span class="fc" id="L209">            new CountrySeed(&quot;LK&quot;, &quot;Sri Lanka&quot;,              &quot;South Asia&quot;,     &quot;LKR&quot;, List.of(</span>
+<span class="fc" id="L210">                    c(&quot;Colombo&quot;,       6.9271,  79.8612,   &quot;Asia/Colombo&quot;),</span>
+<span class="fc" id="L211">                    c(&quot;Galle&quot;,         6.0535,  80.2210,   &quot;Asia/Colombo&quot;))),</span>
+
+            // Middle East
+<span class="fc" id="L214">            new CountrySeed(&quot;AE&quot;, &quot;United Arab Emirates&quot;,   &quot;Middle East&quot;,    &quot;AED&quot;, List.of(</span>
+<span class="fc" id="L215">                    c(&quot;Dubai&quot;,         25.2048, 55.2708,   &quot;Asia/Dubai&quot;),</span>
+<span class="fc" id="L216">                    c(&quot;Abu Dhabi&quot;,     24.4539, 54.3773,   &quot;Asia/Dubai&quot;))),</span>
+<span class="fc" id="L217">            new CountrySeed(&quot;SA&quot;, &quot;Saudi Arabia&quot;,           &quot;Middle East&quot;,    &quot;SAR&quot;, List.of(</span>
+<span class="fc" id="L218">                    c(&quot;Riyadh&quot;,        24.7136, 46.6753,   &quot;Asia/Riyadh&quot;),</span>
+<span class="fc" id="L219">                    c(&quot;Jeddah&quot;,        21.4858, 39.1925,   &quot;Asia/Riyadh&quot;))),</span>
+<span class="fc" id="L220">            new CountrySeed(&quot;QA&quot;, &quot;Qatar&quot;,                  &quot;Middle East&quot;,    &quot;QAR&quot;, List.of(</span>
+<span class="fc" id="L221">                    c(&quot;Doha&quot;,          25.2854, 51.5310,   &quot;Asia/Qatar&quot;))),</span>
+<span class="fc" id="L222">            new CountrySeed(&quot;OM&quot;, &quot;Oman&quot;,                   &quot;Middle East&quot;,    &quot;OMR&quot;, List.of(</span>
+<span class="fc" id="L223">                    c(&quot;Muscat&quot;,        23.5880, 58.3829,   &quot;Asia/Muscat&quot;))),</span>
+<span class="fc" id="L224">            new CountrySeed(&quot;IL&quot;, &quot;Israel&quot;,                 &quot;Middle East&quot;,    &quot;ILS&quot;, List.of(</span>
+<span class="fc" id="L225">                    c(&quot;Tel Aviv&quot;,      32.0853, 34.7818,   &quot;Asia/Jerusalem&quot;),</span>
+<span class="fc" id="L226">                    c(&quot;Jerusalem&quot;,     31.7683, 35.2137,   &quot;Asia/Jerusalem&quot;))),</span>
+<span class="fc" id="L227">            new CountrySeed(&quot;JO&quot;, &quot;Jordan&quot;,                 &quot;Middle East&quot;,    &quot;JOD&quot;, List.of(</span>
+<span class="fc" id="L228">                    c(&quot;Amman&quot;,         31.9539, 35.9106,   &quot;Asia/Amman&quot;))),</span>
+
+            // Africa
+<span class="fc" id="L231">            new CountrySeed(&quot;EG&quot;, &quot;Egypt&quot;,                  &quot;Africa&quot;,         &quot;EGP&quot;, List.of(</span>
+<span class="fc" id="L232">                    c(&quot;Cairo&quot;,         30.0444, 31.2357,   &quot;Africa/Cairo&quot;))),</span>
+<span class="fc" id="L233">            new CountrySeed(&quot;MA&quot;, &quot;Morocco&quot;,                &quot;Africa&quot;,         &quot;MAD&quot;, List.of(</span>
+<span class="fc" id="L234">                    c(&quot;Marrakech&quot;,     31.6295, -7.9811,   &quot;Africa/Casablanca&quot;),</span>
+<span class="fc" id="L235">                    c(&quot;Casablanca&quot;,    33.5731, -7.5898,   &quot;Africa/Casablanca&quot;))),</span>
+<span class="fc" id="L236">            new CountrySeed(&quot;ZA&quot;, &quot;South Africa&quot;,           &quot;Africa&quot;,         &quot;ZAR&quot;, List.of(</span>
+<span class="fc" id="L237">                    c(&quot;Cape Town&quot;,    -33.9249, 18.4241,   &quot;Africa/Johannesburg&quot;),</span>
+<span class="fc" id="L238">                    c(&quot;Johannesburg&quot;, -26.2041, 28.0473,   &quot;Africa/Johannesburg&quot;))),</span>
+<span class="fc" id="L239">            new CountrySeed(&quot;KE&quot;, &quot;Kenya&quot;,                  &quot;Africa&quot;,         &quot;KES&quot;, List.of(</span>
+<span class="fc" id="L240">                    c(&quot;Nairobi&quot;,      -1.2921,  36.8219,   &quot;Africa/Nairobi&quot;))),</span>
+
+            // South America
+<span class="fc" id="L243">            new CountrySeed(&quot;BR&quot;, &quot;Brazil&quot;,                 &quot;South America&quot;,  &quot;BRL&quot;, List.of(</span>
+<span class="fc" id="L244">                    c(&quot;Rio de Janeiro&quot;, -22.9068, -43.1729, &quot;America/Sao_Paulo&quot;),</span>
+<span class="fc" id="L245">                    c(&quot;São Paulo&quot;,      -23.5505, -46.6333, &quot;America/Sao_Paulo&quot;))),</span>
+<span class="fc" id="L246">            new CountrySeed(&quot;AR&quot;, &quot;Argentina&quot;,              &quot;South America&quot;,  &quot;ARS&quot;, List.of(</span>
+<span class="fc" id="L247">                    c(&quot;Buenos Aires&quot;,  -34.6037, -58.3816, &quot;America/Argentina/Buenos_Aires&quot;))),</span>
+<span class="fc" id="L248">            new CountrySeed(&quot;CL&quot;, &quot;Chile&quot;,                  &quot;South America&quot;,  &quot;CLP&quot;, List.of(</span>
+<span class="fc" id="L249">                    c(&quot;Santiago&quot;,      -33.4489, -70.6693, &quot;America/Santiago&quot;))),</span>
+<span class="fc" id="L250">            new CountrySeed(&quot;PE&quot;, &quot;Peru&quot;,                   &quot;South America&quot;,  &quot;PEN&quot;, List.of(</span>
+<span class="fc" id="L251">                    c(&quot;Lima&quot;,          -12.0464, -77.0428, &quot;America/Lima&quot;))),</span>
+
+            // Oceania
+<span class="fc" id="L254">            new CountrySeed(&quot;AU&quot;, &quot;Australia&quot;,              &quot;Oceania&quot;,        &quot;AUD&quot;, List.of(</span>
+<span class="fc" id="L255">                    c(&quot;Sydney&quot;,        -33.8688, 151.2093, &quot;Australia/Sydney&quot;),</span>
+<span class="fc" id="L256">                    c(&quot;Melbourne&quot;,     -37.8136, 144.9631, &quot;Australia/Melbourne&quot;),</span>
+<span class="fc" id="L257">                    c(&quot;Perth&quot;,         -31.9505, 115.8605, &quot;Australia/Perth&quot;))),</span>
+<span class="fc" id="L258">            new CountrySeed(&quot;NZ&quot;, &quot;New Zealand&quot;,            &quot;Oceania&quot;,        &quot;NZD&quot;, List.of(</span>
+<span class="fc" id="L259">                    c(&quot;Auckland&quot;,      -36.8485, 174.7633, &quot;Pacific/Auckland&quot;),</span>
+<span class="fc" id="L260">                    c(&quot;Queenstown&quot;,    -45.0312, 168.6626, &quot;Pacific/Auckland&quot;)))</span>
+    );
+
+    /** Common amenities shared by all generated hotels. */
+    private static Amenity am(String id, String code, String name, String cat, String desc, boolean premium) {
+<span class="fc" id="L265">        return new Amenity(id, code, name, cat, desc, null, premium, null, null);</span>
+    }
+<span class="fc" id="L267">    private static final Amenity A_POOL  = am(&quot;am-pool&quot;,  &quot;POOL&quot;,  &quot;Pool&quot;,         &quot;POOL&quot;,          &quot;Pool&quot;,         false);</span>
+<span class="fc" id="L268">    private static final Amenity A_SPA   = am(&quot;am-spa&quot;,   &quot;SPA&quot;,   &quot;Spa&quot;,          &quot;SPA&quot;,           &quot;Spa&quot;,          true);</span>
+<span class="fc" id="L269">    private static final Amenity A_GYM   = am(&quot;am-gym&quot;,   &quot;GYM&quot;,   &quot;Fitness&quot;,      &quot;FITNESS&quot;,       &quot;Gym&quot;,          false);</span>
+<span class="fc" id="L270">    private static final Amenity A_WIFI  = am(&quot;am-wifi&quot;,  &quot;WIFI&quot;,  &quot;WiFi&quot;,         &quot;CONNECTIVITY&quot;,  &quot;WiFi&quot;,         false);</span>
+<span class="fc" id="L271">    private static final Amenity A_VALET = am(&quot;am-valet&quot;, &quot;VALET&quot;, &quot;Valet&quot;,        &quot;PARKING&quot;,       &quot;Valet&quot;,        true);</span>
+<span class="fc" id="L272">    private static final Amenity A_CONC  = am(&quot;am-conc&quot;,  &quot;CONC&quot;,  &quot;Concierge&quot;,    &quot;BUSINESS&quot;,      &quot;Concierge&quot;,    false);</span>
+<span class="fc" id="L273">    private static final Amenity A_REST  = am(&quot;am-rest&quot;,  &quot;REST&quot;,  &quot;Restaurant&quot;,   &quot;DINING&quot;,        &quot;Restaurant&quot;,   false);</span>
+<span class="fc" id="L274">    private static final Amenity A_BUS   = am(&quot;am-bus&quot;,   &quot;BUS&quot;,   &quot;Business&quot;,     &quot;BUSINESS&quot;,      &quot;Business&quot;,     false);</span>
+<span class="fc" id="L275">    private static final Amenity A_KIDS  = am(&quot;am-kids&quot;,  &quot;KIDS&quot;,  &quot;Kids Club&quot;,    &quot;RECREATION&quot;,    &quot;Kids Club&quot;,    false);</span>
+<span class="fc" id="L276">    private static final Amenity A_BREAKFAST = am(&quot;am-bfst&quot;, &quot;BREAKFAST&quot;, &quot;Free Breakfast&quot;, &quot;DINING&quot;, &quot;Daily breakfast included&quot;, false);</span>
+
+    /**
+     * Generate brand records and templated hotels for them. The &quot;Luxe Collection&quot;
+     * brand and its 5 hand-curated hotels are produced separately by the caller.
+     */
+    static Out generate(OffsetDateTime now,
+                         Consumer&lt;RoomType&gt; roomSink) {
+<span class="fc" id="L284">        List&lt;Brand&gt; brands = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L285">        List&lt;Hotel&gt; hotels = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L286">        List&lt;RoomType&gt; rooms = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L287">        Map&lt;String, Integer&gt; propertyCounts = new HashMap&lt;&gt;();</span>
+
+        // Generate hotels first (we need them to compute the per-brand property counts).
+<span class="fc bfc" id="L290" title="All 2 branches covered.">        for (BrandSpec b : BRANDS) {</span>
+<span class="fc" id="L291">            String brandId = &quot;brand-&quot; + b.code().toLowerCase() + &quot;-001&quot;;</span>
+<span class="fc" id="L292">            int countriesForBrand = countriesForBrand(b);</span>
+<span class="fc" id="L293">            int countryCursor = 0;</span>
+<span class="fc bfc" id="L294" title="All 2 branches covered.">            for (CountrySeed country : COUNTRIES) {</span>
+<span class="fc bfc" id="L295" title="All 2 branches covered.">                if (countryCursor++ &gt;= countriesForBrand) break;</span>
+<span class="fc" id="L296">                int hotelsHere = hotelsPerCountry(b, country);</span>
+<span class="fc" id="L297">                int picked = 0;</span>
+<span class="fc bfc" id="L298" title="All 4 branches covered.">                for (int cityIdx = 0; cityIdx &lt; country.cities().size() &amp;&amp; picked &lt; hotelsHere; cityIdx++) {</span>
+<span class="fc" id="L299">                    CitySeed city = country.cities().get(cityIdx);</span>
+<span class="fc" id="L300">                    String suffix = nameSuffix(b, country, picked);</span>
+<span class="fc" id="L301">                    Hotel h = buildHotel(b, brandId, country, city, picked, suffix, now);</span>
+<span class="fc" id="L302">                    hotels.add(h);</span>
+<span class="fc" id="L303">                    rooms.addAll(h.getRoomTypes());</span>
+<span class="fc" id="L304">                    h.getRoomTypes().forEach(roomSink);</span>
+<span class="fc" id="L305">                    propertyCounts.merge(brandId, 1, Integer::sum);</span>
+<span class="fc" id="L306">                    picked++;</span>
+                }
+<span class="fc" id="L308">            }</span>
+<span class="fc" id="L309">        }</span>
+
+        // Now build brand records with the actual property counts.
+<span class="fc bfc" id="L312" title="All 2 branches covered.">        for (BrandSpec b : BRANDS) {</span>
+<span class="fc" id="L313">            String brandId = &quot;brand-&quot; + b.code().toLowerCase() + &quot;-001&quot;;</span>
+<span class="fc" id="L314">            int count = propertyCounts.getOrDefault(brandId, 0);</span>
+<span class="fc" id="L315">            String logoUrl = MediaUrls.brandLogoUrl(b.slug());</span>
+<span class="fc" id="L316">            String heroUrl = MediaUrls.brandHeroUrl(b.slug());</span>
+<span class="fc" id="L317">            brands.add(new Brand(brandId, b.code(), b.name(), b.slug(), b.tier(),</span>
+<span class="fc" id="L318">                    b.tagline(),</span>
+<span class="fc" id="L319">                    &quot;The &quot; + b.name() + &quot; collection — &quot; + b.tagline().toLowerCase(),</span>
+<span class="fc" id="L320">                    logoUrl, heroUrl, b.accent(),</span>
+<span class="fc" id="L321">                    b.pointsMultiplier(), count,</span>
+                    &quot;Carbon-conscious operations across all properties.&quot;,
+<span class="fc" id="L323">                    now.minusYears(8), now));</span>
+<span class="fc" id="L324">        }</span>
+
+        // Sort by tier then name for predictable order.
+<span class="fc" id="L327">        brands.sort(Comparator.comparing(Brand::getTier).reversed().thenComparing(Brand::getName));</span>
+<span class="fc" id="L328">        return new Out(brands, hotels, rooms);</span>
+    }
+
+    /** How many countries a brand spans — luxury/premium fan out wider than select. */
+    private static int countriesForBrand(BrandSpec b) {
+<span class="pc bpc" id="L333" title="1 of 4 branches missed.">        return switch (b.tier()) {</span>
+<span class="fc" id="L334">            case &quot;LUXURY&quot;  -&gt; COUNTRIES.size();          // ~50</span>
+<span class="fc" id="L335">            case &quot;PREMIUM&quot; -&gt; Math.min(COUNTRIES.size(), 38);</span>
+<span class="fc" id="L336">            case &quot;SELECT&quot;  -&gt; Math.min(COUNTRIES.size(), 28);</span>
+<span class="nc" id="L337">            default        -&gt; 20;</span>
+        };
+    }
+
+    /** Hotels per country for a given brand: 1–4, deterministic per (brand, country). */
+    private static int hotelsPerCountry(BrandSpec b, CountrySeed country) {
+<span class="fc" id="L343">        int seed = Math.abs((b.code() + &quot;::&quot; + country.code()).hashCode());</span>
+        // Bias toward 2–3, with occasional 4 for big-market countries.
+<span class="fc" id="L345">        int base = 2 + (seed % 3); // 2, 3, or 4</span>
+<span class="fc bfc" id="L346" title="All 2 branches covered.">        if (country.cities().size() == 1) return Math.min(base, 1);</span>
+<span class="fc" id="L347">        return Math.min(base, country.cities().size());</span>
+    }
+
+    private static String nameSuffix(BrandSpec b, CountrySeed country, int idx) {
+<span class="fc bfc" id="L351" title="All 2 branches covered.">        if (idx == 0) return &quot;&quot;;</span>
+<span class="fc" id="L352">        String[] suffixes = { &quot;Downtown&quot;, &quot;Marina&quot;, &quot;Heritage&quot;, &quot;Riverside&quot;, &quot;Park&quot;, &quot;Old Town&quot;, &quot;Bay&quot; };</span>
+<span class="fc" id="L353">        int seed = Math.abs((b.code() + country.code() + idx).hashCode());</span>
+<span class="fc" id="L354">        return &quot; &quot; + suffixes[seed % suffixes.length];</span>
+    }
+
+    private static Hotel buildHotel(BrandSpec b, String brandId, CountrySeed country, CitySeed city,
+                                     int idx, String suffix, OffsetDateTime now) {
+<span class="fc" id="L359">        String hid = &quot;prop-&quot; + b.code().toLowerCase() + &quot;-&quot; +</span>
+<span class="fc" id="L360">                country.code().toLowerCase() + &quot;-&quot; +</span>
+<span class="fc bfc" id="L361" title="All 2 branches covered.">                slugify(city.name()) + (idx &gt; 0 ? &quot;-&quot; + (idx + 1) : &quot;&quot;);</span>
+<span class="fc" id="L362">        String displayName = b.name() + &quot; &quot; + city.name() + suffix;</span>
+<span class="fc" id="L363">        String slug = slugify(displayName);</span>
+<span class="fc" id="L364">        int seed = Math.abs(hid.hashCode());</span>
+
+<span class="pc bpc" id="L366" title="1 of 4 branches missed.">        int starRating = switch (b.tier()) {</span>
+<span class="fc" id="L367">            case &quot;LUXURY&quot;  -&gt; 5;</span>
+<span class="fc" id="L368">            case &quot;PREMIUM&quot; -&gt; 4 + (seed % 2);  // 4 or 5</span>
+<span class="fc" id="L369">            case &quot;SELECT&quot;  -&gt; 3 + (seed % 2);  // 3 or 4</span>
+<span class="pc" id="L370">            default        -&gt; 4;</span>
+        };
+<span class="pc bpc" id="L372" title="1 of 4 branches missed.">        double overall = switch (b.tier()) {</span>
+<span class="fc" id="L373">            case &quot;LUXURY&quot;  -&gt; 8.8 + (seed % 9) * 0.1;   // 8.8 – 9.6</span>
+<span class="fc" id="L374">            case &quot;PREMIUM&quot; -&gt; 8.4 + (seed % 9) * 0.1;   // 8.4 – 9.2</span>
+<span class="fc" id="L375">            case &quot;SELECT&quot;  -&gt; 7.8 + (seed % 11) * 0.1;  // 7.8 – 8.8</span>
+<span class="pc" id="L376">            default        -&gt; 8.0;</span>
+        };
+<span class="fc" id="L378">        int reviewCount = 200 + (seed % 1800);</span>
+<span class="pc bpc" id="L379" title="1 of 4 branches missed.">        int totalRooms = switch (b.tier()) {</span>
+<span class="fc" id="L380">            case &quot;LUXURY&quot;  -&gt; 120 + (seed % 250);</span>
+<span class="fc" id="L381">            case &quot;PREMIUM&quot; -&gt; 180 + (seed % 320);</span>
+<span class="fc" id="L382">            case &quot;SELECT&quot;  -&gt; 80  + (seed % 280);</span>
+<span class="pc" id="L383">            default        -&gt; 150;</span>
+        };
+<span class="fc" id="L385">        int floors = 4 + (seed % 32);</span>
+<span class="fc" id="L386">        int openedYear = 1985 + (seed % 38);</span>
+<span class="fc bfc" id="L387" title="All 2 branches covered.">        Integer renovatedYear = (seed % 3 == 0) ? openedYear + 8 + (seed % 6) : null;</span>
+
+        // Slight jitter on coordinates so multiple hotels per city aren't co-located.
+<span class="fc" id="L390">        double latJitter = ((seed &gt;&gt; 4) % 100) / 1000.0 - 0.05;</span>
+<span class="fc" id="L391">        double lngJitter = ((seed &gt;&gt; 8) % 100) / 1000.0 - 0.05;</span>
+
+<span class="fc" id="L393">        HotelLocation loc = new HotelLocation(</span>
+<span class="fc" id="L394">                new Address(addressLine(b, city, idx), null, city.name(), null, postalCode(country, seed),</span>
+<span class="fc" id="L395">                        country.code(), country.name()),</span>
+<span class="fc" id="L396">                new Coordinates(round(city.lat() + latJitter, 4), round(city.lng() + lngJitter, 4)),</span>
+<span class="fc" id="L397">                city.tz(),</span>
+                null,
+                null);
+
+<span class="fc" id="L401">        HotelContact contact = new HotelContact(</span>
+                &quot;+00-&quot; + (1000 + seed % 9000) + &quot;-&quot; + (10000 + (seed * 7) % 89999),
+<span class="fc" id="L403">                slugify(b.name()) + &quot;-&quot; + slugify(city.name()) + &quot;@luxehotels.com&quot;,</span>
+<span class="fc" id="L404">                &quot;https://&quot; + slugify(b.name()) + &quot;.luxehotels.com/&quot; + slugify(city.name()),</span>
+                null, null);
+
+<span class="fc" id="L407">        HotelPolicies policies = new HotelPolicies(</span>
+<span class="fc" id="L408">                new HotelPolicies.CheckInPolicy(&quot;15:00&quot;, new HotelPolicies.EarlyLatePolicy(true, country.currency() + &quot; 50&quot;, true)),</span>
+<span class="fc" id="L409">                new HotelPolicies.CheckOutPolicy(&quot;12:00&quot;, new HotelPolicies.EarlyLatePolicy(true, country.currency() + &quot; 50&quot;, true)),</span>
+<span class="fc" id="L410">                new HotelPolicies.CancellationPolicy(48, &quot;Free cancellation up to 48h before arrival.&quot;),</span>
+<span class="fc bfc" id="L411" title="All 4 branches covered.">                new HotelPolicies.PetPolicy(b.tier().equals(&quot;SELECT&quot;) || (seed % 4 == 0), null,</span>
+<span class="fc bfc" id="L412" title="All 2 branches covered.">                        b.tier().equals(&quot;SELECT&quot;) ? &quot;Pets welcome on request.&quot; : &quot;Small pets welcome (under 10kg).&quot;),</span>
+                &quot;Non-smoking throughout.&quot;,
+                &quot;Children of all ages welcome.&quot;);
+
+<span class="fc" id="L416">        List&lt;Amenity&gt; amenities = amenitiesForTier(b.tier(), seed);</span>
+<span class="fc" id="L417">        boolean hasSpa = amenities.contains(A_SPA);</span>
+<span class="fc" id="L418">        boolean hasPool = amenities.contains(A_POOL);</span>
+
+<span class="fc bfc" id="L420" title="All 2 branches covered.">        Spa spa = hasSpa ? new Spa(&quot;spa-&quot; + hid, hid, b.name() + &quot; Spa &quot; + city.name(),</span>
+<span class="fc" id="L421">                LocalizedContent.of(&quot;A signature spa experience by &quot; + b.name() + &quot;.&quot;),</span>
+<span class="fc" id="L422">                &quot;07:00–22:00&quot;, true) : null;</span>
+
+<span class="pc bpc" id="L424" title="3 of 4 branches missed.">        List&lt;Restaurant&gt; restaurants = (amenities.contains(A_REST) || b.tier().equals(&quot;LUXURY&quot;))</span>
+<span class="fc" id="L425">                ? List.of(new Restaurant(&quot;rest-&quot; + hid, hid, &quot;The &quot; + city.name() + &quot; Table&quot;,</span>
+<span class="fc bfc" id="L426" title="All 2 branches covered.">                        List.of(&quot;Seasonal&quot;, b.tier().equals(&quot;LUXURY&quot;) ? &quot;Fine dining&quot; : &quot;All-day dining&quot;),</span>
+<span class="fc" id="L427">                        LocalizedContent.of(&quot;Signature in-house dining at &quot; + displayName + &quot;.&quot;),</span>
+<span class="fc bfc" id="L428" title="All 2 branches covered.">                        b.tier().equals(&quot;LUXURY&quot;) ? &quot;Smart&quot; : &quot;Casual&quot;,</span>
+                        &quot;06:30–22:30&quot;,
+<span class="fc bfc" id="L430" title="All 4 branches covered.">                        country.currency() + &quot; &quot; + (b.tier().equals(&quot;LUXURY&quot;) ? &quot;$$$$&quot; : b.tier().equals(&quot;PREMIUM&quot;) ? &quot;$$$&quot; : &quot;$$&quot;),</span>
+<span class="fc" id="L431">                        b.tier().equals(&quot;LUXURY&quot;), true))</span>
+<span class="pc" id="L432">                : List.of();</span>
+
+<span class="fc" id="L434">        String citySlug = slugify(city.name());</span>
+<span class="fc" id="L435">        List&lt;MediaAsset&gt; media = List.of(</span>
+                new MediaAsset(&quot;m-&quot; + hid + &quot;-1&quot;,
+<span class="fc" id="L437">                        MediaUrls.hotelExteriorUrl(b.slug(), citySlug),</span>
+<span class="fc" id="L438">                        MediaUrls.hotelExteriorThumbUrl(b.slug(), citySlug),</span>
+                        &quot;EXTERIOR&quot;, &quot;Exterior view&quot;, null, true, 1),
+                new MediaAsset(&quot;m-&quot; + hid + &quot;-2&quot;,
+<span class="fc" id="L441">                        MediaUrls.hotelLobbyUrl(b.slug(), citySlug),</span>
+<span class="fc" id="L442">                        MediaUrls.hotelLobbyThumbUrl(b.slug(), citySlug),</span>
+                        &quot;INTERIOR&quot;, &quot;Lobby&quot;, null, false, 2)
+        );
+
+<span class="fc" id="L446">        SustainabilityInfo sustainability = new SustainabilityInfo(</span>
+<span class="fc" id="L447">                60 + (seed % 35),</span>
+<span class="fc bfc" id="L448" title="All 2 branches covered.">                List.of(),</span>
+                seed % 2 == 0,
+<span class="fc" id="L450">                40 + (seed % 50),</span>
+<span class="fc" id="L451">                30 + (seed % 60));</span>
+
+<span class="fc bfc" id="L453" title="All 6 branches covered.">        boolean isFeatured = &quot;LUXURY&quot;.equals(b.tier()) &amp;&amp; idx == 0 &amp;&amp; (seed % 7 == 0);</span>
+
+<span class="fc" id="L455">        Hotel h = new Hotel(hid, brandId, b.code(),</span>
+<span class="fc" id="L456">                country.code() + String.format(&quot;%03d&quot;, 1 + (seed % 999)),</span>
+                displayName, slug, &quot;ACTIVE&quot;,
+<span class="fc" id="L458">                openedYear, renovatedYear, floors, totalRooms, starRating,</span>
+<span class="fc" id="L459">                new GuestRating(round(overall, 1), reviewCount,</span>
+                        new RatingBreakdown(reviewCount * 7 / 10, reviewCount * 2 / 10,
+                                reviewCount / 20, reviewCount / 50, reviewCount / 100),
+<span class="fc" id="L462">                        List.of()),</span>
+                loc, contact,
+<span class="fc" id="L464">                LocalizedContent.of(displayName + &quot; brings the &quot; + b.name() + &quot; philosophy to &quot; + city.name() +</span>
+<span class="fc" id="L465">                        &quot;. &quot; + b.tagline()),</span>
+                policies,
+                amenities,
+                new ArrayList&lt;&gt;(),  // room types attached below
+                restaurants, spa, null,
+                media,
+<span class="fc" id="L471">                List.of(),</span>
+<span class="fc" id="L472">                new ParkingInfo(true, &quot;Multi-storey&quot;, b.tier().equals(&quot;LUXURY&quot;),</span>
+<span class="fc" id="L473">                        country.currency() + &quot; 30/day&quot;, null, true),</span>
+                sustainability,
+<span class="fc" id="L475">                List.of(),</span>
+                isFeatured, now);
+
+        // Add a tiered set of room types.
+<span class="fc" id="L479">        List&lt;RoomType&gt; rt = roomTypesFor(h, b, city, seed);</span>
+<span class="fc" id="L480">        h.getRoomTypes().addAll(rt);</span>
+<span class="fc" id="L481">        return h;</span>
+    }
+
+    private static List&lt;Amenity&gt; amenitiesForTier(String tier, int seed) {
+<span class="fc" id="L485">        List&lt;Amenity&gt; base = new ArrayList&lt;&gt;(List.of(A_WIFI, A_GYM, A_REST));</span>
+<span class="pc bpc" id="L486" title="1 of 4 branches missed.">        switch (tier) {</span>
+            case &quot;LUXURY&quot; -&gt; {
+<span class="fc" id="L488">                base.addAll(List.of(A_POOL, A_SPA, A_VALET, A_CONC, A_BUS));</span>
+                // Most luxury properties include breakfast in club / suite bookings.
+<span class="fc bfc" id="L490" title="All 2 branches covered.">                if (seed % 3 != 0) base.add(A_BREAKFAST);</span>
+            }
+            case &quot;PREMIUM&quot; -&gt; {
+<span class="fc" id="L493">                base.add(A_CONC); base.add(A_BUS);</span>
+<span class="fc bfc" id="L494" title="All 2 branches covered.">                if (seed % 3 != 0) base.add(A_POOL);</span>
+<span class="fc bfc" id="L495" title="All 2 branches covered.">                if (seed % 2 == 0) base.add(A_SPA);</span>
+<span class="fc bfc" id="L496" title="All 2 branches covered.">                if (seed % 4 == 0) base.add(A_KIDS);</span>
+                // Premium tier offers breakfast often (~50% of hotels).
+<span class="fc bfc" id="L498" title="All 2 branches covered.">                if (seed % 2 == 1) base.add(A_BREAKFAST);</span>
+            }
+            case &quot;SELECT&quot; -&gt; {
+<span class="fc bfc" id="L501" title="All 2 branches covered.">                if (seed % 4 == 0) base.add(A_POOL);</span>
+<span class="fc bfc" id="L502" title="All 2 branches covered.">                if (seed % 5 == 0) base.add(A_BUS);</span>
+                // Free breakfast is a select-tier signature (~70% of hotels).
+<span class="fc bfc" id="L504" title="All 2 branches covered.">                if (seed % 10 &lt; 7) base.add(A_BREAKFAST);</span>
+            }
+        }
+<span class="fc" id="L507">        return base;</span>
+    }
+
+    private static List&lt;RoomType&gt; roomTypesFor(Hotel h, BrandSpec b, CitySeed city, int seed) {
+<span class="fc" id="L511">        List&lt;RoomType&gt; out = new ArrayList&lt;&gt;();</span>
+        // Always have a Deluxe and a Suite. LUXURY gets a Penthouse too.
+<span class="fc" id="L513">        out.add(room(h.getId() + &quot;-rm1&quot;, h.getId(), &quot;DLX&quot;,</span>
+<span class="fc bfc" id="L514" title="All 2 branches covered.">                &quot;Deluxe &quot; + (b.tier().equals(&quot;LUXURY&quot;) ? &quot;King&quot; : &quot;Room&quot;),</span>
+                &quot;DELUXE&quot;, &quot;Refined room with city outlook.&quot;, 32 + (seed % 18),
+                new OccupancyLimit(2, 1, 3),
+<span class="fc" id="L517">                List.of(new BedConfiguration(&quot;KING&quot;, 1)),</span>
+                &quot;City view&quot;, &quot;3-12&quot;,
+<span class="fc" id="L519">                List.of(&quot;Premium linens&quot;, &quot;Smart room controls&quot;),</span>
+                false, false));
+<span class="fc" id="L521">        out.add(room(h.getId() + &quot;-rm2&quot;, h.getId(), &quot;EXE&quot;,</span>
+                &quot;Executive Room&quot;,
+                &quot;PREMIER&quot;, &quot;Elevated room with extra space and lounge access.&quot;, 40 + (seed % 14),
+                new OccupancyLimit(2, 1, 3),
+<span class="fc" id="L525">                List.of(new BedConfiguration(&quot;KING&quot;, 1)),</span>
+                &quot;Skyline view&quot;, &quot;10-20&quot;,
+<span class="fc" id="L527">                List.of(&quot;Lounge access&quot;, &quot;Welcome amenities&quot;),</span>
+                false, false));
+<span class="fc" id="L529">        out.add(room(h.getId() + &quot;-rm3&quot;, h.getId(), &quot;STE&quot;,</span>
+<span class="fc bfc" id="L530" title="All 2 branches covered.">                b.tier().equals(&quot;LUXURY&quot;) ? &quot;Signature Suite&quot; : &quot;Junior Suite&quot;,</span>
+                &quot;SUITE&quot;, &quot;Suite with separate living area.&quot;, 60 + (seed % 22),
+                new OccupancyLimit(3, 2, 5),
+<span class="fc" id="L533">                List.of(new BedConfiguration(&quot;KING&quot;, 1), new BedConfiguration(&quot;SOFA_BED&quot;, 1)),</span>
+                &quot;Premium view&quot;, &quot;12-25&quot;,
+<span class="fc" id="L535">                List.of(&quot;Living area&quot;, &quot;Marble bathroom&quot;),</span>
+                false, true));
+<span class="fc bfc" id="L537" title="All 2 branches covered.">        if (&quot;LUXURY&quot;.equals(b.tier())) {</span>
+<span class="fc" id="L538">            out.add(room(h.getId() + &quot;-rm4&quot;, h.getId(), &quot;PNT&quot;,</span>
+                    &quot;Penthouse&quot;,
+                    &quot;PENTHOUSE&quot;, &quot;Top-floor penthouse with private terrace.&quot;, 140.0 + (seed % 60),
+                    new OccupancyLimit(4, 2, 6),
+<span class="fc" id="L542">                    List.of(new BedConfiguration(&quot;KING&quot;, 2)),</span>
+                    &quot;Panoramic&quot;, &quot;Top&quot;,
+<span class="fc" id="L544">                    List.of(&quot;Private terrace&quot;, &quot;Butler service&quot;),</span>
+                    false, false));
+        }
+<span class="fc" id="L547">        return out;</span>
+    }
+
+    private static RoomType room(String id, String hotelId, String code, String name, String category,
+                                  String desc, double sqm, OccupancyLimit occ, List&lt;BedConfiguration&gt; beds,
+                                  String view, String floor, List&lt;String&gt; highlights, boolean smoking, boolean connecting) {
+<span class="fc" id="L553">        return new RoomType(id, hotelId, code, name, category,</span>
+<span class="fc" id="L554">                LocalizedContent.of(desc), sqm, occ, beds, view, floor,</span>
+<span class="fc" id="L555">                List.of(),</span>
+<span class="fc" id="L556">                List.of(new MediaAsset(id + &quot;-img&quot;,</span>
+<span class="fc" id="L557">                        MediaUrls.roomImageUrl(id),</span>
+<span class="fc" id="L558">                        MediaUrls.roomImageThumbUrl(id),</span>
+                        &quot;ROOM&quot;, null, null, true, 1)),
+<span class="fc" id="L560">                List.of(),</span>
+                highlights, smoking, connecting);
+    }
+
+    private static String addressLine(BrandSpec b, CitySeed city, int idx) {
+<span class="fc" id="L565">        int n = 1 + Math.abs((b.code() + city.name() + idx).hashCode()) % 240;</span>
+<span class="fc" id="L566">        String[] streets = { &quot;High Street&quot;, &quot;Park Avenue&quot;, &quot;Marina Boulevard&quot;, &quot;Central Square&quot;,</span>
+                &quot;Riverside Drive&quot;, &quot;Heritage Lane&quot;, &quot;Old Town Way&quot;, &quot;Garden Crescent&quot; };
+<span class="fc" id="L568">        return n + &quot; &quot; + streets[Math.abs((b.code() + city.name()).hashCode()) % streets.length];</span>
+    }
+
+    private static String postalCode(CountrySeed country, int seed) {
+<span class="fc" id="L572">        int code = 10000 + Math.abs(seed) % 89999;</span>
+<span class="fc bfc" id="L573" title="All 3 branches covered.">        return switch (country.code()) {</span>
+<span class="fc" id="L574">            case &quot;GB&quot; -&gt; &quot;SW1A 1A&quot; + (Math.abs(seed) % 9);</span>
+<span class="fc" id="L575">            case &quot;US&quot;, &quot;JP&quot;, &quot;DE&quot;, &quot;FR&quot;, &quot;ES&quot; -&gt; String.valueOf(code);</span>
+<span class="fc" id="L576">            default -&gt; String.valueOf(code);</span>
+        };
+    }
+
+    private static double round(double d, int decimals) {
+<span class="fc" id="L581">        double k = Math.pow(10, decimals);</span>
+<span class="fc" id="L582">        return Math.round(d * k) / k;</span>
+    }
+
+    private static String slugify(String s) {
+<span class="fc" id="L586">        return s.toLowerCase().replaceAll(&quot;[^a-z0-9]+&quot;, &quot;-&quot;).replaceAll(&quot;(^-|-$)&quot;, &quot;&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

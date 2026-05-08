@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PropertyDataFetcher.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Luxe Hotels - Property Subgraph</a> &gt; <a href="index.source.html" class="el_package">com.luxe.property.resolver</a> &gt; <span class="el_source">PropertyDataFetcher.java</span></div><h1>PropertyDataFetcher.java</h1><pre class="source lang-java linenums">package com.luxe.property.resolver;
 
 import com.luxe.common.auth.AuthContext;
+import com.luxe.common.auth.AuthContextResolver;
 import com.luxe.common.error.NotFoundError;
 import com.luxe.property.datasource.PropertyDataSource;
 import com.luxe.property.schema.types.*;
 import com.netflix.graphql.dgs.*;
 import graphql.schema.DataFetchingEnvironment;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -16,27 +15,27 @@ import java.util.stream.Collectors;
 public class PropertyDataFetcher {
 
     private final PropertyDataSource dataSource;
+    private final AuthContextResolver authResolver;
 
-<span class="fc" id="L20">    public PropertyDataFetcher(PropertyDataSource dataSource) {</span>
+<span class="fc" id="L20">    public PropertyDataFetcher(PropertyDataSource dataSource, AuthContextResolver authResolver) {</span>
 <span class="fc" id="L21">        this.dataSource = dataSource;</span>
-<span class="fc" id="L22">    }</span>
+<span class="fc" id="L22">        this.authResolver = authResolver;</span>
+<span class="fc" id="L23">    }</span>
 
-    private AuthContext auth() {
-<span class="fc" id="L25">        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();</span>
-<span class="pc bpc" id="L26" title="1 of 2 branches missed.">        if (attrs == null) return null;</span>
-<span class="fc" id="L27">        return (AuthContext) attrs.getRequest().getAttribute(&quot;authContext&quot;);</span>
+    private AuthContext auth(DataFetchingEnvironment dfe) {
+<span class="fc" id="L26">        return authResolver.resolve(dfe);</span>
     }
 
     // ── Queries ───────────────────────────────────────────────────────────────
 
     @DgsQuery
     public Hotel hotel(@InputArgument String id) {
-<span class="fc" id="L34">        return dataSource.getHotelById(id).orElse(null);</span>
+<span class="fc" id="L33">        return dataSource.getHotelById(id).orElse(null);</span>
     }
 
     @DgsQuery
     public Hotel hotelBySlug(@InputArgument String slug) {
-<span class="fc" id="L39">        return dataSource.getHotelBySlug(slug).orElse(null);</span>
+<span class="fc" id="L38">        return dataSource.getHotelBySlug(slug).orElse(null);</span>
     }
 
     @DgsQuery
@@ -44,224 +43,237 @@ public class PropertyDataFetcher {
                                        @InputArgument String after,
                                        @InputArgument Map&lt;String, Object&gt; filter,
                                        @InputArgument String sortBy) {
-<span class="fc" id="L47">        List&lt;Hotel&gt; all = dataSource.searchHotels(filter, sortBy);</span>
-<span class="fc" id="L48">        return buildConnection(all, first, after);</span>
+<span class="fc" id="L46">        List&lt;Hotel&gt; all = dataSource.searchHotels(filter, sortBy);</span>
+<span class="fc" id="L47">        return buildConnection(all, first, after);</span>
+    }
+
+    @DgsQuery
+    public com.luxe.property.schema.types.HotelFacets hotelFacets(
+            @InputArgument Map&lt;String, Object&gt; filter) {
+<span class="nc" id="L53">        return dataSource.computeFacets(filter);</span>
     }
 
     @DgsQuery
     public Brand brand(@InputArgument String id) {
-<span class="nc" id="L53">        return dataSource.getBrandById(id).orElse(null);</span>
+<span class="nc" id="L58">        return dataSource.getBrandById(id).orElse(null);</span>
     }
 
     @DgsQuery
     public Brand brandByCode(@InputArgument String code) {
-<span class="fc" id="L58">        return dataSource.getBrandByCode(code).orElse(null);</span>
+<span class="fc" id="L63">        return dataSource.getBrandByCode(code).orElse(null);</span>
     }
 
     @DgsQuery
     public Map&lt;String, Object&gt; brands(@InputArgument Integer first,
                                        @InputArgument String after,
                                        @InputArgument String tier) {
-<span class="fc" id="L65">        List&lt;Brand&gt; all = dataSource.getAllBrands(tier);</span>
-<span class="fc" id="L66">        return buildBrandConnection(all, first, after);</span>
+<span class="fc" id="L70">        List&lt;Brand&gt; all = dataSource.getAllBrands(tier);</span>
+<span class="fc" id="L71">        return buildBrandConnection(all, first, after);</span>
     }
 
     @DgsQuery
     public RoomType roomType(@InputArgument String id) {
-<span class="nc" id="L71">        return dataSource.getRoomTypeById(id).orElse(null);</span>
+<span class="nc" id="L76">        return dataSource.getRoomTypeById(id).orElse(null);</span>
     }
 
     @DgsQuery
     public List&lt;Hotel&gt; featuredHotels(@InputArgument Integer first,
                                        @InputArgument String brandTier,
                                        @InputArgument String countryCode) {
-<span class="pc bpc" id="L78" title="1 of 2 branches missed.">        return dataSource.getFeaturedHotels(brandTier, countryCode, first != null ? first : 6);</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">        return dataSource.getFeaturedHotels(brandTier, countryCode, first != null ? first : 6);</span>
+    }
+
+    @DgsQuery
+    public List&lt;com.luxe.property.schema.types.DestinationSuggestion&gt; destinationSuggestions(
+            @InputArgument String query, @InputArgument Integer limit) {
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        return dataSource.destinationSuggestions(query, limit != null ? limit : 10);</span>
     }
 
     @DgsQuery
     public Restaurant restaurant(@InputArgument String id) {
-<span class="nc" id="L83">        return dataSource.getRestaurantById(id).orElse(null);</span>
+<span class="nc" id="L94">        return dataSource.getRestaurantById(id).orElse(null);</span>
     }
 
     @DgsQuery
     public Spa spa(@InputArgument String id) {
-<span class="nc" id="L88">        return dataSource.getSpaById(id).orElse(null);</span>
+<span class="nc" id="L99">        return dataSource.getSpaById(id).orElse(null);</span>
     }
 
     // ── Mutations ─────────────────────────────────────────────────────────────
 
     @DgsMutation
-    public Object submitReview(@InputArgument Map&lt;String, Object&gt; input) {
-<span class="fc" id="L95">        AuthContext authContext = auth();</span>
-<span class="pc bpc" id="L96" title="1 of 2 branches missed.">        if (authContext != null) authContext.requireAuth();</span>
+    public Object submitReview(@InputArgument Map&lt;String, Object&gt; input,
+                                DataFetchingEnvironment dfe) {
+<span class="fc" id="L107">        AuthContext authContext = auth(dfe);</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">        if (authContext != null) authContext.requireAuth();</span>
 
-<span class="fc" id="L98">        String hotelId = (String) input.get(&quot;hotelId&quot;);</span>
-<span class="fc" id="L99">        Number rating = (Number) input.get(&quot;overallRating&quot;);</span>
-<span class="fc" id="L100">        String title = (String) input.get(&quot;title&quot;);</span>
-<span class="fc" id="L101">        String body = (String) input.get(&quot;body&quot;);</span>
+<span class="fc" id="L110">        String hotelId = (String) input.get(&quot;hotelId&quot;);</span>
+<span class="fc" id="L111">        Number rating = (Number) input.get(&quot;overallRating&quot;);</span>
+<span class="fc" id="L112">        String title = (String) input.get(&quot;title&quot;);</span>
+<span class="fc" id="L113">        String body = (String) input.get(&quot;body&quot;);</span>
         // Date scalar deserializes to java.time.LocalDate; coerce to ISO string for the data source.
-<span class="fc" id="L103">        Object rawStayDate = input.get(&quot;stayDate&quot;);</span>
-<span class="pc bpc" id="L104" title="1 of 2 branches missed.">        String stayDate = rawStayDate != null ? rawStayDate.toString() : null;</span>
+<span class="fc" id="L115">        Object rawStayDate = input.get(&quot;stayDate&quot;);</span>
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        String stayDate = rawStayDate != null ? rawStayDate.toString() : null;</span>
 
-<span class="fc bfc" id="L106" title="All 2 branches covered.">        if (dataSource.getHotelById(hotelId).isEmpty()) {</span>
-<span class="fc" id="L107">            return new NotFoundError(&quot;Hotel&quot;, hotelId);</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        if (dataSource.getHotelById(hotelId).isEmpty()) {</span>
+<span class="fc" id="L119">            return new NotFoundError(&quot;Hotel&quot;, hotelId);</span>
         }
 
         @SuppressWarnings(&quot;unchecked&quot;)
-<span class="fc" id="L111">        Map&lt;String, Object&gt; cats = (Map&lt;String, Object&gt;) input.get(&quot;categoryRatings&quot;);</span>
-<span class="pc bpc" id="L112" title="3 of 4 branches missed.">        String guestName = authContext != null &amp;&amp; authContext.guestId() != null</span>
-<span class="pc" id="L113">                ? authContext.guestId() : &quot;Anonymous&quot;;</span>
+<span class="fc" id="L123">        Map&lt;String, Object&gt; cats = (Map&lt;String, Object&gt;) input.get(&quot;categoryRatings&quot;);</span>
+<span class="pc bpc" id="L124" title="2 of 4 branches missed.">        String guestName = authContext != null &amp;&amp; authContext.guestId() != null</span>
+<span class="pc" id="L125">                ? authContext.guestId() : &quot;Anonymous&quot;;</span>
 
-<span class="fc" id="L115">        return dataSource.submitReview(hotelId, guestName, rating.doubleValue(), cats, title, body, stayDate);</span>
+<span class="fc" id="L127">        return dataSource.submitReview(hotelId, guestName, rating.doubleValue(), cats, title, body, stayDate);</span>
     }
 
     @DgsMutation
     public Object markReviewHelpful(@InputArgument String reviewId) {
-<span class="nc" id="L120">        return dataSource.markReviewHelpful(reviewId)</span>
-<span class="nc" id="L121">                .&lt;Object&gt;map(r -&gt; r)</span>
-<span class="nc" id="L122">                .orElseGet(() -&gt; new NotFoundError(&quot;Review&quot;, reviewId));</span>
+<span class="nc" id="L132">        return dataSource.markReviewHelpful(reviewId)</span>
+<span class="nc" id="L133">                .&lt;Object&gt;map(r -&gt; r)</span>
+<span class="nc" id="L134">                .orElseGet(() -&gt; new NotFoundError(&quot;Review&quot;, reviewId));</span>
     }
 
     // ── Parent-type field resolvers ────────────────────────────────────────────
 
     @DgsData(parentType = &quot;Hotel&quot;, field = &quot;brand&quot;)
     public Brand hotelBrand(DataFetchingEnvironment dfe) {
-<span class="nc" id="L129">        Hotel hotel = dfe.getSource();</span>
-<span class="nc" id="L130">        return dataSource.getBrandById(hotel.getBrandId()).orElse(null);</span>
+<span class="nc" id="L141">        Hotel hotel = dfe.getSource();</span>
+<span class="nc" id="L142">        return dataSource.getBrandById(hotel.getBrandId()).orElse(null);</span>
     }
 
     @DgsData(parentType = &quot;Hotel&quot;, field = &quot;roomTypes&quot;)
     public List&lt;RoomType&gt; hotelRoomTypes(DataFetchingEnvironment dfe) {
-<span class="nc" id="L135">        Hotel hotel = dfe.getSource();</span>
-<span class="nc" id="L136">        return dataSource.getRoomTypesByHotelId(hotel.getId());</span>
+<span class="nc" id="L147">        Hotel hotel = dfe.getSource();</span>
+<span class="nc" id="L148">        return dataSource.getRoomTypesByHotelId(hotel.getId());</span>
     }
 
     @DgsData(parentType = &quot;Hotel&quot;, field = &quot;reviews&quot;)
     public Map&lt;String, Object&gt; hotelReviews(DataFetchingEnvironment dfe) {
-<span class="nc" id="L141">        Hotel hotel = dfe.getSource();</span>
-<span class="nc" id="L142">        String sortBy = dfe.getArgument(&quot;sortBy&quot;);</span>
-<span class="nc" id="L143">        Integer first = dfe.getArgument(&quot;first&quot;);</span>
-<span class="nc" id="L144">        String after = dfe.getArgument(&quot;after&quot;);</span>
-<span class="nc" id="L145">        List&lt;Review&gt; all = dataSource.getReviewsByHotelId(hotel.getId(), sortBy);</span>
-<span class="nc" id="L146">        return buildReviewConnection(all, first, after);</span>
+<span class="nc" id="L153">        Hotel hotel = dfe.getSource();</span>
+<span class="nc" id="L154">        String sortBy = dfe.getArgument(&quot;sortBy&quot;);</span>
+<span class="nc" id="L155">        Integer first = dfe.getArgument(&quot;first&quot;);</span>
+<span class="nc" id="L156">        String after = dfe.getArgument(&quot;after&quot;);</span>
+<span class="nc" id="L157">        List&lt;Review&gt; all = dataSource.getReviewsByHotelId(hotel.getId(), sortBy);</span>
+<span class="nc" id="L158">        return buildReviewConnection(all, first, after);</span>
     }
 
     @DgsData(parentType = &quot;Hotel&quot;, field = &quot;media&quot;)
     public Map&lt;String, Object&gt; hotelMedia(DataFetchingEnvironment dfe) {
-<span class="nc" id="L151">        Hotel hotel = dfe.getSource();</span>
-<span class="nc" id="L152">        Integer first = dfe.getArgument(&quot;first&quot;);</span>
-<span class="nc" id="L153">        List&lt;MediaAsset&gt; all = hotel.getMedia();</span>
-<span class="nc bnc" id="L154" title="All 2 branches missed.">        if (first != null) all = all.stream().limit(first).collect(Collectors.toList());</span>
-<span class="nc" id="L155">        return buildMediaConnection(all);</span>
+<span class="nc" id="L163">        Hotel hotel = dfe.getSource();</span>
+<span class="nc" id="L164">        Integer first = dfe.getArgument(&quot;first&quot;);</span>
+<span class="nc" id="L165">        List&lt;MediaAsset&gt; all = hotel.getMedia();</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">        if (first != null) all = all.stream().limit(first).collect(Collectors.toList());</span>
+<span class="nc" id="L167">        return buildMediaConnection(all);</span>
     }
 
     @DgsData(parentType = &quot;Brand&quot;, field = &quot;featuredHotels&quot;)
     public List&lt;Hotel&gt; brandFeaturedHotels(DataFetchingEnvironment dfe) {
-<span class="nc" id="L160">        Brand brand = dfe.getSource();</span>
-<span class="nc" id="L161">        Integer first = dfe.getArgument(&quot;first&quot;);</span>
-<span class="nc" id="L162">        return dataSource.searchHotels(null, null).stream()</span>
-<span class="nc bnc" id="L163" title="All 4 branches missed.">                .filter(h -&gt; brand.getId().equals(h.getBrandId()) &amp;&amp; h.getIsFeatured())</span>
-<span class="nc bnc" id="L164" title="All 2 branches missed.">                .limit(first != null ? first : 6)</span>
-<span class="nc" id="L165">                .collect(Collectors.toList());</span>
+<span class="nc" id="L172">        Brand brand = dfe.getSource();</span>
+<span class="nc" id="L173">        Integer first = dfe.getArgument(&quot;first&quot;);</span>
+<span class="nc" id="L174">        return dataSource.searchHotels(null, null).stream()</span>
+<span class="nc bnc" id="L175" title="All 4 branches missed.">                .filter(h -&gt; brand.getId().equals(h.getBrandId()) &amp;&amp; h.getIsFeatured())</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">                .limit(first != null ? first : 6)</span>
+<span class="nc" id="L177">                .collect(Collectors.toList());</span>
     }
 
     @DgsData(parentType = &quot;Brand&quot;, field = &quot;hotels&quot;)
     public Map&lt;String, Object&gt; brandHotels(DataFetchingEnvironment dfe) {
-<span class="nc" id="L170">        Brand brand = dfe.getSource();</span>
-<span class="nc" id="L171">        Integer first = dfe.getArgument(&quot;first&quot;);</span>
-<span class="nc" id="L172">        String after = dfe.getArgument(&quot;after&quot;);</span>
-<span class="nc" id="L173">        List&lt;Hotel&gt; all = dataSource.searchHotels(null, null).stream()</span>
-<span class="nc" id="L174">                .filter(h -&gt; brand.getId().equals(h.getBrandId()))</span>
-<span class="nc" id="L175">                .collect(Collectors.toList());</span>
-<span class="nc" id="L176">        return buildConnection(all, first, after);</span>
+<span class="nc" id="L182">        Brand brand = dfe.getSource();</span>
+<span class="nc" id="L183">        Integer first = dfe.getArgument(&quot;first&quot;);</span>
+<span class="nc" id="L184">        String after = dfe.getArgument(&quot;after&quot;);</span>
+<span class="nc" id="L185">        List&lt;Hotel&gt; all = dataSource.searchHotels(null, null).stream()</span>
+<span class="nc" id="L186">                .filter(h -&gt; brand.getId().equals(h.getBrandId()))</span>
+<span class="nc" id="L187">                .collect(Collectors.toList());</span>
+<span class="nc" id="L188">        return buildConnection(all, first, after);</span>
     }
 
     @DgsData(parentType = &quot;PropertyLocalizedContent&quot;, field = &quot;text&quot;)
     public String localizedText(DataFetchingEnvironment dfe) {
-<span class="nc" id="L181">        LocalizedContent content = dfe.getSource();</span>
-<span class="nc" id="L182">        String locale = dfe.getArgument(&quot;locale&quot;);</span>
-<span class="nc" id="L183">        return content.text(locale);</span>
+<span class="nc" id="L193">        LocalizedContent content = dfe.getSource();</span>
+<span class="nc" id="L194">        String locale = dfe.getArgument(&quot;locale&quot;);</span>
+<span class="nc" id="L195">        return content.text(locale);</span>
     }
 
     @DgsData(parentType = &quot;PropertyLocalizedContent&quot;, field = &quot;availableLocales&quot;)
     public List&lt;String&gt; availableLocales(DataFetchingEnvironment dfe) {
-<span class="nc" id="L188">        LocalizedContent content = dfe.getSource();</span>
-<span class="nc" id="L189">        return content.getAvailableLocales();</span>
+<span class="nc" id="L200">        LocalizedContent content = dfe.getSource();</span>
+<span class="nc" id="L201">        return content.getAvailableLocales();</span>
     }
 
     // ── Entity Fetchers ───────────────────────────────────────────────────────
 
     @DgsEntityFetcher(name = &quot;Hotel&quot;)
     public Hotel fetchHotelEntity(Map&lt;String, Object&gt; values) {
-<span class="fc" id="L196">        return dataSource.getHotelById((String) values.get(&quot;id&quot;)).orElse(null);</span>
+<span class="fc" id="L208">        return dataSource.getHotelById((String) values.get(&quot;id&quot;)).orElse(null);</span>
     }
 
     @DgsEntityFetcher(name = &quot;Brand&quot;)
     public Brand fetchBrandEntity(Map&lt;String, Object&gt; values) {
-<span class="fc" id="L201">        return dataSource.getBrandById((String) values.get(&quot;id&quot;)).orElse(null);</span>
+<span class="fc" id="L213">        return dataSource.getBrandById((String) values.get(&quot;id&quot;)).orElse(null);</span>
     }
 
     @DgsEntityFetcher(name = &quot;RoomType&quot;)
     public RoomType fetchRoomTypeEntity(Map&lt;String, Object&gt; values) {
-<span class="nc" id="L206">        return dataSource.getRoomTypeById((String) values.get(&quot;id&quot;)).orElse(null);</span>
+<span class="nc" id="L218">        return dataSource.getRoomTypeById((String) values.get(&quot;id&quot;)).orElse(null);</span>
     }
 
     // ── Connection helpers ────────────────────────────────────────────────────
 
     private Map&lt;String, Object&gt; buildConnection(List&lt;Hotel&gt; all, Integer first, String after) {
-<span class="pc bpc" id="L212" title="1 of 2 branches missed.">        int limit = first != null ? first : 10;</span>
-<span class="fc" id="L213">        int start = 0;</span>
-<span class="pc bpc" id="L214" title="1 of 2 branches missed.">        if (after != null) {</span>
-<span class="nc" id="L215">            String decoded = new String(Base64.getDecoder().decode(after));</span>
-<span class="nc bnc" id="L216" title="All 2 branches missed.">            for (int i = 0; i &lt; all.size(); i++) {</span>
-<span class="nc bnc" id="L217" title="All 2 branches missed.">                if (all.get(i).getId().equals(decoded)) { start = i + 1; break; }</span>
+<span class="pc bpc" id="L224" title="1 of 2 branches missed.">        int limit = first != null ? first : 10;</span>
+<span class="fc" id="L225">        int start = 0;</span>
+<span class="pc bpc" id="L226" title="1 of 2 branches missed.">        if (after != null) {</span>
+<span class="nc" id="L227">            String decoded = new String(Base64.getDecoder().decode(after));</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">            for (int i = 0; i &lt; all.size(); i++) {</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">                if (all.get(i).getId().equals(decoded)) { start = i + 1; break; }</span>
             }
         }
-<span class="fc" id="L220">        List&lt;Hotel&gt; page = all.stream().skip(start).limit(limit).collect(Collectors.toList());</span>
-<span class="fc" id="L221">        List&lt;Map&lt;String, Object&gt;&gt; edges = page.stream().map(h -&gt; Map.&lt;String,Object&gt;of(</span>
-<span class="fc" id="L222">                &quot;node&quot;, h, &quot;cursor&quot;, Base64.getEncoder().encodeToString(h.getId().getBytes())</span>
-<span class="fc" id="L223">        )).collect(Collectors.toList());</span>
-<span class="fc" id="L224">        return Map.of(&quot;edges&quot;, edges, &quot;pageInfo&quot;, pageInfo(edges, start, all.size(), page.size()), &quot;totalCount&quot;, all.size());</span>
+<span class="fc" id="L232">        List&lt;Hotel&gt; page = all.stream().skip(start).limit(limit).collect(Collectors.toList());</span>
+<span class="fc" id="L233">        List&lt;Map&lt;String, Object&gt;&gt; edges = page.stream().map(h -&gt; Map.&lt;String,Object&gt;of(</span>
+<span class="fc" id="L234">                &quot;node&quot;, h, &quot;cursor&quot;, Base64.getEncoder().encodeToString(h.getId().getBytes())</span>
+<span class="fc" id="L235">        )).collect(Collectors.toList());</span>
+<span class="fc" id="L236">        return Map.of(&quot;edges&quot;, edges, &quot;pageInfo&quot;, pageInfo(edges, start, all.size(), page.size()), &quot;totalCount&quot;, all.size());</span>
     }
 
     private Map&lt;String, Object&gt; buildBrandConnection(List&lt;Brand&gt; all, Integer first, String after) {
-<span class="pc bpc" id="L228" title="1 of 2 branches missed.">        int limit = first != null ? first : 20;</span>
-<span class="fc" id="L229">        List&lt;Brand&gt; page = all.stream().limit(limit).collect(Collectors.toList());</span>
-<span class="fc" id="L230">        List&lt;Map&lt;String, Object&gt;&gt; edges = page.stream().map(b -&gt; Map.&lt;String,Object&gt;of(</span>
-<span class="fc" id="L231">                &quot;node&quot;, b, &quot;cursor&quot;, Base64.getEncoder().encodeToString(b.getId().getBytes())</span>
-<span class="fc" id="L232">        )).collect(Collectors.toList());</span>
-<span class="fc" id="L233">        return Map.of(&quot;edges&quot;, edges, &quot;pageInfo&quot;, pageInfo(edges, 0, all.size(), page.size()), &quot;totalCount&quot;, all.size());</span>
+<span class="pc bpc" id="L240" title="1 of 2 branches missed.">        int limit = first != null ? first : 20;</span>
+<span class="fc" id="L241">        List&lt;Brand&gt; page = all.stream().limit(limit).collect(Collectors.toList());</span>
+<span class="fc" id="L242">        List&lt;Map&lt;String, Object&gt;&gt; edges = page.stream().map(b -&gt; Map.&lt;String,Object&gt;of(</span>
+<span class="fc" id="L243">                &quot;node&quot;, b, &quot;cursor&quot;, Base64.getEncoder().encodeToString(b.getId().getBytes())</span>
+<span class="fc" id="L244">        )).collect(Collectors.toList());</span>
+<span class="fc" id="L245">        return Map.of(&quot;edges&quot;, edges, &quot;pageInfo&quot;, pageInfo(edges, 0, all.size(), page.size()), &quot;totalCount&quot;, all.size());</span>
     }
 
     private Map&lt;String, Object&gt; buildReviewConnection(List&lt;Review&gt; all, Integer first, String after) {
-<span class="nc bnc" id="L237" title="All 2 branches missed.">        int limit = first != null ? first : 10;</span>
-<span class="nc" id="L238">        List&lt;Review&gt; page = all.stream().limit(limit).collect(Collectors.toList());</span>
-<span class="nc" id="L239">        List&lt;Map&lt;String, Object&gt;&gt; edges = page.stream().map(r -&gt; Map.&lt;String,Object&gt;of(</span>
-<span class="nc" id="L240">                &quot;node&quot;, r, &quot;cursor&quot;, Base64.getEncoder().encodeToString(r.getId().getBytes())</span>
-<span class="nc" id="L241">        )).collect(Collectors.toList());</span>
-<span class="nc" id="L242">        double avg = all.stream().mapToDouble(Review::getOverallRating).average().orElse(0.0);</span>
-<span class="nc" id="L243">        Map&lt;String, Object&gt; conn = new HashMap&lt;&gt;();</span>
-<span class="nc" id="L244">        conn.put(&quot;edges&quot;, edges);</span>
-<span class="nc" id="L245">        conn.put(&quot;pageInfo&quot;, pageInfo(edges, 0, all.size(), page.size()));</span>
-<span class="nc" id="L246">        conn.put(&quot;totalCount&quot;, all.size());</span>
-<span class="nc bnc" id="L247" title="All 2 branches missed.">        conn.put(&quot;averageRating&quot;, avg &gt; 0 ? avg : null);</span>
-<span class="nc" id="L248">        return conn;</span>
+<span class="nc bnc" id="L249" title="All 2 branches missed.">        int limit = first != null ? first : 10;</span>
+<span class="nc" id="L250">        List&lt;Review&gt; page = all.stream().limit(limit).collect(Collectors.toList());</span>
+<span class="nc" id="L251">        List&lt;Map&lt;String, Object&gt;&gt; edges = page.stream().map(r -&gt; Map.&lt;String,Object&gt;of(</span>
+<span class="nc" id="L252">                &quot;node&quot;, r, &quot;cursor&quot;, Base64.getEncoder().encodeToString(r.getId().getBytes())</span>
+<span class="nc" id="L253">        )).collect(Collectors.toList());</span>
+<span class="nc" id="L254">        double avg = all.stream().mapToDouble(Review::getOverallRating).average().orElse(0.0);</span>
+<span class="nc" id="L255">        Map&lt;String, Object&gt; conn = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L256">        conn.put(&quot;edges&quot;, edges);</span>
+<span class="nc" id="L257">        conn.put(&quot;pageInfo&quot;, pageInfo(edges, 0, all.size(), page.size()));</span>
+<span class="nc" id="L258">        conn.put(&quot;totalCount&quot;, all.size());</span>
+<span class="nc bnc" id="L259" title="All 2 branches missed.">        conn.put(&quot;averageRating&quot;, avg &gt; 0 ? avg : null);</span>
+<span class="nc" id="L260">        return conn;</span>
     }
 
     private Map&lt;String, Object&gt; buildMediaConnection(List&lt;MediaAsset&gt; assets) {
-<span class="nc" id="L252">        List&lt;Map&lt;String, Object&gt;&gt; edges = assets.stream().map(m -&gt; Map.&lt;String,Object&gt;of(</span>
-<span class="nc" id="L253">                &quot;node&quot;, m, &quot;cursor&quot;, Base64.getEncoder().encodeToString(m.id().getBytes())</span>
-<span class="nc" id="L254">        )).collect(Collectors.toList());</span>
-<span class="nc" id="L255">        return Map.of(&quot;edges&quot;, edges, &quot;pageInfo&quot;, pageInfo(edges, 0, assets.size(), assets.size()));</span>
+<span class="nc" id="L264">        List&lt;Map&lt;String, Object&gt;&gt; edges = assets.stream().map(m -&gt; Map.&lt;String,Object&gt;of(</span>
+<span class="nc" id="L265">                &quot;node&quot;, m, &quot;cursor&quot;, Base64.getEncoder().encodeToString(m.id().getBytes())</span>
+<span class="nc" id="L266">        )).collect(Collectors.toList());</span>
+<span class="nc" id="L267">        return Map.of(&quot;edges&quot;, edges, &quot;pageInfo&quot;, pageInfo(edges, 0, assets.size(), assets.size()));</span>
     }
 
     private Map&lt;String, Object&gt; pageInfo(List&lt;Map&lt;String,Object&gt;&gt; edges, int start, int total, int pageSize) {
-<span class="fc" id="L259">        Map&lt;String, Object&gt; pi = new HashMap&lt;&gt;();</span>
-<span class="fc bfc" id="L260" title="All 2 branches covered.">        pi.put(&quot;hasNextPage&quot;, start + pageSize &lt; total);</span>
-<span class="pc bpc" id="L261" title="1 of 2 branches missed.">        pi.put(&quot;hasPreviousPage&quot;, start &gt; 0);</span>
-<span class="pc bpc" id="L262" title="1 of 2 branches missed.">        pi.put(&quot;startCursor&quot;, edges.isEmpty() ? null : edges.get(0).get(&quot;cursor&quot;));</span>
-<span class="pc bpc" id="L263" title="1 of 2 branches missed.">        pi.put(&quot;endCursor&quot;, edges.isEmpty() ? null : edges.get(edges.size()-1).get(&quot;cursor&quot;));</span>
-<span class="fc" id="L264">        return pi;</span>
+<span class="fc" id="L271">        Map&lt;String, Object&gt; pi = new HashMap&lt;&gt;();</span>
+<span class="pc bpc" id="L272" title="1 of 2 branches missed.">        pi.put(&quot;hasNextPage&quot;, start + pageSize &lt; total);</span>
+<span class="pc bpc" id="L273" title="1 of 2 branches missed.">        pi.put(&quot;hasPreviousPage&quot;, start &gt; 0);</span>
+<span class="pc bpc" id="L274" title="1 of 2 branches missed.">        pi.put(&quot;startCursor&quot;, edges.isEmpty() ? null : edges.get(0).get(&quot;cursor&quot;));</span>
+<span class="pc bpc" id="L275" title="1 of 2 branches missed.">        pi.put(&quot;endCursor&quot;, edges.isEmpty() ? null : edges.get(edges.size()-1).get(&quot;cursor&quot;));</span>
+<span class="fc" id="L276">        return pi;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

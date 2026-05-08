@@ -1,7 +1,10 @@
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/PropertyApplication.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/config/PropertyGraphQLConfig.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/datasource/MediaUrls.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/datasource/PropertyDataGenerator.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/datasource/PropertyDataSource.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/datasource/PropertyMockDataSource.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/datasource/PropertySearchService.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/resolver/PropertyDataFetcher.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/schema/types/Address.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/schema/types/AirportInfo.java
@@ -12,11 +15,13 @@
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/schema/types/Brand.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/schema/types/CategoryRatings.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/schema/types/Coordinates.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/schema/types/DestinationSuggestion.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/schema/types/DistanceValue.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/schema/types/GolfCourse.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/schema/types/GuestRating.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/schema/types/Hotel.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/schema/types/HotelContact.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/schema/types/HotelFacets.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/schema/types/HotelLocation.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/schema/types/HotelPolicies.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-property/src/main/java/com/luxe/property/schema/types/LocalizedContent.java

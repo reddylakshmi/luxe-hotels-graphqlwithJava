@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(\"/Applications/IntelliJ IDEA.app/Contents/plugins/maven/lib/maven3/bin/mvn\" -pl common,subgraph-guest -am test)",
-      "Bash(\"/Applications/IntelliJ IDEA.app/Contents/plugins/maven/lib/maven3/bin/mvn\" -pl common,subgraph-pricing -am test)"
+      "Bash(\"/Applications/IntelliJ IDEA.app/Contents/plugins/maven/lib/maven3/bin/mvn\" -pl common,subgraph-pricing -am test)",
+      "Bash(curl -sS \"http://localhost:3000/brands/brand-mai-001\")",
+      "Bash('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' --headless=new --disable-gpu --hide-scrollbars --window-size=1440,2400 --disable-cache --incognito --screenshot=/tmp/luxe-screenshots/08-brand-mai.png 'http://localhost:3000/brands/brand-mai-001?nocache=__CMDSUB_OUTPUT__')",
+      "Bash('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' --headless=new --disable-gpu --hide-scrollbars --window-size=1440,1500 --disable-cache --incognito --screenshot=/tmp/luxe-screenshots/09-brand-aur.png 'http://localhost:3000/brands/brand-aur-001?nocache=__CMDSUB_OUTPUT__')"
     ]
   }
 }

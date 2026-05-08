@@ -7,6 +7,8 @@ server:
 spring:
   application:
     name: luxe-property-service
+  profiles:
+    default: local
   graphql:
     graphiql:
       enabled: true
@@ -18,6 +20,11 @@ spring:
 luxe:
   jwt:
     secret: ${JWT_SECRET:luxe-hotels-super-secret-key-minimum-256-bits-long}
+  # Backend API URL — empty value means: use in-memory mock data.
+  # To target a real backend, paste its URL into the matching profile
+  # block below, or set the env var LUXE_PROPERTY_BACKEND_URL.
+  backend:
+    base-url: ${LUXE_PROPERTY_BACKEND_URL:}
 
 management:
   endpoints:
@@ -28,12 +35,44 @@ management:
     health:
       show-details: always
 
+# ── Profile overrides ───────────────────────────────────────────────────
+
 ---
 spring:
   config:
     activate:
       on-profile: local
+luxe:
+  backend:
+    base-url: ""                                # local: always mock
 
 logging:
   level:
     com.luxe: DEBUG
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+luxe:
+  backend:
+    base-url: ${LUXE_PROPERTY_BACKEND_URL:}     # paste DEV URL or set env var
+
+---
+spring:
+  config:
+    activate:
+      on-profile: stage
+luxe:
+  backend:
+    base-url: ${LUXE_PROPERTY_BACKEND_URL:}     # paste STAGE URL or set env var
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+luxe:
+  backend:
+    base-url: ${LUXE_PROPERTY_BACKEND_URL:}     # paste PROD URL or set env var

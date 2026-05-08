@@ -60,7 +60,7 @@ public class RFP implements HasId {
 <span class="nc" id="L60">    public String getEventType() { return eventType; }</span>
 <span class="nc" id="L61">    public LocalDate getStartDate() { return startDate; }</span>
 <span class="nc" id="L62">    public LocalDate getEndDate() { return endDate; }</span>
-<span class="nc" id="L63">    public int getAttendees() { return attendees; }</span>
+<span class="fc" id="L63">    public int getAttendees() { return attendees; }</span>
 <span class="nc" id="L64">    public Integer getGuestRoomsPerNight() { return guestRoomsPerNight; }</span>
 <span class="nc" id="L65">    public List&lt;SpaceRequirement&gt; getSpaceRequirements() { return spaceRequirements; }</span>
 <span class="nc" id="L66">    public String getCateringRequirements() { return cateringRequirements; }</span>
@@ -86,15 +86,15 @@ public class RFP implements HasId {
     public void update(LocalDate startDate, LocalDate endDate, Integer attendees,
                         Integer guestRoomsPerNight, List&lt;SpaceRequirement&gt; spaceReqs,
                         String catering, String additional) {
-<span class="nc bnc" id="L89" title="All 2 branches missed.">        if (startDate != null) this.startDate = startDate;</span>
-<span class="nc bnc" id="L90" title="All 2 branches missed.">        if (endDate != null)   this.endDate = endDate;</span>
-<span class="nc bnc" id="L91" title="All 2 branches missed.">        if (attendees != null) this.attendees = attendees;</span>
-<span class="nc bnc" id="L92" title="All 2 branches missed.">        if (guestRoomsPerNight != null) this.guestRoomsPerNight = guestRoomsPerNight;</span>
-<span class="nc bnc" id="L93" title="All 2 branches missed.">        if (spaceReqs != null) this.spaceRequirements = spaceReqs;</span>
-<span class="nc bnc" id="L94" title="All 2 branches missed.">        if (catering != null)  this.cateringRequirements = catering;</span>
-<span class="nc bnc" id="L95" title="All 2 branches missed.">        if (additional != null) this.additionalRequirements = additional;</span>
-<span class="nc" id="L96">        this.updatedAt = OffsetDateTime.now();</span>
-<span class="nc" id="L97">    }</span>
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">        if (startDate != null) this.startDate = startDate;</span>
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">        if (endDate != null)   this.endDate = endDate;</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">        if (attendees != null) this.attendees = attendees;</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">        if (guestRoomsPerNight != null) this.guestRoomsPerNight = guestRoomsPerNight;</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">        if (spaceReqs != null) this.spaceRequirements = spaceReqs;</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">        if (catering != null)  this.cateringRequirements = catering;</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">        if (additional != null) this.additionalRequirements = additional;</span>
+<span class="fc" id="L96">        this.updatedAt = OffsetDateTime.now();</span>
+<span class="fc" id="L97">    }</span>
 
 <span class="fc" id="L99">    public void addResponse(RFPResponse r) { this.responses.add(r); }</span>
 

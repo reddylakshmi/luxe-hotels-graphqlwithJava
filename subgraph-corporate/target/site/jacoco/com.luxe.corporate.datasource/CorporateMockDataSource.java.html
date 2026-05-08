@@ -187,8 +187,8 @@ public class CorporateMockDataSource implements CorporateDataSource {
 <span class="fc" id="L187">                (String) input.getOrDefault(&quot;tier&quot;, &quot;STANDARD&quot;),</span>
 <span class="fc" id="L188">                (String) input.get(&quot;industry&quot;),</span>
 <span class="fc" id="L189">                &quot;PENDING_REVIEW&quot;, pc, bc, List.of(),</span>
-<span class="fc" id="L190">                LocalDate.parse((String) input.get(&quot;contractStartDate&quot;)),</span>
-<span class="fc" id="L191">                LocalDate.parse((String) input.get(&quot;contractEndDate&quot;)),</span>
+<span class="fc" id="L190">                toDate(input.get(&quot;contractStartDate&quot;)),</span>
+<span class="fc" id="L191">                toDate(input.get(&quot;contractEndDate&quot;)),</span>
 <span class="fc" id="L192">                Money.of(0, &quot;USD&quot;), OffsetDateTime.now());</span>
 <span class="fc" id="L193">        a.setTravelPolicy(buildPolicy(&quot;policy-&quot; + id, id,</span>
 <span class="fc" id="L194">                List.of(), Money.of(500, &quot;USD&quot;), Money.of(750, &quot;USD&quot;),</span>
@@ -209,8 +209,8 @@ public class CorporateMockDataSource implements CorporateDataSource {
 <span class="fc" id="L209">        TravelPolicy p = a.getTravelPolicy();</span>
 <span class="fc bfc" id="L210" title="All 2 branches covered.">        Money max = input.get(&quot;maxNightlyRateUsd&quot;) != null</span>
 <span class="fc" id="L211">                ? Money.of(((Number) input.get(&quot;maxNightlyRateUsd&quot;)).doubleValue(), &quot;USD&quot;) : null;</span>
-<span class="pc bpc" id="L212" title="1 of 2 branches missed.">        Money apprAbove = input.get(&quot;requiresApprovalAboveUsd&quot;) != null</span>
-<span class="pc" id="L213">                ? Money.of(((Number) input.get(&quot;requiresApprovalAboveUsd&quot;)).doubleValue(), &quot;USD&quot;) : null;</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">        Money apprAbove = input.get(&quot;requiresApprovalAboveUsd&quot;) != null</span>
+<span class="fc" id="L213">                ? Money.of(((Number) input.get(&quot;requiresApprovalAboveUsd&quot;)).doubleValue(), &quot;USD&quot;) : null;</span>
 <span class="fc bfc" id="L214" title="All 2 branches covered.">        Money perDiem = input.get(&quot;perDiemMealsUsd&quot;) != null</span>
 <span class="fc" id="L215">                ? Money.of(((Number) input.get(&quot;perDiemMealsUsd&quot;)).doubleValue(), &quot;USD&quot;) : null;</span>
 
@@ -308,6 +308,10 @@ public class CorporateMockDataSource implements CorporateDataSource {
 <span class="fc" id="L308">                        new TravelReport.MonthlySpend(&quot;2026-04&quot;, 24, Money.of(102000, &quot;USD&quot;))),</span>
                 124850.0,
 <span class="fc" id="L310">                OffsetDateTime.now());</span>
+    }
+
+    private static LocalDate toDate(Object raw) {
+<span class="fc bfc" id="L314" title="All 2 branches covered.">        return raw instanceof LocalDate ld ? ld : LocalDate.parse(raw.toString());</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

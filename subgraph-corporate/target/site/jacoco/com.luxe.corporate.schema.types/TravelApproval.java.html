@@ -26,18 +26,18 @@ public class TravelApproval implements HasId {
 <span class="fc" id="L26">        this.requestedAt = requestedAt;</span>
 <span class="fc" id="L27">    }</span>
 
-<span class="nc" id="L29">    @Override public String getId() { return id; }</span>
+<span class="fc" id="L29">    @Override public String getId() { return id; }</span>
 <span class="fc" id="L30">    public String getAccountId() { return accountId; }</span>
 <span class="nc" id="L31">    public String getTravelerId() { return travelerId; }</span>
 <span class="nc" id="L32">    public String getReservationId() { return reservationId; }</span>
 <span class="fc" id="L33">    public String getStatus() { return status; }</span>
-<span class="nc" id="L34">    public Money getTotalAmount() { return totalAmount; }</span>
+<span class="fc" id="L34">    public Money getTotalAmount() { return totalAmount; }</span>
 <span class="nc" id="L35">    public List&lt;PolicyException&gt; getPolicyExceptions() { return policyExceptions; }</span>
 <span class="nc" id="L36">    public String getBusinessJustification() { return businessJustification; }</span>
 <span class="fc" id="L37">    public OffsetDateTime getRequestedAt() { return requestedAt; }</span>
 <span class="nc" id="L38">    public OffsetDateTime getDecidedAt() { return decidedAt; }</span>
-<span class="nc" id="L39">    public String getDecidedBy() { return decidedBy; }</span>
-<span class="nc" id="L40">    public String getNotes() { return notes; }</span>
+<span class="fc" id="L39">    public String getDecidedBy() { return decidedBy; }</span>
+<span class="fc" id="L40">    public String getNotes() { return notes; }</span>
 
     public void decide(String status, String decidedBy, String notes) {
 <span class="fc" id="L43">        this.status = status;</span>

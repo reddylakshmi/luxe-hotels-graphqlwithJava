@@ -1,7 +1,10 @@
 com/luxe/loyalty/schema/types/Certificate.class
 com/luxe/loyalty/datasource/LoyaltyDataSource.class
+com/luxe/loyalty/schema/types/CertificateRedemption.class
 com/luxe/loyalty/schema/types/LinkedPartnerAccount.class
 com/luxe/loyalty/schema/types/PointsValuation.class
+com/luxe/loyalty/schema/types/AirlineTransferSuccess.class
+com/luxe/loyalty/schema/types/GiftPointsSuccess.class
 com/luxe/loyalty/schema/types/PointsTransaction.class
 com/luxe/loyalty/datasource/LoyaltyMockDataSource.class
 com/luxe/loyalty/schema/types/GuestProfile.class

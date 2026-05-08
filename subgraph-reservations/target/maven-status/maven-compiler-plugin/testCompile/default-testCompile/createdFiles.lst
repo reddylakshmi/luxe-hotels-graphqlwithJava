@@ -1,4 +1,6 @@
 com/luxe/reservations/datasource/ReservationMockDataSourceTest.class
+com/luxe/reservations/resolver/ReservationAuthenticatedTest.class
+com/luxe/reservations/resolver/ReservationAuthenticatedTest$AuthOverrideConfig.class
 com/luxe/reservations/datasource/ReservationMutationsTest.class
 com/luxe/reservations/resolver/ReservationMutationsResolverTest.class
 com/luxe/reservations/resolver/ReservationDataFetcherTest.class

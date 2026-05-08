@@ -1,3 +1,5 @@
+com/luxe/corporate/resolver/CorporateAuthenticatedTest.class
+com/luxe/corporate/resolver/CorporateAuthenticatedTest$AuthOverrideConfig.class
 com/luxe/corporate/resolver/CorporateDataFetcherTest.class
 com/luxe/corporate/datasource/CorporateBranchesTest.class
 com/luxe/corporate/datasource/CorporateMockDataSourceTest.class

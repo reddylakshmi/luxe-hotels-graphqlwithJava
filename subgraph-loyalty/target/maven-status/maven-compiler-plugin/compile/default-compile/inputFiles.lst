@@ -3,8 +3,11 @@
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-loyalty/src/main/java/com/luxe/loyalty/datasource/LoyaltyDataSource.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-loyalty/src/main/java/com/luxe/loyalty/datasource/LoyaltyMockDataSource.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-loyalty/src/main/java/com/luxe/loyalty/resolver/LoyaltyDataFetcher.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-loyalty/src/main/java/com/luxe/loyalty/schema/types/AirlineTransferSuccess.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-loyalty/src/main/java/com/luxe/loyalty/schema/types/Certificate.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-loyalty/src/main/java/com/luxe/loyalty/schema/types/CertificateRedemption.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-loyalty/src/main/java/com/luxe/loyalty/schema/types/Challenge.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-loyalty/src/main/java/com/luxe/loyalty/schema/types/GiftPointsSuccess.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-loyalty/src/main/java/com/luxe/loyalty/schema/types/GuestProfile.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-loyalty/src/main/java/com/luxe/loyalty/schema/types/LinkedPartnerAccount.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-loyalty/src/main/java/com/luxe/loyalty/schema/types/LoyaltyAccount.java

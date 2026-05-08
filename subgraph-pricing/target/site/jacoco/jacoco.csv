@@ -1,9 +1,9 @@
 GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
 Luxe Hotels - Pricing Subgraph,com.luxe.pricing.config,PricingGraphQLConfig,0,19,0,0,0,5,0,2,0,2
-Luxe Hotels - Pricing Subgraph,com.luxe.pricing.schema.types,RoomAvailability,6,29,0,0,2,10,2,4,2,4
+Luxe Hotels - Pricing Subgraph,com.luxe.pricing.schema.types,RoomAvailability,9,26,0,0,3,9,3,3,3,3
 Luxe Hotels - Pricing Subgraph,com.luxe.pricing.schema.types,GiftCardBalance,0,18,0,0,0,1,0,1,0,1
 Luxe Hotels - Pricing Subgraph,com.luxe.pricing.schema.types,CancellationPolicy,0,12,0,0,0,1,0,1,0,1
-Luxe Hotels - Pricing Subgraph,com.luxe.pricing.schema.types,AvailabilityResult,24,50,0,0,8,16,8,4,8,4
+Luxe Hotels - Pricing Subgraph,com.luxe.pricing.schema.types,AvailabilityResult,15,59,0,0,5,19,5,7,5,7
 Luxe Hotels - Pricing Subgraph,com.luxe.pricing.schema.types,TaxBreakdown,0,18,0,0,0,1,0,1,0,1
 Luxe Hotels - Pricing Subgraph,com.luxe.pricing.schema.types,Promotion,29,69,2,0,8,15,9,8,8,8
 Luxe Hotels - Pricing Subgraph,com.luxe.pricing.schema.types,Rate,36,63,0,0,12,14,12,5,12,5
@@ -15,5 +15,6 @@ Luxe Hotels - Pricing Subgraph,com.luxe.pricing.schema.types,GuestCount,0,9,0,0,
 Luxe Hotels - Pricing Subgraph,com.luxe.pricing.schema.types,Package,30,33,0,0,10,5,10,1,10,1
 Luxe Hotels - Pricing Subgraph,com.luxe.pricing.schema.types,DateRateSummary,0,15,0,0,0,1,0,1,0,1
 Luxe Hotels - Pricing Subgraph,com.luxe.pricing.schema.types,RatePlan,30,63,0,0,10,14,10,6,10,6
-Luxe Hotels - Pricing Subgraph,com.luxe.pricing.resolver,PricingDataFetcher,393,110,15,3,59,18,18,12,10,11
-Luxe Hotels - Pricing Subgraph,com.luxe.pricing.datasource,PricingMockDataSource,49,1642,20,54,6,205,18,60,1,40
+Luxe Hotels - Pricing Subgraph,com.luxe.pricing.resolver,PricingDataFetcher,242,263,12,10,36,43,17,16,8,14
+Luxe Hotels - Pricing Subgraph,com.luxe.pricing.datasource,PricingMockDataSource,135,1701,37,74,13,256,34,72,1,47
+Luxe Hotels - Pricing Subgraph,com.luxe.pricing.datasource,FxConversionService,0,379,0,16,0,59,0,10,0,2

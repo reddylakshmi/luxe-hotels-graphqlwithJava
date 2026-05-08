@@ -49,7 +49,7 @@ public class Hotel implements HasId {
 <span class="fc" id="L49">    }</span>
 
 <span class="fc" id="L51">    @Override public String getId() { return id; }</span>
-<span class="nc" id="L52">    public String getBrandId() { return brandId; }</span>
+<span class="fc" id="L52">    public String getBrandId() { return brandId; }</span>
 <span class="nc" id="L53">    public String getChainCode() { return chainCode; }</span>
 <span class="nc" id="L54">    public String getPropertyCode() { return propertyCode; }</span>
 <span class="fc" id="L55">    public String getName() { return name; }</span>
@@ -79,11 +79,18 @@ public class Hotel implements HasId {
 <span class="fc" id="L79">    public boolean getIsFeatured() { return isFeatured; }</span>
 <span class="nc" id="L80">    public OffsetDateTime getUpdatedAt() { return updatedAt; }</span>
 <span class="nc bnc" id="L81" title="All 4 branches missed.">    public boolean isHasRestaurants() { return restaurants != null &amp;&amp; !restaurants.isEmpty(); }</span>
-<span class="nc bnc" id="L82" title="All 2 branches missed.">    public boolean isHasSpa() { return spa != null; }</span>
-<span class="nc bnc" id="L83" title="All 2 branches missed.">    public boolean isHasGolf() { return golfCourse != null; }</span>
+<span class="fc bfc" id="L82" title="All 2 branches covered.">    public boolean isHasSpa() { return spa != null; }</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">    public boolean isHasGolf() { return golfCourse != null; }</span>
     public boolean isHasPool() {
-<span class="nc bnc" id="L85" title="All 2 branches missed.">        return amenities != null &amp;&amp; amenities.stream()</span>
-<span class="nc bnc" id="L86" title="All 2 branches missed.">                .anyMatch(a -&gt; &quot;POOL&quot;.equals(a.getCategory()));</span>
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">        return amenities != null &amp;&amp; amenities.stream()</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">                .anyMatch(a -&gt; &quot;POOL&quot;.equals(a.getCategory()));</span>
+    }
+    public boolean isHasFreeBreakfast() {
+<span class="pc bpc" id="L89" title="1 of 2 branches missed.">        return amenities != null &amp;&amp; amenities.stream()</span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">                .anyMatch(a -&gt; &quot;BREAKFAST&quot;.equals(a.getCode()));</span>
+    }
+    public boolean isPetsAllowed() {
+<span class="pc bpc" id="L93" title="1 of 6 branches missed.">        return policies != null &amp;&amp; policies.petPolicy() != null &amp;&amp; policies.petPolicy().allowed();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

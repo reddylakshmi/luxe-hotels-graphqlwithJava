@@ -1,5 +1,6 @@
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-pricing/src/main/java/com/luxe/pricing/PricingApplication.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-pricing/src/main/java/com/luxe/pricing/config/PricingGraphQLConfig.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-pricing/src/main/java/com/luxe/pricing/datasource/FxConversionService.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-pricing/src/main/java/com/luxe/pricing/datasource/PricingDataSource.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-pricing/src/main/java/com/luxe/pricing/datasource/PricingMockDataSource.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-pricing/src/main/java/com/luxe/pricing/resolver/PricingDataFetcher.java

@@ -1,3 +1,4 @@
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-meetings/src/test/java/com/luxe/meetings/datasource/MeetingsMockDataSourceTest.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-meetings/src/test/java/com/luxe/meetings/resolver/MeetingsAuthenticatedTest.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-meetings/src/test/java/com/luxe/meetings/resolver/MeetingsDataFetcherTest.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-meetings/src/test/java/com/luxe/meetings/resolver/MeetingsMutationsResolverTest.java

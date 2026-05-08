@@ -1,4 +1,6 @@
+com/luxe/notifications/resolver/NotificationsAuthenticatedTest$AuthOverrideConfig.class
 com/luxe/notifications/datasource/NotificationsBranchesTest.class
 com/luxe/notifications/datasource/NotificationsMockDataSourceTest.class
+com/luxe/notifications/resolver/NotificationsAuthenticatedTest.class
 com/luxe/notifications/resolver/NotificationsDataFetcherTest.class
 com/luxe/notifications/resolver/NotificationsMutationsResolverTest.class

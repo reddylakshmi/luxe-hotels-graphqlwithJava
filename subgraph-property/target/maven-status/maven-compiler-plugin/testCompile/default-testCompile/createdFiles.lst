@@ -1,2 +1,5 @@
+com/luxe/property/resolver/PropertyDataFetcherTest$AuthOverrideConfig.class
+com/luxe/property/datasource/PropertySearchServiceTest.class
 com/luxe/property/datasource/PropertyMockDataSourceTest.class
+com/luxe/property/datasource/SearchHotelsTest.class
 com/luxe/property/resolver/PropertyDataFetcherTest.class

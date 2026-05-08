@@ -3,6 +3,7 @@
 import com.luxe.common.scalar.Money;
 import com.luxe.content.schema.types.*;
 import com.luxe.content.schema.types.LocalizedContent.LocaleText;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -11,405 +12,406 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
+@ConditionalOnExpression(&quot;'${luxe.backend.base-url:}'.length() == 0&quot;)
 public class ContentMockDataSource implements ContentDataSource {
 
-<span class="fc" id="L16">    private final Map&lt;String, Article&gt; articles = new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L17">    private final Map&lt;String, TravelInspiration&gt; inspirations = new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L18">    private final Map&lt;String, DealSpotlight&gt; spotlights = new LinkedHashMap&lt;&gt;();</span>
-<span class="fc" id="L19">    private final Map&lt;String, ContentCollection&gt; collections = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L18">    private final Map&lt;String, Article&gt; articles = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L19">    private final Map&lt;String, TravelInspiration&gt; inspirations = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L20">    private final Map&lt;String, DealSpotlight&gt; spotlights = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc" id="L21">    private final Map&lt;String, ContentCollection&gt; collections = new LinkedHashMap&lt;&gt;();</span>
     private final BrandStory brandStory;
 
-<span class="fc" id="L22">    public ContentMockDataSource() {</span>
-<span class="fc" id="L23">        initArticles();</span>
-<span class="fc" id="L24">        initInspirations();</span>
-<span class="fc" id="L25">        initSpotlights();</span>
-<span class="fc" id="L26">        initCollections();</span>
-<span class="fc" id="L27">        this.brandStory = buildBrandStory();</span>
-<span class="fc" id="L28">    }</span>
+<span class="fc" id="L24">    public ContentMockDataSource() {</span>
+<span class="fc" id="L25">        initArticles();</span>
+<span class="fc" id="L26">        initInspirations();</span>
+<span class="fc" id="L27">        initSpotlights();</span>
+<span class="fc" id="L28">        initCollections();</span>
+<span class="fc" id="L29">        this.brandStory = buildBrandStory();</span>
+<span class="fc" id="L30">    }</span>
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private MediaAsset photo(String id, String url, String alt) {
-<span class="fc" id="L33">        return new MediaAsset(id, url, url + &quot;?w=480&quot;,</span>
-<span class="fc" id="L34">                LocalizedContent.ofEnglish(alt), null,</span>
-<span class="fc" id="L35">                &quot;PHOTO&quot;, 1920, 1080, null);</span>
+<span class="fc" id="L35">        return new MediaAsset(id, url, url + &quot;?w=480&quot;,</span>
+<span class="fc" id="L36">                LocalizedContent.ofEnglish(alt), null,</span>
+<span class="fc" id="L37">                &quot;PHOTO&quot;, 1920, 1080, null);</span>
     }
 
     private List&lt;LocaleText&gt; tr(String en, String fr, String es) {
-<span class="fc" id="L39">        List&lt;LocaleText&gt; out = new ArrayList&lt;&gt;();</span>
-<span class="fc" id="L40">        out.add(new LocaleText(&quot;en&quot;, en));</span>
-<span class="fc bfc" id="L41" title="All 2 branches covered.">        if (fr != null) out.add(new LocaleText(&quot;fr&quot;, fr));</span>
-<span class="fc bfc" id="L42" title="All 2 branches covered.">        if (es != null) out.add(new LocaleText(&quot;es&quot;, es));</span>
-<span class="fc" id="L43">        return out;</span>
+<span class="fc" id="L41">        List&lt;LocaleText&gt; out = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L42">        out.add(new LocaleText(&quot;en&quot;, en));</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        if (fr != null) out.add(new LocaleText(&quot;fr&quot;, fr));</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        if (es != null) out.add(new LocaleText(&quot;es&quot;, es));</span>
+<span class="fc" id="L45">        return out;</span>
     }
 
     private List&lt;LocaleText&gt; en(String text) {
-<span class="fc" id="L47">        return List.of(new LocaleText(&quot;en&quot;, text));</span>
+<span class="fc" id="L49">        return List.of(new LocaleText(&quot;en&quot;, text));</span>
     }
 
     // ── Articles ─────────────────────────────────────────────────────────────
 
     private void initArticles() {
-<span class="fc" id="L53">        ContentAuthor camille = new ContentAuthor(&quot;auth-001&quot;, &quot;Camille Laurent&quot;,</span>
+<span class="fc" id="L55">        ContentAuthor camille = new ContentAuthor(&quot;auth-001&quot;, &quot;Camille Laurent&quot;,</span>
                 &quot;Senior Travel Editor&quot;,
-<span class="fc" id="L55">                LocalizedContent.ofEnglish(&quot;Camille has covered luxury travel across 60+ countries.&quot;),</span>
+<span class="fc" id="L57">                LocalizedContent.ofEnglish(&quot;Camille has covered luxury travel across 60+ countries.&quot;),</span>
                 &quot;https://content.luxehotels.example/auth/camille.jpg&quot;);
-<span class="fc" id="L57">        ContentAuthor marcus = new ContentAuthor(&quot;auth-002&quot;, &quot;Marcus Chen&quot;,</span>
+<span class="fc" id="L59">        ContentAuthor marcus = new ContentAuthor(&quot;auth-002&quot;, &quot;Marcus Chen&quot;,</span>
                 &quot;Wellness Correspondent&quot;,
-<span class="fc" id="L59">                LocalizedContent.ofEnglish(&quot;Marcus writes about wellness, mindfulness, and slow travel.&quot;),</span>
+<span class="fc" id="L61">                LocalizedContent.ofEnglish(&quot;Marcus writes about wellness, mindfulness, and slow travel.&quot;),</span>
                 &quot;https://content.luxehotels.example/auth/marcus.jpg&quot;);
-<span class="fc" id="L61">        ContentAuthor sofia = new ContentAuthor(&quot;auth-003&quot;, &quot;Sofía Reyes&quot;,</span>
+<span class="fc" id="L63">        ContentAuthor sofia = new ContentAuthor(&quot;auth-003&quot;, &quot;Sofía Reyes&quot;,</span>
                 &quot;Food &amp; Wine Editor&quot;,
-<span class="fc" id="L63">                LocalizedContent.ofEnglish(&quot;Sofía explores Michelin-starred kitchens and hidden bistros alike.&quot;),</span>
+<span class="fc" id="L65">                LocalizedContent.ofEnglish(&quot;Sofía explores Michelin-starred kitchens and hidden bistros alike.&quot;),</span>
                 &quot;https://content.luxehotels.example/auth/sofia.jpg&quot;);
 
-<span class="fc" id="L66">        OffsetDateTime now = OffsetDateTime.now();</span>
+<span class="fc" id="L68">        OffsetDateTime now = OffsetDateTime.now();</span>
 
-<span class="fc" id="L68">        articles.put(&quot;art-001&quot;, new Article(&quot;art-001&quot;, &quot;paris-by-night&quot;,</span>
+<span class="fc" id="L70">        articles.put(&quot;art-001&quot;, new Article(&quot;art-001&quot;, &quot;paris-by-night&quot;,</span>
                 &quot;DESTINATION&quot;, &quot;PUBLISHED&quot;,
-<span class="fc" id="L70">                tr(&quot;Paris After Dark: A Curator's Guide&quot;,</span>
+<span class="fc" id="L72">                tr(&quot;Paris After Dark: A Curator's Guide&quot;,</span>
                         &quot;Paris la nuit : le guide d'un connaisseur&quot;,
                         &quot;París de noche: la guía del experto&quot;),
-<span class="fc" id="L73">                tr(&quot;Twilight bistros, jazz cellars, and rooftop views&quot;,</span>
+<span class="fc" id="L75">                tr(&quot;Twilight bistros, jazz cellars, and rooftop views&quot;,</span>
                         &quot;Bistros, caves de jazz et vues sur les toits&quot;,
                         &quot;Bistrós, sótanos de jazz y vistas desde la azotea&quot;),
-<span class="fc" id="L76">                tr(&quot;Paris reveals its quietest secrets after the last metro. From a candle-lit terrace overlooking Notre-Dame to an unmarked jazz cave in the Marais, the night belongs to those who know where to look. ...&quot;,</span>
+<span class="fc" id="L78">                tr(&quot;Paris reveals its quietest secrets after the last metro. From a candle-lit terrace overlooking Notre-Dame to an unmarked jazz cave in the Marais, the night belongs to those who know where to look. ...&quot;,</span>
                         &quot;Paris révèle ses secrets les plus calmes après le dernier métro. ...&quot;,
                         &quot;París revela sus secretos más íntimos tras el último metro. ...&quot;),
-<span class="fc" id="L79">                tr(&quot;A curator's guide to the city's twilight hours.&quot;,</span>
+<span class="fc" id="L81">                tr(&quot;A curator's guide to the city's twilight hours.&quot;,</span>
                         &quot;Le guide d'un curateur pour les heures crépusculaires.&quot;,
                         &quot;La guía de un curador para las horas crepusculares.&quot;),
-<span class="fc" id="L82">                photo(&quot;img-paris-night-01&quot;, &quot;https://content.luxehotels.example/articles/paris-night.jpg&quot;,</span>
+<span class="fc" id="L84">                photo(&quot;img-paris-night-01&quot;, &quot;https://content.luxehotels.example/articles/paris-night.jpg&quot;,</span>
                         &quot;Lit Eiffel Tower over Seine&quot;),
-<span class="fc" id="L84">                List.of(photo(&quot;img-paris-night-02&quot;, &quot;https://content.luxehotels.example/articles/paris-marais.jpg&quot;,</span>
+<span class="fc" id="L86">                List.of(photo(&quot;img-paris-night-02&quot;, &quot;https://content.luxehotels.example/articles/paris-marais.jpg&quot;,</span>
                         &quot;Marais alley after rain&quot;)),
-<span class="fc" id="L86">                camille, List.of(&quot;Paris&quot;, &quot;Nightlife&quot;, &quot;Romantic&quot;),</span>
-<span class="fc" id="L87">                List.of(&quot;prop-paris-001&quot;), 8,</span>
-<span class="fc" id="L88">                now.minusDays(20), now.minusDays(1)));</span>
+<span class="fc" id="L88">                camille, List.of(&quot;Paris&quot;, &quot;Nightlife&quot;, &quot;Romantic&quot;),</span>
+<span class="fc" id="L89">                List.of(&quot;prop-paris-001&quot;), 8,</span>
+<span class="fc" id="L90">                now.minusDays(20), now.minusDays(1)));</span>
 
-<span class="fc" id="L90">        articles.put(&quot;art-002&quot;, new Article(&quot;art-002&quot;, &quot;tokyo-omakase-renaissance&quot;,</span>
+<span class="fc" id="L92">        articles.put(&quot;art-002&quot;, new Article(&quot;art-002&quot;, &quot;tokyo-omakase-renaissance&quot;,</span>
                 &quot;FOOD_AND_WINE&quot;, &quot;PUBLISHED&quot;,
-<span class="fc" id="L92">                tr(&quot;The Tokyo Omakase Renaissance&quot;,</span>
+<span class="fc" id="L94">                tr(&quot;The Tokyo Omakase Renaissance&quot;,</span>
                         &quot;La renaissance de l'omakase à Tokyo&quot;,
                         &quot;El renacimiento del omakase en Tokio&quot;),
-<span class="fc" id="L95">                tr(&quot;Twelve-seat counters and the chefs reshaping them&quot;, null, null),</span>
-<span class="fc" id="L96">                tr(&quot;In a city that has long defined sushi excellence, a quiet revolution is taking place at twelve-seat counters from Ginza to Nakameguro. ...&quot;,</span>
+<span class="fc" id="L97">                tr(&quot;Twelve-seat counters and the chefs reshaping them&quot;, null, null),</span>
+<span class="fc" id="L98">                tr(&quot;In a city that has long defined sushi excellence, a quiet revolution is taking place at twelve-seat counters from Ginza to Nakameguro. ...&quot;,</span>
                         null, null),
-<span class="fc" id="L98">                tr(&quot;Twelve-seat counters reshape Tokyo's edible storytelling.&quot;,</span>
+<span class="fc" id="L100">                tr(&quot;Twelve-seat counters reshape Tokyo's edible storytelling.&quot;,</span>
                         null, null),
-<span class="fc" id="L100">                photo(&quot;img-tokyo-sushi-01&quot;,</span>
+<span class="fc" id="L102">                photo(&quot;img-tokyo-sushi-01&quot;,</span>
                         &quot;https://content.luxehotels.example/articles/tokyo-omakase.jpg&quot;,
                         &quot;Omakase counter, Ginza&quot;),
-<span class="fc" id="L103">                List.of(),</span>
-<span class="fc" id="L104">                sofia, List.of(&quot;Tokyo&quot;, &quot;Sushi&quot;, &quot;Food&quot;),</span>
-<span class="fc" id="L105">                List.of(&quot;prop-tokyo-001&quot;), 6,</span>
-<span class="fc" id="L106">                now.minusDays(45), now.minusDays(12)));</span>
+<span class="fc" id="L105">                List.of(),</span>
+<span class="fc" id="L106">                sofia, List.of(&quot;Tokyo&quot;, &quot;Sushi&quot;, &quot;Food&quot;),</span>
+<span class="fc" id="L107">                List.of(&quot;prop-tokyo-001&quot;), 6,</span>
+<span class="fc" id="L108">                now.minusDays(45), now.minusDays(12)));</span>
 
-<span class="fc" id="L108">        articles.put(&quot;art-003&quot;, new Article(&quot;art-003&quot;, &quot;wellness-without-the-noise&quot;,</span>
+<span class="fc" id="L110">        articles.put(&quot;art-003&quot;, new Article(&quot;art-003&quot;, &quot;wellness-without-the-noise&quot;,</span>
                 &quot;WELLNESS&quot;, &quot;PUBLISHED&quot;,
-<span class="fc" id="L110">                tr(&quot;Wellness Without the Noise&quot;, null, null),</span>
-<span class="fc" id="L111">                tr(&quot;Why the next generation of luxury wellness is quiet, slow, and deeply personal&quot;, null, null),</span>
-<span class="fc" id="L112">                tr(&quot;Forget icy plunges and frantic biohacking. The next era of wellness is about doing less, with intention. ...&quot;, null, null),</span>
-<span class="fc" id="L113">                tr(&quot;A new era of luxury wellness — quieter, slower, more personal.&quot;, null, null),</span>
-<span class="fc" id="L114">                photo(&quot;img-wellness-01&quot;,</span>
+<span class="fc" id="L112">                tr(&quot;Wellness Without the Noise&quot;, null, null),</span>
+<span class="fc" id="L113">                tr(&quot;Why the next generation of luxury wellness is quiet, slow, and deeply personal&quot;, null, null),</span>
+<span class="fc" id="L114">                tr(&quot;Forget icy plunges and frantic biohacking. The next era of wellness is about doing less, with intention. ...&quot;, null, null),</span>
+<span class="fc" id="L115">                tr(&quot;A new era of luxury wellness — quieter, slower, more personal.&quot;, null, null),</span>
+<span class="fc" id="L116">                photo(&quot;img-wellness-01&quot;,</span>
                         &quot;https://content.luxehotels.example/articles/wellness.jpg&quot;,
                         &quot;Spa pool at dawn&quot;),
-<span class="fc" id="L117">                List.of(),</span>
-<span class="fc" id="L118">                marcus, List.of(&quot;Wellness&quot;, &quot;Spa&quot;, &quot;Mindfulness&quot;),</span>
-<span class="fc" id="L119">                List.of(&quot;prop-paris-001&quot;, &quot;prop-tokyo-001&quot;), 7,</span>
-<span class="fc" id="L120">                now.minusDays(30), now.minusDays(5)));</span>
+<span class="fc" id="L119">                List.of(),</span>
+<span class="fc" id="L120">                marcus, List.of(&quot;Wellness&quot;, &quot;Spa&quot;, &quot;Mindfulness&quot;),</span>
+<span class="fc" id="L121">                List.of(&quot;prop-paris-001&quot;, &quot;prop-tokyo-001&quot;), 7,</span>
+<span class="fc" id="L122">                now.minusDays(30), now.minusDays(5)));</span>
 
-<span class="fc" id="L122">        articles.put(&quot;art-004&quot;, new Article(&quot;art-004&quot;, &quot;designing-the-desert&quot;,</span>
+<span class="fc" id="L124">        articles.put(&quot;art-004&quot;, new Article(&quot;art-004&quot;, &quot;designing-the-desert&quot;,</span>
                 &quot;DESIGN&quot;, &quot;PUBLISHED&quot;,
-<span class="fc" id="L124">                tr(&quot;Designing the Desert: Inside Atlantis Royal&quot;, null, null),</span>
-<span class="fc" id="L125">                tr(&quot;How a flagship hotel translates dunes into living space&quot;, null, null),</span>
-<span class="fc" id="L126">                tr(&quot;Walk into Atlantis Royal at golden hour and you'll feel the desert before you see it. ...&quot;, null, null),</span>
-<span class="fc" id="L127">                tr(&quot;Inside the design language of Atlantis Royal Dubai.&quot;, null, null),</span>
-<span class="fc" id="L128">                photo(&quot;img-design-01&quot;,</span>
+<span class="fc" id="L126">                tr(&quot;Designing the Desert: Inside Atlantis Royal&quot;, null, null),</span>
+<span class="fc" id="L127">                tr(&quot;How a flagship hotel translates dunes into living space&quot;, null, null),</span>
+<span class="fc" id="L128">                tr(&quot;Walk into Atlantis Royal at golden hour and you'll feel the desert before you see it. ...&quot;, null, null),</span>
+<span class="fc" id="L129">                tr(&quot;Inside the design language of Atlantis Royal Dubai.&quot;, null, null),</span>
+<span class="fc" id="L130">                photo(&quot;img-design-01&quot;,</span>
                         &quot;https://content.luxehotels.example/articles/dubai-design.jpg&quot;,
                         &quot;Atlantis Royal at golden hour&quot;),
-<span class="fc" id="L131">                List.of(),</span>
-<span class="fc" id="L132">                camille, List.of(&quot;Dubai&quot;, &quot;Design&quot;, &quot;Architecture&quot;),</span>
-<span class="fc" id="L133">                List.of(&quot;prop-dubai-001&quot;), 9,</span>
-<span class="fc" id="L134">                now.minusDays(60), now.minusDays(20)));</span>
+<span class="fc" id="L133">                List.of(),</span>
+<span class="fc" id="L134">                camille, List.of(&quot;Dubai&quot;, &quot;Design&quot;, &quot;Architecture&quot;),</span>
+<span class="fc" id="L135">                List.of(&quot;prop-dubai-001&quot;), 9,</span>
+<span class="fc" id="L136">                now.minusDays(60), now.minusDays(20)));</span>
 
-<span class="fc" id="L136">        articles.put(&quot;art-005&quot;, new Article(&quot;art-005&quot;, &quot;summer-in-the-cotswolds&quot;,</span>
+<span class="fc" id="L138">        articles.put(&quot;art-005&quot;, new Article(&quot;art-005&quot;, &quot;summer-in-the-cotswolds&quot;,</span>
                 &quot;DESTINATION&quot;, &quot;PUBLISHED&quot;,
-<span class="fc" id="L138">                tr(&quot;A Summer in the Cotswolds&quot;, null, null),</span>
-<span class="fc" id="L139">                tr(&quot;Slow Sundays, ancient pubs, and an English garden you'll never want to leave&quot;, null, null),</span>
-<span class="fc" id="L140">                tr(&quot;There is a particular kind of summer that only the Cotswolds can produce. ...&quot;, null, null),</span>
-<span class="fc" id="L141">                tr(&quot;Slow Sundays and gardens you'll never want to leave.&quot;, null, null),</span>
-<span class="fc" id="L142">                photo(&quot;img-cotswolds-01&quot;,</span>
+<span class="fc" id="L140">                tr(&quot;A Summer in the Cotswolds&quot;, null, null),</span>
+<span class="fc" id="L141">                tr(&quot;Slow Sundays, ancient pubs, and an English garden you'll never want to leave&quot;, null, null),</span>
+<span class="fc" id="L142">                tr(&quot;There is a particular kind of summer that only the Cotswolds can produce. ...&quot;, null, null),</span>
+<span class="fc" id="L143">                tr(&quot;Slow Sundays and gardens you'll never want to leave.&quot;, null, null),</span>
+<span class="fc" id="L144">                photo(&quot;img-cotswolds-01&quot;,</span>
                         &quot;https://content.luxehotels.example/articles/cotswolds.jpg&quot;,
                         &quot;Cotswolds village in summer&quot;),
-<span class="fc" id="L145">                List.of(),</span>
-<span class="fc" id="L146">                camille, List.of(&quot;England&quot;, &quot;Countryside&quot;, &quot;Family&quot;),</span>
-<span class="fc" id="L147">                List.of(&quot;prop-london-001&quot;), 5,</span>
-<span class="fc" id="L148">                now.minusDays(15), now.minusDays(2)));</span>
-<span class="fc" id="L149">    }</span>
+<span class="fc" id="L147">                List.of(),</span>
+<span class="fc" id="L148">                camille, List.of(&quot;England&quot;, &quot;Countryside&quot;, &quot;Family&quot;),</span>
+<span class="fc" id="L149">                List.of(&quot;prop-london-001&quot;), 5,</span>
+<span class="fc" id="L150">                now.minusDays(15), now.minusDays(2)));</span>
+<span class="fc" id="L151">    }</span>
 
     // ── Inspirations ─────────────────────────────────────────────────────────
 
     private void initInspirations() {
-<span class="fc" id="L154">        OffsetDateTime now = OffsetDateTime.now();</span>
-<span class="fc" id="L155">        inspirations.put(&quot;ins-001&quot;, new TravelInspiration(&quot;ins-001&quot;, &quot;paris-spring&quot;,</span>
+<span class="fc" id="L156">        OffsetDateTime now = OffsetDateTime.now();</span>
+<span class="fc" id="L157">        inspirations.put(&quot;ins-001&quot;, new TravelInspiration(&quot;ins-001&quot;, &quot;paris-spring&quot;,</span>
                 &quot;Paris&quot;, &quot;Western Europe&quot;, &quot;SPRING&quot;,
-<span class="fc" id="L157">                tr(&quot;Paris in Bloom&quot;, &quot;Paris en fleurs&quot;, &quot;París en flor&quot;),</span>
-<span class="fc" id="L158">                tr(&quot;Markets, gardens, and the world's best terraces, set against the soft light of April.&quot;, null, null),</span>
-<span class="fc" id="L159">                photo(&quot;img-ins-paris&quot;, &quot;https://content.luxehotels.example/inspirations/paris-spring.jpg&quot;,</span>
+<span class="fc" id="L159">                tr(&quot;Paris in Bloom&quot;, &quot;Paris en fleurs&quot;, &quot;París en flor&quot;),</span>
+<span class="fc" id="L160">                tr(&quot;Markets, gardens, and the world's best terraces, set against the soft light of April.&quot;, null, null),</span>
+<span class="fc" id="L161">                photo(&quot;img-ins-paris&quot;, &quot;https://content.luxehotels.example/inspirations/paris-spring.jpg&quot;,</span>
                         &quot;Paris cherry blossoms&quot;),
-<span class="fc" id="L161">                List.of(),</span>
-<span class="fc" id="L162">                List.of(en(&quot;Marché Bastille at sunrise&quot;),</span>
-<span class="fc" id="L163">                        en(&quot;Walk the Promenade Plantée&quot;),</span>
-<span class="fc" id="L164">                        en(&quot;Dinner at Septime&quot;)),</span>
-<span class="fc" id="L165">                List.of(&quot;prop-paris-001&quot;),</span>
-<span class="fc" id="L166">                Money.of(4500, &quot;USD&quot;), 4, now.minusDays(40)));</span>
+<span class="fc" id="L163">                List.of(),</span>
+<span class="fc" id="L164">                List.of(en(&quot;Marché Bastille at sunrise&quot;),</span>
+<span class="fc" id="L165">                        en(&quot;Walk the Promenade Plantée&quot;),</span>
+<span class="fc" id="L166">                        en(&quot;Dinner at Septime&quot;)),</span>
+<span class="fc" id="L167">                List.of(&quot;prop-paris-001&quot;),</span>
+<span class="fc" id="L168">                Money.of(4500, &quot;USD&quot;), 4, now.minusDays(40)));</span>
 
-<span class="fc" id="L168">        inspirations.put(&quot;ins-002&quot;, new TravelInspiration(&quot;ins-002&quot;, &quot;tokyo-cherry-blossoms&quot;,</span>
+<span class="fc" id="L170">        inspirations.put(&quot;ins-002&quot;, new TravelInspiration(&quot;ins-002&quot;, &quot;tokyo-cherry-blossoms&quot;,</span>
                 &quot;Tokyo&quot;, &quot;East Asia&quot;, &quot;SPRING&quot;,
-<span class="fc" id="L170">                tr(&quot;Hanami in Tokyo&quot;, null, null),</span>
-<span class="fc" id="L171">                tr(&quot;Two weeks of cherry blossoms, and the rituals that surround them.&quot;, null, null),</span>
-<span class="fc" id="L172">                photo(&quot;img-ins-tokyo&quot;, &quot;https://content.luxehotels.example/inspirations/tokyo-spring.jpg&quot;,</span>
+<span class="fc" id="L172">                tr(&quot;Hanami in Tokyo&quot;, null, null),</span>
+<span class="fc" id="L173">                tr(&quot;Two weeks of cherry blossoms, and the rituals that surround them.&quot;, null, null),</span>
+<span class="fc" id="L174">                photo(&quot;img-ins-tokyo&quot;, &quot;https://content.luxehotels.example/inspirations/tokyo-spring.jpg&quot;,</span>
                         &quot;Cherry blossoms in Ueno Park&quot;),
-<span class="fc" id="L174">                List.of(),</span>
-<span class="fc" id="L175">                List.of(en(&quot;Ueno Park hanami picnic&quot;),</span>
-<span class="fc" id="L176">                        en(&quot;Yanaka tea ceremony&quot;),</span>
-<span class="fc" id="L177">                        en(&quot;Sunset at Tokyo Tower&quot;)),</span>
-<span class="fc" id="L178">                List.of(&quot;prop-tokyo-001&quot;),</span>
-<span class="fc" id="L179">                Money.of(6800, &quot;USD&quot;), 6, now.minusDays(30)));</span>
+<span class="fc" id="L176">                List.of(),</span>
+<span class="fc" id="L177">                List.of(en(&quot;Ueno Park hanami picnic&quot;),</span>
+<span class="fc" id="L178">                        en(&quot;Yanaka tea ceremony&quot;),</span>
+<span class="fc" id="L179">                        en(&quot;Sunset at Tokyo Tower&quot;)),</span>
+<span class="fc" id="L180">                List.of(&quot;prop-tokyo-001&quot;),</span>
+<span class="fc" id="L181">                Money.of(6800, &quot;USD&quot;), 6, now.minusDays(30)));</span>
 
-<span class="fc" id="L181">        inspirations.put(&quot;ins-003&quot;, new TravelInspiration(&quot;ins-003&quot;, &quot;dubai-desert-winter&quot;,</span>
+<span class="fc" id="L183">        inspirations.put(&quot;ins-003&quot;, new TravelInspiration(&quot;ins-003&quot;, &quot;dubai-desert-winter&quot;,</span>
                 &quot;Dubai&quot;, &quot;Middle East&quot;, &quot;WINTER&quot;,
-<span class="fc" id="L183">                tr(&quot;Dubai's Desert Winter&quot;, null, null),</span>
-<span class="fc" id="L184">                tr(&quot;Desert mornings and rooftop nights — Dubai shines brightest from November to February.&quot;, null, null),</span>
-<span class="fc" id="L185">                photo(&quot;img-ins-dubai&quot;, &quot;https://content.luxehotels.example/inspirations/dubai-winter.jpg&quot;,</span>
+<span class="fc" id="L185">                tr(&quot;Dubai's Desert Winter&quot;, null, null),</span>
+<span class="fc" id="L186">                tr(&quot;Desert mornings and rooftop nights — Dubai shines brightest from November to February.&quot;, null, null),</span>
+<span class="fc" id="L187">                photo(&quot;img-ins-dubai&quot;, &quot;https://content.luxehotels.example/inspirations/dubai-winter.jpg&quot;,</span>
                         &quot;Atlantis Royal across the bay&quot;),
-<span class="fc" id="L187">                List.of(),</span>
-<span class="fc" id="L188">                List.of(en(&quot;Sunrise dune drive&quot;),</span>
-<span class="fc" id="L189">                        en(&quot;Dinner at Sky Terrace&quot;),</span>
-<span class="fc" id="L190">                        en(&quot;Spa morning at Atlantis&quot;)),</span>
-<span class="fc" id="L191">                List.of(&quot;prop-dubai-001&quot;),</span>
-<span class="fc" id="L192">                Money.of(8200, &quot;USD&quot;), 5, now.minusDays(20)));</span>
+<span class="fc" id="L189">                List.of(),</span>
+<span class="fc" id="L190">                List.of(en(&quot;Sunrise dune drive&quot;),</span>
+<span class="fc" id="L191">                        en(&quot;Dinner at Sky Terrace&quot;),</span>
+<span class="fc" id="L192">                        en(&quot;Spa morning at Atlantis&quot;)),</span>
+<span class="fc" id="L193">                List.of(&quot;prop-dubai-001&quot;),</span>
+<span class="fc" id="L194">                Money.of(8200, &quot;USD&quot;), 5, now.minusDays(20)));</span>
 
-<span class="fc" id="L194">        inspirations.put(&quot;ins-004&quot;, new TravelInspiration(&quot;ins-004&quot;, &quot;manhattan-fall-weekend&quot;,</span>
+<span class="fc" id="L196">        inspirations.put(&quot;ins-004&quot;, new TravelInspiration(&quot;ins-004&quot;, &quot;manhattan-fall-weekend&quot;,</span>
                 &quot;New York&quot;, &quot;North America&quot;, &quot;FALL&quot;,
-<span class="fc" id="L196">                tr(&quot;A Manhattan Fall Weekend&quot;, null, null),</span>
-<span class="fc" id="L197">                tr(&quot;Three days of art, theater, and the best season the city offers.&quot;, null, null),</span>
-<span class="fc" id="L198">                photo(&quot;img-ins-nyc&quot;, &quot;https://content.luxehotels.example/inspirations/nyc-fall.jpg&quot;,</span>
+<span class="fc" id="L198">                tr(&quot;A Manhattan Fall Weekend&quot;, null, null),</span>
+<span class="fc" id="L199">                tr(&quot;Three days of art, theater, and the best season the city offers.&quot;, null, null),</span>
+<span class="fc" id="L200">                photo(&quot;img-ins-nyc&quot;, &quot;https://content.luxehotels.example/inspirations/nyc-fall.jpg&quot;,</span>
                         &quot;Central Park in autumn&quot;),
-<span class="fc" id="L200">                List.of(),</span>
-<span class="fc" id="L201">                List.of(en(&quot;MoMA Friday late hours&quot;),</span>
-<span class="fc" id="L202">                        en(&quot;Broadway opening night&quot;),</span>
-<span class="fc" id="L203">                        en(&quot;Brunch at Café Boulud&quot;)),</span>
-<span class="fc" id="L204">                List.of(&quot;prop-nyc-001&quot;),</span>
-<span class="fc" id="L205">                Money.of(5400, &quot;USD&quot;), 3, now.minusDays(25)));</span>
+<span class="fc" id="L202">                List.of(),</span>
+<span class="fc" id="L203">                List.of(en(&quot;MoMA Friday late hours&quot;),</span>
+<span class="fc" id="L204">                        en(&quot;Broadway opening night&quot;),</span>
+<span class="fc" id="L205">                        en(&quot;Brunch at Café Boulud&quot;)),</span>
+<span class="fc" id="L206">                List.of(&quot;prop-nyc-001&quot;),</span>
+<span class="fc" id="L207">                Money.of(5400, &quot;USD&quot;), 3, now.minusDays(25)));</span>
 
-<span class="fc" id="L207">        inspirations.put(&quot;ins-005&quot;, new TravelInspiration(&quot;ins-005&quot;, &quot;london-yearround&quot;,</span>
+<span class="fc" id="L209">        inspirations.put(&quot;ins-005&quot;, new TravelInspiration(&quot;ins-005&quot;, &quot;london-yearround&quot;,</span>
                 &quot;London&quot;, &quot;Western Europe&quot;, &quot;YEAR_ROUND&quot;,
-<span class="fc" id="L209">                tr(&quot;London, Beyond the Postcards&quot;, null, null),</span>
-<span class="fc" id="L210">                tr(&quot;Inside the markets, mews, and members' clubs that locals call home.&quot;, null, null),</span>
-<span class="fc" id="L211">                photo(&quot;img-ins-london&quot;, &quot;https://content.luxehotels.example/inspirations/london.jpg&quot;,</span>
+<span class="fc" id="L211">                tr(&quot;London, Beyond the Postcards&quot;, null, null),</span>
+<span class="fc" id="L212">                tr(&quot;Inside the markets, mews, and members' clubs that locals call home.&quot;, null, null),</span>
+<span class="fc" id="L213">                photo(&quot;img-ins-london&quot;, &quot;https://content.luxehotels.example/inspirations/london.jpg&quot;,</span>
                         &quot;Foggy morning over the Thames&quot;),
-<span class="fc" id="L213">                List.of(),</span>
-<span class="fc" id="L214">                List.of(en(&quot;Borough Market breakfast&quot;),</span>
-<span class="fc" id="L215">                        en(&quot;Soho gallery walk&quot;),</span>
-<span class="fc" id="L216">                        en(&quot;West End ovation&quot;)),</span>
-<span class="fc" id="L217">                List.of(&quot;prop-london-001&quot;),</span>
-<span class="fc" id="L218">                Money.of(4200, &quot;GBP&quot;), 4, now.minusDays(50)));</span>
-<span class="fc" id="L219">    }</span>
+<span class="fc" id="L215">                List.of(),</span>
+<span class="fc" id="L216">                List.of(en(&quot;Borough Market breakfast&quot;),</span>
+<span class="fc" id="L217">                        en(&quot;Soho gallery walk&quot;),</span>
+<span class="fc" id="L218">                        en(&quot;West End ovation&quot;)),</span>
+<span class="fc" id="L219">                List.of(&quot;prop-london-001&quot;),</span>
+<span class="fc" id="L220">                Money.of(4200, &quot;GBP&quot;), 4, now.minusDays(50)));</span>
+<span class="fc" id="L221">    }</span>
 
     // ── Brand story ──────────────────────────────────────────────────────────
 
     private BrandStory buildBrandStory() {
-<span class="fc" id="L224">        BrandStory.BrandPillar craft = new BrandStory.BrandPillar(</span>
+<span class="fc" id="L226">        BrandStory.BrandPillar craft = new BrandStory.BrandPillar(</span>
                 &quot;CRAFT&quot;, &quot;hand&quot;,
-<span class="fc" id="L226">                tr(&quot;Craft Without Compromise&quot;,</span>
+<span class="fc" id="L228">                tr(&quot;Craft Without Compromise&quot;,</span>
                         &quot;Le métier sans compromis&quot;,
                         &quot;Oficio sin concesiones&quot;),
-<span class="fc" id="L229">                tr(&quot;Every detail at every Luxe property reflects 1,000 small decisions made in service of the guest.&quot;, null, null));</span>
-<span class="fc" id="L230">        BrandStory.BrandPillar place = new BrandStory.BrandPillar(</span>
+<span class="fc" id="L231">                tr(&quot;Every detail at every Luxe property reflects 1,000 small decisions made in service of the guest.&quot;, null, null));</span>
+<span class="fc" id="L232">        BrandStory.BrandPillar place = new BrandStory.BrandPillar(</span>
                 &quot;PLACE&quot;, &quot;compass&quot;,
-<span class="fc" id="L232">                tr(&quot;Devotion to Place&quot;,</span>
+<span class="fc" id="L234">                tr(&quot;Devotion to Place&quot;,</span>
                         &quot;Dévouement au lieu&quot;,
                         &quot;Devoción al lugar&quot;),
-<span class="fc" id="L235">                tr(&quot;Each hotel speaks the language of its city — its history, its rituals, its people.&quot;, null, null));</span>
-<span class="fc" id="L236">        BrandStory.BrandPillar quiet = new BrandStory.BrandPillar(</span>
+<span class="fc" id="L237">                tr(&quot;Each hotel speaks the language of its city — its history, its rituals, its people.&quot;, null, null));</span>
+<span class="fc" id="L238">        BrandStory.BrandPillar quiet = new BrandStory.BrandPillar(</span>
                 &quot;QUIET&quot;, &quot;leaf&quot;,
-<span class="fc" id="L238">                tr(&quot;The Power of Quiet&quot;,</span>
+<span class="fc" id="L240">                tr(&quot;The Power of Quiet&quot;,</span>
                         &quot;La force du silence&quot;,
                         &quot;El poder del silencio&quot;),
-<span class="fc" id="L241">                tr(&quot;True luxury is the absence of noise — visual, audible, and emotional.&quot;, null, null));</span>
+<span class="fc" id="L243">                tr(&quot;True luxury is the absence of noise — visual, audible, and emotional.&quot;, null, null));</span>
 
-<span class="fc" id="L243">        return new BrandStory(&quot;brand-story-001&quot;,</span>
-<span class="fc" id="L244">                tr(&quot;Luxe International — Where Quiet Meets Craft&quot;, null, null),</span>
-<span class="fc" id="L245">                tr(&quot;Twelve cities. One philosophy. Anchored in place, devoted to craft.&quot;, null, null),</span>
-<span class="fc" id="L246">                tr(&quot;From a single hotel on the Île Saint-Louis in 1957, Luxe has grown to twelve cities across four continents — but the philosophy has never moved. ...&quot;, null, null),</span>
-<span class="fc" id="L247">                List.of(craft, place, quiet),</span>
-<span class="fc" id="L248">                photo(&quot;img-brand&quot;, &quot;https://content.luxehotels.example/brand/hero.jpg&quot;,</span>
+<span class="fc" id="L245">        return new BrandStory(&quot;brand-story-001&quot;,</span>
+<span class="fc" id="L246">                tr(&quot;Luxe International — Where Quiet Meets Craft&quot;, null, null),</span>
+<span class="fc" id="L247">                tr(&quot;Twelve cities. One philosophy. Anchored in place, devoted to craft.&quot;, null, null),</span>
+<span class="fc" id="L248">                tr(&quot;From a single hotel on the Île Saint-Louis in 1957, Luxe has grown to twelve cities across four continents — but the philosophy has never moved. ...&quot;, null, null),</span>
+<span class="fc" id="L249">                List.of(craft, place, quiet),</span>
+<span class="fc" id="L250">                photo(&quot;img-brand&quot;, &quot;https://content.luxehotels.example/brand/hero.jpg&quot;,</span>
                         &quot;Luxe Paris facade at dusk&quot;),
                 &quot;https://content.luxehotels.example/brand/film.mp4&quot;,
-<span class="fc" id="L251">                OffsetDateTime.now().minusDays(120));</span>
+<span class="fc" id="L253">                OffsetDateTime.now().minusDays(120));</span>
     }
 
     // ── Deal spotlights ──────────────────────────────────────────────────────
 
     private void initSpotlights() {
-<span class="fc" id="L257">        LocalDate today = LocalDate.now();</span>
-<span class="fc" id="L258">        spotlights.put(&quot;dl-001&quot;, new DealSpotlight(&quot;dl-001&quot;, &quot;spring-suites&quot;,</span>
-<span class="fc" id="L259">                &quot;PUBLISHED&quot;, &quot;SPRING25&quot;, 25.0,</span>
-<span class="fc" id="L260">                today.minusDays(10), today.plusDays(50),</span>
-<span class="fc" id="L261">                List.of(&quot;prop-paris-001&quot;, &quot;prop-london-001&quot;),</span>
+<span class="fc" id="L259">        LocalDate today = LocalDate.now();</span>
+<span class="fc" id="L260">        spotlights.put(&quot;dl-001&quot;, new DealSpotlight(&quot;dl-001&quot;, &quot;spring-suites&quot;,</span>
+<span class="fc" id="L261">                &quot;PUBLISHED&quot;, &quot;SPRING25&quot;, 25.0,</span>
+<span class="fc" id="L262">                today.minusDays(10), today.plusDays(50),</span>
+<span class="fc" id="L263">                List.of(&quot;prop-paris-001&quot;, &quot;prop-london-001&quot;),</span>
                 &quot;https://luxehotels.example/offers/spring-suites&quot;,
-<span class="fc" id="L263">                tr(&quot;Spring Suite Awakening — 25% off&quot;,</span>
+<span class="fc" id="L265">                tr(&quot;Spring Suite Awakening — 25% off&quot;,</span>
                         &quot;Réveil printanier en suite — 25% de réduction&quot;, null),
-<span class="fc" id="L265">                tr(&quot;Step into spring with a 25% reduction on all suites at our European flagships.&quot;, null, null),</span>
-<span class="fc" id="L266">                en(&quot;Valid for stays through June 30. Subject to availability. Cannot be combined with other offers.&quot;),</span>
-<span class="fc" id="L267">                tr(&quot;Book Spring Suite&quot;, &quot;Réserver la suite&quot;, null),</span>
-<span class="fc" id="L268">                photo(&quot;img-deal-spring&quot;, &quot;https://content.luxehotels.example/deals/spring-suite.jpg&quot;,</span>
+<span class="fc" id="L267">                tr(&quot;Step into spring with a 25% reduction on all suites at our European flagships.&quot;, null, null),</span>
+<span class="fc" id="L268">                en(&quot;Valid for stays through June 30. Subject to availability. Cannot be combined with other offers.&quot;),</span>
+<span class="fc" id="L269">                tr(&quot;Book Spring Suite&quot;, &quot;Réserver la suite&quot;, null),</span>
+<span class="fc" id="L270">                photo(&quot;img-deal-spring&quot;, &quot;https://content.luxehotels.example/deals/spring-suite.jpg&quot;,</span>
                         &quot;Suite at Le Grand Luxe Paris&quot;)));
 
-<span class="fc" id="L271">        spotlights.put(&quot;dl-002&quot;, new DealSpotlight(&quot;dl-002&quot;, &quot;fourth-night-free&quot;,</span>
+<span class="fc" id="L273">        spotlights.put(&quot;dl-002&quot;, new DealSpotlight(&quot;dl-002&quot;, &quot;fourth-night-free&quot;,</span>
                 &quot;PUBLISHED&quot;, &quot;STAY4&quot;, null,
-<span class="fc" id="L273">                today.minusDays(30), today.plusDays(120),</span>
-<span class="fc" id="L274">                List.of(&quot;prop-tokyo-001&quot;, &quot;prop-dubai-001&quot;, &quot;prop-nyc-001&quot;),</span>
+<span class="fc" id="L275">                today.minusDays(30), today.plusDays(120),</span>
+<span class="fc" id="L276">                List.of(&quot;prop-tokyo-001&quot;, &quot;prop-dubai-001&quot;, &quot;prop-nyc-001&quot;),</span>
                 &quot;https://luxehotels.example/offers/fourth-night-free&quot;,
-<span class="fc" id="L276">                tr(&quot;Stay 4, Pay 3 — A Long Weekend on Us&quot;, null, null),</span>
-<span class="fc" id="L277">                tr(&quot;Book any qualifying rate for four consecutive nights and the fourth is on us.&quot;, null, null),</span>
-<span class="fc" id="L278">                en(&quot;Promo applied at checkout. Lowest-rate night becomes complimentary.&quot;),</span>
-<span class="fc" id="L279">                tr(&quot;Plan a Long Weekend&quot;, null, null),</span>
-<span class="fc" id="L280">                photo(&quot;img-deal-stay4&quot;, &quot;https://content.luxehotels.example/deals/stay4.jpg&quot;,</span>
+<span class="fc" id="L278">                tr(&quot;Stay 4, Pay 3 — A Long Weekend on Us&quot;, null, null),</span>
+<span class="fc" id="L279">                tr(&quot;Book any qualifying rate for four consecutive nights and the fourth is on us.&quot;, null, null),</span>
+<span class="fc" id="L280">                en(&quot;Promo applied at checkout. Lowest-rate night becomes complimentary.&quot;),</span>
+<span class="fc" id="L281">                tr(&quot;Plan a Long Weekend&quot;, null, null),</span>
+<span class="fc" id="L282">                photo(&quot;img-deal-stay4&quot;, &quot;https://content.luxehotels.example/deals/stay4.jpg&quot;,</span>
                         &quot;Concierge at front desk&quot;)));
 
-<span class="fc" id="L283">        spotlights.put(&quot;dl-003&quot;, new DealSpotlight(&quot;dl-003&quot;, &quot;wellness-retreat&quot;,</span>
-<span class="fc" id="L284">                &quot;DRAFT&quot;, null, 15.0,</span>
-<span class="fc" id="L285">                today.plusDays(20), today.plusDays(180),</span>
-<span class="fc" id="L286">                List.of(&quot;prop-paris-001&quot;, &quot;prop-dubai-001&quot;),</span>
+<span class="fc" id="L285">        spotlights.put(&quot;dl-003&quot;, new DealSpotlight(&quot;dl-003&quot;, &quot;wellness-retreat&quot;,</span>
+<span class="fc" id="L286">                &quot;DRAFT&quot;, null, 15.0,</span>
+<span class="fc" id="L287">                today.plusDays(20), today.plusDays(180),</span>
+<span class="fc" id="L288">                List.of(&quot;prop-paris-001&quot;, &quot;prop-dubai-001&quot;),</span>
                 &quot;https://luxehotels.example/offers/wellness-retreat&quot;,
-<span class="fc" id="L288">                tr(&quot;Wellness Retreat — 3 Nights, 15% Off&quot;, null, null),</span>
-<span class="fc" id="L289">                tr(&quot;Three nights of treatments, sound baths, and slow mornings at our flagship spas.&quot;, null, null),</span>
-<span class="fc" id="L290">                en(&quot;Includes daily breakfast and one signature treatment per night.&quot;),</span>
-<span class="fc" id="L291">                tr(&quot;Reserve Retreat&quot;, null, null),</span>
-<span class="fc" id="L292">                photo(&quot;img-deal-wellness&quot;, &quot;https://content.luxehotels.example/deals/wellness.jpg&quot;,</span>
+<span class="fc" id="L290">                tr(&quot;Wellness Retreat — 3 Nights, 15% Off&quot;, null, null),</span>
+<span class="fc" id="L291">                tr(&quot;Three nights of treatments, sound baths, and slow mornings at our flagship spas.&quot;, null, null),</span>
+<span class="fc" id="L292">                en(&quot;Includes daily breakfast and one signature treatment per night.&quot;),</span>
+<span class="fc" id="L293">                tr(&quot;Reserve Retreat&quot;, null, null),</span>
+<span class="fc" id="L294">                photo(&quot;img-deal-wellness&quot;, &quot;https://content.luxehotels.example/deals/wellness.jpg&quot;,</span>
                         &quot;Spa courtyard&quot;)));
-<span class="fc" id="L294">    }</span>
+<span class="fc" id="L296">    }</span>
 
     // ── Collections ──────────────────────────────────────────────────────────
 
     private void initCollections() {
-<span class="fc" id="L299">        collections.put(&quot;col-spring&quot;, new ContentCollection(&quot;col-spring&quot;, &quot;spring-2026&quot;,</span>
-<span class="fc" id="L300">                tr(&quot;Spring 2026 Collection&quot;, null, null),</span>
-<span class="fc" id="L301">                tr(&quot;A curated mix of articles, inspirations, and offers for the season ahead.&quot;, null, null),</span>
-<span class="fc" id="L302">                articles.get(&quot;art-005&quot;).getHeroImage(),</span>
-<span class="fc" id="L303">                List.of(&quot;art-001&quot;, &quot;art-005&quot;),</span>
-<span class="fc" id="L304">                List.of(&quot;ins-001&quot;, &quot;ins-002&quot;),</span>
-<span class="fc" id="L305">                List.of(&quot;dl-001&quot;),</span>
-<span class="fc" id="L306">                OffsetDateTime.now().minusDays(15)));</span>
+<span class="fc" id="L301">        collections.put(&quot;col-spring&quot;, new ContentCollection(&quot;col-spring&quot;, &quot;spring-2026&quot;,</span>
+<span class="fc" id="L302">                tr(&quot;Spring 2026 Collection&quot;, null, null),</span>
+<span class="fc" id="L303">                tr(&quot;A curated mix of articles, inspirations, and offers for the season ahead.&quot;, null, null),</span>
+<span class="fc" id="L304">                articles.get(&quot;art-005&quot;).getHeroImage(),</span>
+<span class="fc" id="L305">                List.of(&quot;art-001&quot;, &quot;art-005&quot;),</span>
+<span class="fc" id="L306">                List.of(&quot;ins-001&quot;, &quot;ins-002&quot;),</span>
+<span class="fc" id="L307">                List.of(&quot;dl-001&quot;),</span>
+<span class="fc" id="L308">                OffsetDateTime.now().minusDays(15)));</span>
 
-<span class="fc" id="L308">        collections.put(&quot;col-wellness&quot;, new ContentCollection(&quot;col-wellness&quot;, &quot;wellness-collection&quot;,</span>
-<span class="fc" id="L309">                tr(&quot;The Wellness Collection&quot;, null, null),</span>
-<span class="fc" id="L310">                tr(&quot;Stories, destinations, and offers for travelers in search of stillness.&quot;, null, null),</span>
-<span class="fc" id="L311">                articles.get(&quot;art-003&quot;).getHeroImage(),</span>
-<span class="fc" id="L312">                List.of(&quot;art-003&quot;),</span>
-<span class="fc" id="L313">                List.of(&quot;ins-002&quot;, &quot;ins-005&quot;),</span>
-<span class="fc" id="L314">                List.of(&quot;dl-003&quot;),</span>
-<span class="fc" id="L315">                OffsetDateTime.now().minusDays(7)));</span>
-<span class="fc" id="L316">    }</span>
+<span class="fc" id="L310">        collections.put(&quot;col-wellness&quot;, new ContentCollection(&quot;col-wellness&quot;, &quot;wellness-collection&quot;,</span>
+<span class="fc" id="L311">                tr(&quot;The Wellness Collection&quot;, null, null),</span>
+<span class="fc" id="L312">                tr(&quot;Stories, destinations, and offers for travelers in search of stillness.&quot;, null, null),</span>
+<span class="fc" id="L313">                articles.get(&quot;art-003&quot;).getHeroImage(),</span>
+<span class="fc" id="L314">                List.of(&quot;art-003&quot;),</span>
+<span class="fc" id="L315">                List.of(&quot;ins-002&quot;, &quot;ins-005&quot;),</span>
+<span class="fc" id="L316">                List.of(&quot;dl-003&quot;),</span>
+<span class="fc" id="L317">                OffsetDateTime.now().minusDays(7)));</span>
+<span class="fc" id="L318">    }</span>
 
     // ── Lookups ──────────────────────────────────────────────────────────────
 
-<span class="pc bpc" id="L320" title="1 of 2 branches missed.">    private static String localeOf(String locale) { return locale != null ? locale : &quot;en&quot;; }</span>
+<span class="pc bpc" id="L322" title="1 of 2 branches missed.">    private static String localeOf(String locale) { return locale != null ? locale : &quot;en&quot;; }</span>
 
     @Override
     public List&lt;Article&gt; findArticles(Map&lt;String, Object&gt; filter, String locale) {
-<span class="pc bpc" id="L324" title="1 of 2 branches missed.">        String cat = filter != null ? (String) filter.get(&quot;category&quot;) : null;</span>
-<span class="pc bpc" id="L325" title="1 of 2 branches missed.">        String tag = filter != null ? (String) filter.get(&quot;tag&quot;) : null;</span>
-<span class="pc bpc" id="L326" title="1 of 2 branches missed.">        String hotelId = filter != null ? (String) filter.get(&quot;hotelId&quot;) : null;</span>
-<span class="fc" id="L327">        return articles.values().stream()</span>
-<span class="fc" id="L328">                .filter(a -&gt; &quot;PUBLISHED&quot;.equals(a.getStatus()))</span>
-<span class="pc bpc" id="L329" title="1 of 4 branches missed.">                .filter(a -&gt; cat == null || a.getCategory().equals(cat))</span>
-<span class="pc bpc" id="L330" title="3 of 4 branches missed.">                .filter(a -&gt; tag == null || a.getTags().contains(tag))</span>
-<span class="pc bpc" id="L331" title="1 of 2 branches missed.">                .filter(a -&gt; hotelId == null</span>
-<span class="pc bnc" id="L332" title="All 2 branches missed.">                        || a.getRelatedHotels().stream().anyMatch(h -&gt; hotelId.equals(h.get(&quot;id&quot;))))</span>
-<span class="fc" id="L333">                .map(a -&gt; a.forLocale(localeOf(locale)))</span>
-<span class="fc" id="L334">                .sorted(Comparator.comparing(Article::getPublishedAt).reversed())</span>
-<span class="fc" id="L335">                .collect(Collectors.toList());</span>
+<span class="fc bfc" id="L326" title="All 2 branches covered.">        String cat = filter != null ? (String) filter.get(&quot;category&quot;) : null;</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">        String tag = filter != null ? (String) filter.get(&quot;tag&quot;) : null;</span>
+<span class="fc bfc" id="L328" title="All 2 branches covered.">        String hotelId = filter != null ? (String) filter.get(&quot;hotelId&quot;) : null;</span>
+<span class="fc" id="L329">        return articles.values().stream()</span>
+<span class="fc" id="L330">                .filter(a -&gt; &quot;PUBLISHED&quot;.equals(a.getStatus()))</span>
+<span class="fc bfc" id="L331" title="All 4 branches covered.">                .filter(a -&gt; cat == null || a.getCategory().equals(cat))</span>
+<span class="pc bpc" id="L332" title="3 of 4 branches missed.">                .filter(a -&gt; tag == null || a.getTags().contains(tag))</span>
+<span class="pc bpc" id="L333" title="1 of 2 branches missed.">                .filter(a -&gt; hotelId == null</span>
+<span class="pc bnc" id="L334" title="All 2 branches missed.">                        || a.getRelatedHotels().stream().anyMatch(h -&gt; hotelId.equals(h.get(&quot;id&quot;))))</span>
+<span class="fc" id="L335">                .map(a -&gt; a.forLocale(localeOf(locale)))</span>
+<span class="fc" id="L336">                .sorted(Comparator.comparing(Article::getPublishedAt).reversed())</span>
+<span class="fc" id="L337">                .collect(Collectors.toList());</span>
     }
 
     @Override
     public Optional&lt;Article&gt; findArticleBySlug(String slug, String locale) {
-<span class="fc" id="L340">        return articles.values().stream()</span>
-<span class="fc" id="L341">                .filter(a -&gt; a.getSlug().equals(slug))</span>
-<span class="fc" id="L342">                .findFirst()</span>
-<span class="fc" id="L343">                .map(a -&gt; a.forLocale(localeOf(locale)));</span>
+<span class="fc" id="L342">        return articles.values().stream()</span>
+<span class="fc" id="L343">                .filter(a -&gt; a.getSlug().equals(slug))</span>
+<span class="fc" id="L344">                .findFirst()</span>
+<span class="fc" id="L345">                .map(a -&gt; a.forLocale(localeOf(locale)));</span>
     }
 
     @Override
     public List&lt;Article&gt; findFeaturedArticles(int limit, String locale) {
-<span class="fc" id="L348">        return articles.values().stream()</span>
-<span class="fc" id="L349">                .filter(a -&gt; &quot;PUBLISHED&quot;.equals(a.getStatus()))</span>
-<span class="fc" id="L350">                .sorted(Comparator.comparing(Article::getPublishedAt).reversed())</span>
-<span class="fc" id="L351">                .limit(limit)</span>
-<span class="fc" id="L352">                .map(a -&gt; a.forLocale(localeOf(locale)))</span>
-<span class="fc" id="L353">                .collect(Collectors.toList());</span>
+<span class="fc" id="L350">        return articles.values().stream()</span>
+<span class="fc" id="L351">                .filter(a -&gt; &quot;PUBLISHED&quot;.equals(a.getStatus()))</span>
+<span class="fc" id="L352">                .sorted(Comparator.comparing(Article::getPublishedAt).reversed())</span>
+<span class="fc" id="L353">                .limit(limit)</span>
+<span class="fc" id="L354">                .map(a -&gt; a.forLocale(localeOf(locale)))</span>
+<span class="fc" id="L355">                .collect(Collectors.toList());</span>
     }
 
     @Override
     public List&lt;TravelInspiration&gt; findInspirations(String destination, String season,
                                                       int limit, String locale) {
-<span class="fc" id="L359">        return inspirations.values().stream()</span>
-<span class="fc bfc" id="L360" title="All 4 branches covered.">                .filter(i -&gt; destination == null || i.getDestination().equalsIgnoreCase(destination))</span>
-<span class="fc bfc" id="L361" title="All 4 branches covered.">                .filter(i -&gt; season == null || i.getBestSeason().equals(season))</span>
-<span class="fc" id="L362">                .map(i -&gt; i.forLocale(localeOf(locale)))</span>
-<span class="fc" id="L363">                .limit(limit)</span>
-<span class="fc" id="L364">                .collect(Collectors.toList());</span>
+<span class="fc" id="L361">        return inspirations.values().stream()</span>
+<span class="fc bfc" id="L362" title="All 4 branches covered.">                .filter(i -&gt; destination == null || i.getDestination().equalsIgnoreCase(destination))</span>
+<span class="fc bfc" id="L363" title="All 4 branches covered.">                .filter(i -&gt; season == null || i.getBestSeason().equals(season))</span>
+<span class="fc" id="L364">                .map(i -&gt; i.forLocale(localeOf(locale)))</span>
+<span class="fc" id="L365">                .limit(limit)</span>
+<span class="fc" id="L366">                .collect(Collectors.toList());</span>
     }
 
     @Override
     public BrandStory getBrandStory(String locale) {
-<span class="fc" id="L369">        return brandStory.forLocale(localeOf(locale));</span>
+<span class="fc" id="L371">        return brandStory.forLocale(localeOf(locale));</span>
     }
 
     @Override
     public List&lt;DealSpotlight&gt; findDealSpotlights(Boolean active, String locale) {
-<span class="fc" id="L374">        LocalDate today = LocalDate.now();</span>
-<span class="fc" id="L375">        return spotlights.values().stream()</span>
-<span class="pc bpc" id="L376" title="2 of 4 branches missed.">                .filter(d -&gt; active == null || (active</span>
-<span class="fc bfc" id="L377" title="All 2 branches covered.">                        ? &quot;PUBLISHED&quot;.equals(d.getStatus())</span>
-<span class="pc bpc" id="L378" title="1 of 2 branches missed.">                            &amp;&amp; !today.isBefore(d.getValidFrom())</span>
-<span class="pc bpc" id="L379" title="1 of 2 branches missed.">                            &amp;&amp; !today.isAfter(d.getValidTo())</span>
-<span class="nc bnc" id="L380" title="All 2 branches missed.">                        : !&quot;PUBLISHED&quot;.equals(d.getStatus())</span>
-<span class="nc bnc" id="L381" title="All 2 branches missed.">                            || today.isBefore(d.getValidFrom())</span>
-<span class="pc bnc" id="L382" title="All 2 branches missed.">                            || today.isAfter(d.getValidTo())))</span>
-<span class="fc" id="L383">                .map(d -&gt; d.forLocale(localeOf(locale)))</span>
-<span class="fc" id="L384">                .collect(Collectors.toList());</span>
+<span class="fc" id="L376">        LocalDate today = LocalDate.now();</span>
+<span class="fc" id="L377">        return spotlights.values().stream()</span>
+<span class="pc bpc" id="L378" title="1 of 4 branches missed.">                .filter(d -&gt; active == null || (active</span>
+<span class="fc bfc" id="L379" title="All 2 branches covered.">                        ? &quot;PUBLISHED&quot;.equals(d.getStatus())</span>
+<span class="pc bpc" id="L380" title="1 of 2 branches missed.">                            &amp;&amp; !today.isBefore(d.getValidFrom())</span>
+<span class="pc bpc" id="L381" title="1 of 2 branches missed.">                            &amp;&amp; !today.isAfter(d.getValidTo())</span>
+<span class="nc bnc" id="L382" title="All 2 branches missed.">                        : !&quot;PUBLISHED&quot;.equals(d.getStatus())</span>
+<span class="nc bnc" id="L383" title="All 2 branches missed.">                            || today.isBefore(d.getValidFrom())</span>
+<span class="pc bnc" id="L384" title="All 2 branches missed.">                            || today.isAfter(d.getValidTo())))</span>
+<span class="fc" id="L385">                .map(d -&gt; d.forLocale(localeOf(locale)))</span>
+<span class="fc" id="L386">                .collect(Collectors.toList());</span>
     }
 
     @Override
     public Optional&lt;ContentCollection&gt; findCollectionBySlug(String slug, String locale) {
-<span class="fc" id="L389">        return collections.values().stream()</span>
-<span class="fc" id="L390">                .filter(c -&gt; c.getSlug().equals(slug))</span>
-<span class="fc" id="L391">                .findFirst()</span>
-<span class="fc" id="L392">                .map(c -&gt; c.forLocale(localeOf(locale)));</span>
+<span class="fc" id="L391">        return collections.values().stream()</span>
+<span class="fc" id="L392">                .filter(c -&gt; c.getSlug().equals(slug))</span>
+<span class="fc" id="L393">                .findFirst()</span>
+<span class="fc" id="L394">                .map(c -&gt; c.forLocale(localeOf(locale)));</span>
     }
 
-<span class="nc" id="L395">    @Override public Optional&lt;Article&gt; findArticleById(String id) { return Optional.ofNullable(articles.get(id)); }</span>
+<span class="fc" id="L397">    @Override public Optional&lt;Article&gt; findArticleById(String id) { return Optional.ofNullable(articles.get(id)); }</span>
 
     @Override
     public List&lt;Article&gt; articlesByIds(List&lt;String&gt; ids, String locale) {
-<span class="nc" id="L399">        return ids.stream().map(articles::get).filter(Objects::nonNull)</span>
-<span class="nc" id="L400">                .map(a -&gt; a.forLocale(localeOf(locale))).toList();</span>
+<span class="nc" id="L401">        return ids.stream().map(articles::get).filter(Objects::nonNull)</span>
+<span class="nc" id="L402">                .map(a -&gt; a.forLocale(localeOf(locale))).toList();</span>
     }
 
     @Override
     public List&lt;TravelInspiration&gt; inspirationsByIds(List&lt;String&gt; ids, String locale) {
-<span class="nc" id="L405">        return ids.stream().map(inspirations::get).filter(Objects::nonNull)</span>
-<span class="nc" id="L406">                .map(i -&gt; i.forLocale(localeOf(locale))).toList();</span>
+<span class="nc" id="L407">        return ids.stream().map(inspirations::get).filter(Objects::nonNull)</span>
+<span class="nc" id="L408">                .map(i -&gt; i.forLocale(localeOf(locale))).toList();</span>
     }
 
     @Override
     public List&lt;DealSpotlight&gt; spotlightsByIds(List&lt;String&gt; ids, String locale) {
-<span class="nc" id="L411">        return ids.stream().map(spotlights::get).filter(Objects::nonNull)</span>
-<span class="nc" id="L412">                .map(d -&gt; d.forLocale(localeOf(locale))).toList();</span>
+<span class="nc" id="L413">        return ids.stream().map(spotlights::get).filter(Objects::nonNull)</span>
+<span class="nc" id="L414">                .map(d -&gt; d.forLocale(localeOf(locale))).toList();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

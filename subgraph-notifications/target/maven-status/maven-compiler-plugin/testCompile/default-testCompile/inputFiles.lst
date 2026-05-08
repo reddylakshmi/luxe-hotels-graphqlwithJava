@@ -1,4 +1,5 @@
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-notifications/src/test/java/com/luxe/notifications/datasource/NotificationsBranchesTest.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-notifications/src/test/java/com/luxe/notifications/datasource/NotificationsMockDataSourceTest.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-notifications/src/test/java/com/luxe/notifications/resolver/NotificationsAuthenticatedTest.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-notifications/src/test/java/com/luxe/notifications/resolver/NotificationsDataFetcherTest.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-notifications/src/test/java/com/luxe/notifications/resolver/NotificationsMutationsResolverTest.java

@@ -27,32 +27,32 @@ public class PricingDataFetcher {
 
     @DgsQuery
     public Object searchRates(@InputArgument Map&lt;String, Object&gt; input) {
-<span class="nc" id="L30">        String hotelId = (String) input.get(&quot;hotelId&quot;);</span>
-<span class="nc bnc" id="L31" title="All 2 branches missed.">        if (hotelId == null) return new com.luxe.common.error.ValidationError(</span>
+<span class="fc" id="L30">        String hotelId = (String) input.get(&quot;hotelId&quot;);</span>
+<span class="pc bpc" id="L31" title="1 of 2 branches missed.">        if (hotelId == null) return new com.luxe.common.error.ValidationError(</span>
                 &quot;MISSING_FIELD&quot;, &quot;hotelId is required&quot;,
 <span class="nc" id="L33">                List.of(new com.luxe.common.error.FieldError(&quot;hotelId&quot;, &quot;Required&quot;)));</span>
 
-<span class="nc" id="L35">        LocalDate checkIn  = LocalDate.parse((String) input.get(&quot;checkIn&quot;));</span>
-<span class="nc" id="L36">        LocalDate checkOut = LocalDate.parse((String) input.get(&quot;checkOut&quot;));</span>
+<span class="fc" id="L35">        LocalDate checkIn  = toDate(input.get(&quot;checkIn&quot;));</span>
+<span class="fc" id="L36">        LocalDate checkOut = toDate(input.get(&quot;checkOut&quot;));</span>
 
-<span class="nc bnc" id="L38" title="All 2 branches missed.">        if (!checkIn.isBefore(checkOut)) {</span>
-<span class="nc" id="L39">            return new com.luxe.common.error.ValidationError(</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">        if (!checkIn.isBefore(checkOut)) {</span>
+<span class="fc" id="L39">            return new com.luxe.common.error.ValidationError(</span>
                     &quot;INVALID_DATES&quot;, &quot;checkOut must be after checkIn&quot;,
-<span class="nc" id="L41">                    List.of(new com.luxe.common.error.FieldError(&quot;checkOut&quot;, &quot;Must be after checkIn&quot;)));</span>
+<span class="fc" id="L41">                    List.of(new com.luxe.common.error.FieldError(&quot;checkOut&quot;, &quot;Must be after checkIn&quot;)));</span>
         }
 
-<span class="nc bnc" id="L44" title="All 2 branches missed.">        int adults   = input.containsKey(&quot;adults&quot;) ? ((Number) input.get(&quot;adults&quot;)).intValue() : 1;</span>
-<span class="nc bnc" id="L45" title="All 2 branches missed.">        int children = input.containsKey(&quot;children&quot;) ? ((Number) input.get(&quot;children&quot;)).intValue() : 0;</span>
-<span class="nc" id="L46">        String currency = (String) input.get(&quot;currency&quot;);</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">        int adults   = input.containsKey(&quot;adults&quot;) ? ((Number) input.get(&quot;adults&quot;)).intValue() : 1;</span>
+<span class="pc bpc" id="L45" title="1 of 2 branches missed.">        int children = input.containsKey(&quot;children&quot;) ? ((Number) input.get(&quot;children&quot;)).intValue() : 0;</span>
+<span class="fc" id="L46">        String currency = (String) input.get(&quot;currency&quot;);</span>
 
         @SuppressWarnings(&quot;unchecked&quot;)
-<span class="nc" id="L49">        List&lt;String&gt; ratePlanCodes = (List&lt;String&gt;) input.get(&quot;ratePlanCodes&quot;);</span>
+<span class="fc" id="L49">        List&lt;String&gt; ratePlanCodes = (List&lt;String&gt;) input.get(&quot;ratePlanCodes&quot;);</span>
         @SuppressWarnings(&quot;unchecked&quot;)
-<span class="nc" id="L51">        List&lt;String&gt; roomTypeIds = (List&lt;String&gt;) input.get(&quot;roomTypeIds&quot;);</span>
-<span class="nc" id="L52">        String promoCode    = (String) input.get(&quot;promoCode&quot;);</span>
-<span class="nc" id="L53">        String corpCode     = (String) input.get(&quot;corporateCode&quot;);</span>
+<span class="fc" id="L51">        List&lt;String&gt; roomTypeIds = (List&lt;String&gt;) input.get(&quot;roomTypeIds&quot;);</span>
+<span class="fc" id="L52">        String promoCode    = (String) input.get(&quot;promoCode&quot;);</span>
+<span class="fc" id="L53">        String corpCode     = (String) input.get(&quot;corporateCode&quot;);</span>
 
-<span class="nc" id="L55">        return dataSource.searchRates(hotelId, checkIn, checkOut, adults, children, currency,</span>
+<span class="fc" id="L55">        return dataSource.searchRates(hotelId, checkIn, checkOut, adults, children, currency,</span>
                 ratePlanCodes, roomTypeIds, promoCode, corpCode);
     }
 
@@ -91,8 +91,8 @@ public class PricingDataFetcher {
     @DgsQuery
     public List&lt;DateRateSummary&gt; rateCalendar(@InputArgument Map&lt;String, Object&gt; input) {
 <span class="nc" id="L93">        String hotelId   = (String) input.get(&quot;hotelId&quot;);</span>
-<span class="nc" id="L94">        LocalDate start  = LocalDate.parse((String) input.get(&quot;startDate&quot;));</span>
-<span class="nc" id="L95">        LocalDate end    = LocalDate.parse((String) input.get(&quot;endDate&quot;));</span>
+<span class="nc" id="L94">        LocalDate start  = toDate(input.get(&quot;startDate&quot;));</span>
+<span class="nc" id="L95">        LocalDate end    = toDate(input.get(&quot;endDate&quot;));</span>
 <span class="nc bnc" id="L96" title="All 2 branches missed.">        int adults       = input.containsKey(&quot;adults&quot;) ? ((Number) input.get(&quot;adults&quot;)).intValue() : 1;</span>
 <span class="nc" id="L97">        String currency  = (String) input.getOrDefault(&quot;currency&quot;, &quot;USD&quot;);</span>
 <span class="nc" id="L98">        return dataSource.getRateCalendar(hotelId, start, end, adults, currency);</span>
@@ -107,8 +107,8 @@ public class PricingDataFetcher {
     @DgsQuery
     public List&lt;RedemptionRate&gt; redemptionRates(@InputArgument Map&lt;String, Object&gt; input) {
 <span class="nc" id="L109">        String hotelId   = (String) input.get(&quot;hotelId&quot;);</span>
-<span class="nc" id="L110">        LocalDate checkIn  = LocalDate.parse((String) input.get(&quot;checkIn&quot;));</span>
-<span class="nc" id="L111">        LocalDate checkOut = LocalDate.parse((String) input.get(&quot;checkOut&quot;));</span>
+<span class="nc" id="L110">        LocalDate checkIn  = toDate(input.get(&quot;checkIn&quot;));</span>
+<span class="nc" id="L111">        LocalDate checkOut = toDate(input.get(&quot;checkOut&quot;));</span>
 <span class="nc" id="L112">        String roomTypeId  = (String) input.get(&quot;roomTypeId&quot;);</span>
 <span class="nc" id="L113">        return dataSource.findRedemptionRates(hotelId, checkIn, checkOut, roomTypeId);</span>
     }
@@ -119,22 +119,22 @@ public class PricingDataFetcher {
     public List&lt;Rate&gt; hotelRates(DataFetchingEnvironment dfe) {
 <span class="nc" id="L120">        Hotel source = dfe.getSource();</span>
 <span class="nc" id="L121">        String hotelId = source.getId();</span>
-<span class="nc" id="L122">        LocalDate checkIn  = LocalDate.parse((String) dfe.getArgument(&quot;checkIn&quot;));</span>
-<span class="nc" id="L123">        LocalDate checkOut = LocalDate.parse((String) dfe.getArgument(&quot;checkOut&quot;));</span>
+<span class="nc" id="L122">        LocalDate checkIn  = toDate(dfe.getArgument(&quot;checkIn&quot;));</span>
+<span class="nc" id="L123">        LocalDate checkOut = toDate(dfe.getArgument(&quot;checkOut&quot;));</span>
 <span class="nc" id="L124">        int adults = dfe.getArgumentOrDefault(&quot;adults&quot;, 1);</span>
 <span class="nc" id="L125">        return dataSource.findRatesByHotelId(hotelId, checkIn, checkOut, adults);</span>
     }
 
     @DgsData(parentType = &quot;Hotel&quot;, field = &quot;availability&quot;)
     public AvailabilityResult hotelAvailability(DataFetchingEnvironment dfe) {
-<span class="nc" id="L130">        Hotel source = dfe.getSource();</span>
-<span class="nc" id="L131">        String hotelId = source.getId();</span>
-<span class="nc" id="L132">        LocalDate checkIn  = LocalDate.parse((String) dfe.getArgument(&quot;checkIn&quot;));</span>
-<span class="nc" id="L133">        LocalDate checkOut = LocalDate.parse((String) dfe.getArgument(&quot;checkOut&quot;));</span>
-<span class="nc" id="L134">        int adults   = dfe.getArgumentOrDefault(&quot;adults&quot;, 1);</span>
-<span class="nc" id="L135">        int children = dfe.getArgumentOrDefault(&quot;children&quot;, 0);</span>
-<span class="nc" id="L136">        String currency = dfe.getArgumentOrDefault(&quot;currency&quot;, &quot;USD&quot;);</span>
-<span class="nc" id="L137">        return dataSource.searchRates(hotelId, checkIn, checkOut, adults, children, currency,</span>
+<span class="fc" id="L130">        Hotel source = dfe.getSource();</span>
+<span class="fc" id="L131">        String hotelId = source.getId();</span>
+<span class="fc" id="L132">        LocalDate checkIn  = toDate(dfe.getArgument(&quot;checkIn&quot;));</span>
+<span class="fc" id="L133">        LocalDate checkOut = toDate(dfe.getArgument(&quot;checkOut&quot;));</span>
+<span class="fc" id="L134">        int adults   = dfe.getArgumentOrDefault(&quot;adults&quot;, 1);</span>
+<span class="fc" id="L135">        int children = dfe.getArgumentOrDefault(&quot;children&quot;, 0);</span>
+<span class="fc" id="L136">        String currency = dfe.getArgumentOrDefault(&quot;currency&quot;, &quot;USD&quot;);</span>
+<span class="fc" id="L137">        return dataSource.searchRates(hotelId, checkIn, checkOut, adults, children, currency,</span>
                 null, null, null, null);
     }
 
@@ -144,8 +144,8 @@ public class PricingDataFetcher {
     public List&lt;Rate&gt; roomTypeRates(DataFetchingEnvironment dfe) {
 <span class="nc" id="L145">        RoomType source = dfe.getSource();</span>
 <span class="nc" id="L146">        String roomTypeId = source.getId();</span>
-<span class="nc" id="L147">        LocalDate checkIn  = LocalDate.parse((String) dfe.getArgument(&quot;checkIn&quot;));</span>
-<span class="nc" id="L148">        LocalDate checkOut = LocalDate.parse((String) dfe.getArgument(&quot;checkOut&quot;));</span>
+<span class="nc" id="L147">        LocalDate checkIn  = toDate(dfe.getArgument(&quot;checkIn&quot;));</span>
+<span class="nc" id="L148">        LocalDate checkOut = toDate(dfe.getArgument(&quot;checkOut&quot;));</span>
 <span class="nc" id="L149">        int adults = dfe.getArgumentOrDefault(&quot;adults&quot;, 1);</span>
 <span class="nc" id="L150">        return dataSource.findRatesByRoomTypeId(roomTypeId, checkIn, checkOut, adults);</span>
     }
@@ -154,8 +154,8 @@ public class PricingDataFetcher {
     public Object roomTypeAvailability(DataFetchingEnvironment dfe) {
 <span class="nc" id="L155">        RoomType source = dfe.getSource();</span>
 <span class="nc" id="L156">        String roomTypeId = source.getId();</span>
-<span class="nc" id="L157">        LocalDate checkIn  = LocalDate.parse((String) dfe.getArgument(&quot;checkIn&quot;));</span>
-<span class="nc" id="L158">        LocalDate checkOut = LocalDate.parse((String) dfe.getArgument(&quot;checkOut&quot;));</span>
+<span class="nc" id="L157">        LocalDate checkIn  = toDate(dfe.getArgument(&quot;checkIn&quot;));</span>
+<span class="nc" id="L158">        LocalDate checkOut = toDate(dfe.getArgument(&quot;checkOut&quot;));</span>
 <span class="nc" id="L159">        List&lt;Rate&gt; rates = dataSource.findRatesByRoomTypeId(roomTypeId, checkIn, checkOut, 1);</span>
 <span class="nc bnc" id="L160" title="All 2 branches missed.">        if (rates.isEmpty()) return null;</span>
 <span class="nc" id="L161">        Rate lowest = rates.stream()</span>
@@ -191,5 +191,15 @@ public class PricingDataFetcher {
 <span class="fc" id="L191">        return new RoomType((String) values.get(&quot;id&quot;));</span>
     }
 
+    /**
+     * Coerce a Date-scalar argument that DGS may have already deserialised into
+     * a {@link LocalDate}, but which legacy code paths sometimes still receive
+     * as a String. Returning {@code null} for null lets callers decide whether
+     * the field is required.
+     */
+    private static LocalDate toDate(Object raw) {
+<span class="pc bpc" id="L201" title="1 of 2 branches missed.">        if (raw == null) return null;</span>
+<span class="pc bpc" id="L202" title="1 of 2 branches missed.">        return raw instanceof LocalDate ld ? ld : LocalDate.parse(raw.toString());</span>
+    }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -7,8 +7,10 @@
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-reservations/src/main/java/com/luxe/reservations/schema/types/CheckInEligibility.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-reservations/src/main/java/com/luxe/reservations/schema/types/DigitalKey.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-reservations/src/main/java/com/luxe/reservations/schema/types/DiningReservation.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-reservations/src/main/java/com/luxe/reservations/schema/types/ExpressCheckoutSuccess.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-reservations/src/main/java/com/luxe/reservations/schema/types/Folio.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-reservations/src/main/java/com/luxe/reservations/schema/types/GuestProfile.java
+/Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-reservations/src/main/java/com/luxe/reservations/schema/types/MobileCheckInSuccess.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-reservations/src/main/java/com/luxe/reservations/schema/types/PaymentSummary.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-reservations/src/main/java/com/luxe/reservations/schema/types/Reservation.java
 /Users/lmotati/Workspace-IntelliJ/luxe-hotels-graphqlwithJava/subgraph-reservations/src/main/java/com/luxe/reservations/schema/types/ReservationAddOn.java
