@@ -205,6 +205,52 @@ typing the state manually.
 }
 ```
 
+### Redeem loyalty points at checkout (`createReservation`)
+
+The reservations subgraph accepts an optional `pointsToRedeem: Int` on
+`CreateReservationInput`. When present, it applies a flat
+`pointsToRedeem * 0.007` discount in the booking's currency, sets
+`rateBreakdown.loyaltyDiscount`, reduces `totalDue` / `balanceDue`, and
+stamps `loyaltyContext.pointsRedeemed`. The loyalty subgraph remains
+the source of truth for the balance — debiting it is the booker's
+responsibility (saga / event-driven in production; out of scope here).
+
+```graphql
+mutation Book($input: CreateReservationInput!, $key: UUID!) {
+  createReservation(input: $input, idempotencyKey: $key) {
+    __typename
+    ... on Reservation {
+      confirmationNumber
+      rateBreakdown {
+        loyaltyDiscount { amount currency }
+        totalDue { amount currency }
+      }
+      loyaltyContext { pointsRedeemed pointsToEarn }
+    }
+    ... on RoomUnavailableError { code message }
+    ... on ValidationError { code message fieldErrors { field message } }
+  }
+}
+```
+
+Sample `variables` (50,000 pts → −350 EUR off `totalDue`):
+
+```json
+{
+  "input": {
+    "hotelId": "prop-paris-001",
+    "roomTypeId": "rt-paris-deluxe",
+    "rateToken": "rt-r-rt-paris-deluxe-bar-2026-06-01-2026-06-04-2026-06-01-2026-06-04",
+    "checkIn": "2026-06-01",
+    "checkOut": "2026-06-04",
+    "adults": 2,
+    "loyaltyNumber": "LUX0001234567",
+    "pointsToRedeem": 50000
+  },
+  "key": "00000000-0000-4000-8000-000000000001"
+}
+```
+
 ### Guest-context queries (require auth)
 
 Reservations, loyalty account details, message threads, and corporate accounts all
@@ -381,7 +427,7 @@ that produce monetary values can return it.
 
 ## Testing & coverage
 
-The project ships with **692 unit + DGS integration tests** across 37 test classes,
+The project ships with **694 unit + DGS integration tests** across 37 test classes,
 covering common scalars/auth/pagination, every subgraph's mock data source, real
 GraphQL execution through `DgsQueryExecutor` (including federation `_entities`
 resolution), and authenticated mutation paths via a per-test `AuthContextResolver`
@@ -418,10 +464,14 @@ Test highlights for the most-active subgraphs:
   mutators. Both the data-source layer and the DGS resolver layer get
   coverage so the union return shapes (`AddAddressResult`,
   `UpdateAddressResult`) are exercised end-to-end.
-- **Reservations** (68 tests) — including the `canCheckInOnline` /
+- **Reservations** (70 tests) — including the `canCheckInOnline` /
   `canModify` / `isRefundable` regression that locks the JavaBean-getter
   naming (the schema declares them as `Boolean!`, so a doubled-`is`
-  prefix on a getter would surface as a non-null bubble-up at runtime).
+  prefix on a getter would surface as a non-null bubble-up at runtime),
+  plus the points-redemption pair that proves `pointsToRedeem` cuts
+  `rateBreakdown.loyaltyDiscount` + `totalDue` and stamps
+  `loyaltyContext.pointsRedeemed` (and the no-points path leaves the
+  discount null).
 - **Content** (23 tests) — composite resolver paths on `ContentCollection`
   (articles / inspirations / spotlights), federated `Article` entity
   fetcher round-trip, locale-fallback tagging, season + category filters
