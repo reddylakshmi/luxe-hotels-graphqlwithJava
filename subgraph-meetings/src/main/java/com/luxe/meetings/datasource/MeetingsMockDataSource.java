@@ -225,6 +225,47 @@ public class MeetingsMockDataSource implements MeetingsDataSource {
                 now.minusDays(15));
         r3.setStatus("ACCEPTED", "Tanaka has signed contract for Tokyo Sakura Atrium", "Concierge bot");
         rfps.put(r3.getId(), r3);
+
+        // Demo RFPs tied to guest-001 (Sophia Chen) so /account/events
+        // surfaces real data on first sign-in. The resolver looks up by
+        // {guestId}@example.com, so contactEmail must match that pattern.
+        RFP r4 = new RFP("rfp-004", "RFP-2026-001004", "PROPOSAL_SENT",
+                "Sophia Chen", "Pinnacle Ventures", "guest-001@example.com", "+1-415-555-0101",
+                "Pinnacle Ventures Annual Partner Offsite", "BOARD_RETREAT",
+                LocalDate.now().plusDays(95), LocalDate.now().plusDays(97),
+                40, 50, List.of("prop-paris-001", "prop-london-001"),
+                List.of(new RFP.SpaceRequirement(
+                            "Day-long working session", "U_SHAPE", 40, 24.0, "09:00"),
+                        new RFP.SpaceRequirement(
+                            "Closing dinner",          "BANQUET", 40,  4.0, "19:00")),
+                "Plated three-course dinner; one vegetarian, one shellfish-free",
+                "Concierge airport transfers from CDG/LHR", now.minusDays(10));
+        r4.setStatus("PROPOSAL_SENT", "Proposals received from Paris and London",
+                "Concierge bot");
+        r4.addResponse(new RFP.RFPResponse(
+                "rsp-101", "prop-paris-001", "PROPOSED",
+                List.of("evs-002"), 50, Money.of(640, "EUR"),
+                Money.of(8000, "EUR"),
+                "Bibliothèque Boardroom + Salle Versailles for closing dinner",
+                now.minusDays(7), now.plusDays(21)));
+        r4.addResponse(new RFP.RFPResponse(
+                "rsp-102", "prop-london-001", "PROPOSED",
+                List.of("evs-003"), 50, Money.of(595, "GBP"),
+                Money.of(7500, "GBP"),
+                "Mayfair private dining room for working sessions and dinner",
+                now.minusDays(6), now.plusDays(21)));
+        rfps.put(r4.getId(), r4);
+
+        RFP r5 = new RFP("rfp-005", "RFP-2026-001005", "SUBMITTED",
+                "Sophia Chen", "Pinnacle Ventures", "guest-001@example.com", "+1-415-555-0101",
+                "Q4 Strategy Boardroom Day", "CORPORATE_MEETING",
+                LocalDate.now().plusDays(35), LocalDate.now().plusDays(35),
+                14, null, List.of("prop-nyc-001"),
+                List.of(new RFP.SpaceRequirement(
+                        "Boardroom", "BOARDROOM", 14, 8.0, "08:30")),
+                "Working lunch + afternoon coffee break",
+                null, now.minusDays(1));
+        rfps.put(r5.getId(), r5);
     }
 
     // ── Group blocks ─────────────────────────────────────────────────────────
