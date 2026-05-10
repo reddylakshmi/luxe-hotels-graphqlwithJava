@@ -427,7 +427,7 @@ that produce monetary values can return it.
 
 ## Testing & coverage
 
-The project ships with **694 unit + DGS integration tests** across 37 test classes,
+The project ships with **697 unit + DGS integration tests** across 38 test classes,
 covering common scalars/auth/pagination, every subgraph's mock data source, real
 GraphQL execution through `DgsQueryExecutor` (including federation `_entities`
 resolution), and authenticated mutation paths via a per-test `AuthContextResolver`
@@ -476,6 +476,12 @@ Test highlights for the most-active subgraphs:
   (articles / inspirations / spotlights), federated `Article` entity
   fetcher round-trip, locale-fallback tagging, season + category filters
   on the public queries.
+- **Meetings** (40 tests) — event-space CRUD, `searchEventSpaces`
+  capacity filter logic, RFP lifecycle (submit / update / cancel / not
+  found), group-block creation, plus a guest-001 alignment regression
+  that locks the seed contactEmail against the resolver's
+  `{guestId}@example.com` derivation rule (so `/account/events` always
+  has data on first sign-in).
 
 ```bash
 mvn test                              # full suite (~30s test execution, ~47s with JaCoCo + package)
