@@ -71,9 +71,32 @@ headers:
       - propagate:
           named: x-correlation-id
 
+# ── Router-side rate limiting ─────────────────────────────────────────────
+# First defense layer (per-IP) — the subgraph-side RateLimitFilter
+# (common/security/RateLimitFilter) is the second (per-user). The
+# router's built-in limiter is a leaky-bucket; the subgraph's is a
+# Bucket4j token bucket. Together they bracket anonymous bursts on
+# the outside and account-level abuse on the inside.
 traffic_shaping:
+  router:
+    global_rate_limit:
+      capacity: 1000           # 1000 req/window
+      interval: 60s            # rolling 60s window
   all:
     timeout: 30s
+
+# ── Persisted queries (scaffold) ──────────────────────────────────────────
+# In production, only pre-registered queries should execute — flip
+# `safelist.enabled: true` once the manifest is stable. `log_unknown`
+# first reports queries that aren't yet in the safelist so you can
+# wave them through one by one without breaking clients during rollout.
+#
+# persisted_queries:
+#   enabled: true
+#   safelist:
+#     enabled: false      # flip to true once the manifest is reviewed
+#     require_id: false   # accept inline queries during rollout
+#   log_unknown: true
 
 # Surface subgraph errors during local dev so we can diagnose federation calls
 include_subgraph_errors:

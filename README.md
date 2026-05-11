@@ -392,21 +392,124 @@ source if a URL is configured, mock otherwise. No further wiring needed.
 
 ---
 
-## Authentication
+## Security
+
+The platform stacks **five** layered controls, intentionally ordered
+so the cheapest checks run first and an attacker has to defeat
+multiple independent gates to read protected data.
+
+### 1. Authentication (gateway-validated, subgraph-trusted)
 
 JWT-based, HMAC-signed. The flow:
 
 1. Sign in via `guest.signIn(input: { email, password })` → returns `AuthPayload { token }`.
 2. Include `Authorization: Bearer <token>` on subsequent requests.
-3. Spring Security is intentionally permissive at the filter layer (`common/auth/SecurityConfig`)
-   so Apollo Router's introspection (`_service`, `_entities`) reaches the subgraph unauthenticated.
-4. `SubgraphAuthInterceptor` parses the bearer token and stores it on the HTTP request.
+3. **Today**: `SubgraphAuthInterceptor` parses the bearer token and stores it on
+   the HTTP request — every subgraph validates independently (defense-in-depth, but
+   extra parsing cost at high QPS).
+4. **Migration path (scaffolded in `router/router.yaml`)**: switch JWT signing to
+   RS256, publish the public key as a JWK, enable `authentication.router.jwt` on the
+   router. The router validates once at the edge and propagates parsed claims as
+   `x-luxe-claims` headers; subgraphs trust the headers instead of re-parsing.
 5. Resolvers obtain auth via the injected `AuthContextResolver` (production impl
    `DefaultAuthContextResolver` reads from the request; tests substitute a `@Primary`
    bean returning a fixed `AuthContext`). They then call `auth.requireAuth()` or
    `auth.requireRole(AuthRole.PROPERTY_STAFF)` to gate sensitive operations.
 
-Roles: `GUEST < PROPERTY_STAFF < REVENUE_MGR < ADMIN`.
+Roles: `GUEST < LOYALTY_MEMBER < PROPERTY_STAFF < REVENUE_MGR < ADMIN`.
+
+### 2. Field-level authorization — `@auth` directive
+
+Sensitive schema fields carry `@auth(requires: AuthRole!)`. A
+`SchemaDirectiveWiring` (`common/auth/AuthDirectiveWiring`) wraps the
+default `DataFetcher` and rejects requests below the required role
+with structured errors:
+
+- Anonymous → `extensions.code = UNAUTHORIZED`
+- Authenticated but under-privileged → `extensions.code = FORBIDDEN`
+
+Applied surfaces today (subgraph-guest):
+
+| Field | Gate |
+|---|---|
+| `GuestProfile.externalIds`, `phone`, `dateOfBirth`, `nationality` | `@auth(requires: GUEST)` |
+| `PaymentMethod.holderName` / `expiryMonth` / `expiryYear` / `billingAddress` | `@auth(requires: GUEST)` |
+| `PaymentMethod.pspToken` | `@auth(requires: ADMIN)` |
+
+**PCI note**: the primary account number (PAN), CVV, and any reversible
+card material **never appear on the schema at all**. `lastFour` is
+industry-standard truncation and not regulated. In a real deployment,
+the `pspToken` field would live in a dedicated PCI-scoped tokenization
+service behind a detok endpoint — kept here only to demonstrate the
+strictest directive gate.
+
+### 3. Row-level security — ownership checks in resolvers
+
+The directive enforces *role*; the resolver enforces *tenancy*. Two
+separately-auditable layers:
+
+```java
+Reservation r = dataSource.findById(id).orElse(null);
+if (r == null) return null;
+if (auth.hasRole(AuthRole.PROPERTY_STAFF)) return r;     // staff override
+if (auth.guestId().equals(r.getGuestId())) return r;     // owner
+return null;                                              // not yours
+```
+
+Returning `null` on cross-tenant hits (rather than throwing) avoids
+the enumeration leak — an attacker can't distinguish "id maps to a
+real but cross-tenant record" from "id doesn't exist".
+
+### 4. Query complexity + depth guardrails
+
+DGS `Instrumentation` (`common/security/QueryGuardrails`) walks every
+parsed AST during validation and rejects queries above configured
+thresholds before any resolver runs. Surfaced with
+`extensions.code = QUERY_TOO_COMPLEX` or `QUERY_TOO_DEEP`.
+
+Cost model (pure / unit-testable):
+- Every selected field = 1
+- `first` / `limit` / `last` with integer literal = multiplier on the subtree
+- Variable-bound pagination (`first: $n`) = `LIST_DEFAULT` (25) so a hostile
+  client can't bypass the cap via variable substitution
+- `_entities(representations: [...])` = `LIST_DEFAULT` for the same reason
+- Fragment spreads + inline fragments are inlined into the parent walk
+
+Tunable:
+```yaml
+luxe.security.max-complexity: 1000   # default
+luxe.security.max-depth: 10          # default
+```
+
+### 5. Rate limiting + introspection control
+
+**Bucket4j-based token bucket**, two layers:
+- **Router** (per-IP, `traffic_shaping.router.global_rate_limit` in `router.yaml`) —
+  first line of defense against anonymous bursts.
+- **Subgraph** (per-user, `common/security/RateLimitFilter`) — second line, bucket
+  key is `user:<guestId>` for authed traffic and `ip:<X-Forwarded-For>` for
+  anonymous. Exceeded buckets → 429 with `extensions.code = RATE_LIMITED`.
+
+The subgraph store lives behind a one-method `RateLimitStore` interface —
+production swaps to a Redis-backed implementation (Bucket4j-Redis via
+Lettuce/Redisson) by registering a single `@Bean`. No other code changes.
+
+**Tunable** (per-subgraph):
+```yaml
+luxe.security.rate-limit.enabled: true
+luxe.security.rate-limit.capacity: 120
+luxe.security.rate-limit.window-seconds: 60
+```
+
+**Introspection control**: router introspection + Sandbox are env-gated
+(`LUXE_INTROSPECTION`, `LUXE_SANDBOX_ENABLED`, both default true for local
+dev). Production sets both to `false` — the supported partner contract is a
+versioned SDL doc, not live introspection.
+
+**Persisted queries** (scaffold in `router/router.yaml`): in production, only
+pre-registered queries execute. `persisted_queries.safelist.enabled: true`
+once the manifest is reviewed; `log_unknown: true` first reports
+not-yet-safelisted queries so you can wave them through during rollout.
 
 ---
 
@@ -427,7 +530,7 @@ that produce monetary values can return it.
 
 ## Testing & coverage
 
-The project ships with **697 unit + DGS integration tests** across 38 test classes,
+The project ships with **720 unit + DGS integration tests** across 43 test classes,
 covering common scalars/auth/pagination, every subgraph's mock data source, real
 GraphQL execution through `DgsQueryExecutor` (including federation `_entities`
 resolution), and authenticated mutation paths via a per-test `AuthContextResolver`
@@ -456,22 +559,28 @@ Test highlights for the most-active subgraphs:
   (extracted out of the data source) with its own
   `FxConversionServiceTest` suite alongside the through-data-source
   pricing tests.
-- **Guest** (88 tests) — sign-in / sign-up flows, profile partial-update
+- **Guest** (96 tests) — sign-in / sign-up flows, profile partial-update
   (the `phone`/`dateOfBirth`/`nationality` mutation surface), full
   address CRUD with primary-flag invariants (auto-promote when removing
   the primary, demote-existing on add/update/setPrimary), payment-method
   add/remove/set-default, saved-hotels and travel-companion list
   mutators. Both the data-source layer and the DGS resolver layer get
   coverage so the union return shapes (`AddAddressResult`,
-  `UpdateAddressResult`) are exercised end-to-end.
-- **Reservations** (70 tests) — including the `canCheckInOnline` /
+  `UpdateAddressResult`) are exercised end-to-end. Three new
+  `AuthDirectiveXxxTest` classes prove the `@auth` directive states
+  (anon → UNAUTHORIZED, GUEST → passes GUEST-gated + FORBIDDEN on
+  ADMIN-gated, ADMIN → passes both). A new `QueryGuardrailsTest`
+  tightens the complexity / depth limits and proves both rejection
+  paths surface `QUERY_TOO_COMPLEX` / `QUERY_TOO_DEEP`.
+- **Reservations** (72 tests) — including the `canCheckInOnline` /
   `canModify` / `isRefundable` regression that locks the JavaBean-getter
   naming (the schema declares them as `Boolean!`, so a doubled-`is`
   prefix on a getter would surface as a non-null bubble-up at runtime),
-  plus the points-redemption pair that proves `pointsToRedeem` cuts
+  the points-redemption pair that proves `pointsToRedeem` cuts
   `rateBreakdown.loyaltyDiscount` + `totalDue` and stamps
   `loyaltyContext.pointsRedeemed` (and the no-points path leaves the
-  discount null).
+  discount null), and the cross-tenant row-level regression that
+  refuses to return another guest's reservation when looked up by id.
 - **Content** (23 tests) — composite resolver paths on `ContentCollection`
   (articles / inspirations / spotlights), federated `Article` entity
   fetcher round-trip, locale-fallback tagging, season + category filters

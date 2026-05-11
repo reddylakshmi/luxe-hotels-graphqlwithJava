@@ -35,9 +35,22 @@ public class ReservationDataFetcher {
 
     @DgsQuery
     public Reservation reservation(@InputArgument String id, DataFetchingEnvironment dfe) {
-        getAuth(dfe).requireAuth();
+        AuthContext auth = getAuth(dfe);
+        auth.requireAuth();
         // Schema returns nullable Reservation, not a union — return null when missing.
-        return dataSource.findById(id).orElse(null);
+        Reservation r = dataSource.findById(id).orElse(null);
+        if (r == null) return null;
+        // Row-level security: the requester must own the reservation
+        // OR be staff. Without this check, any signed-in guest could
+        // walk reservation IDs and read other guests' bookings.
+        // Property staff still see everything for ops workflows.
+        if (auth.hasRole(AuthRole.PROPERTY_STAFF)) return r;
+        if (auth.guestId() != null && auth.guestId().equals(r.getGuestId())) return r;
+        // Return null (vs throwing) so the schema's nullable Reservation
+        // contract holds. Anonymous-style enumeration leaks "exists vs
+        // not" — same response shape for cross-tenant hits as for
+        // genuinely-missing rows.
+        return null;
     }
 
     @DgsQuery
