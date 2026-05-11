@@ -279,6 +279,7 @@ the relevant subgraph(s) per `router.yaml`.
 │       │   ├── {Name}Application.java
 │       │   ├── config/               # subgraph-specific Spring config (auth interceptor wiring)
 │       │   ├── datasource/           # interface + in-memory mock impl
+│       │   ├── dataloader/           # @DgsDataLoader beans for N+1 batching (property only today)
 │       │   ├── resolver/             # @DgsComponent: queries, mutations, @DgsData, @DgsEntityFetcher
 │       │   └── schema/types/         # POJOs/records for each GraphQL type
 │       └── resources/
@@ -513,6 +514,94 @@ not-yet-safelisted queries so you can wave them through during rollout.
 
 ---
 
+## Performance — DataLoader batching
+
+The classic GraphQL N+1 problem: a query that asks for a field on N
+parent objects fires N independent resolver calls, each issuing its
+own backend round-trip. Federation's `_entities` shape makes this
+worse — every cross-subgraph reference becomes another fan-out.
+
+The property subgraph wires three `@DgsDataLoader` beans that
+collapse the highest-cardinality paths into one batched
+DataSource call per request:
+
+| DataLoader | Bound to | Collapses |
+|---|---|---|
+| `BrandByIdDataLoader` | `Hotel.brand` field resolver | N brand lookups → 1 `getBrandsByIds(Set<id>)` |
+| `RoomTypesByHotelIdDataLoader` | `Hotel.roomTypes` field resolver | N per-hotel room-type queries → 1 `getRoomTypesByHotelIds(Set<hotelId>)` |
+| `HotelByIdDataLoader` | `@DgsEntityFetcher("Hotel")` — the federation `_entities` path | N per-representation hydrations → 1 `getHotelsByIds(Set<id>)` |
+
+### The pattern
+
+```java
+@DgsDataLoader(name = BrandByIdDataLoader.NAME, maxBatchSize = 100)
+public class BrandByIdDataLoader implements MappedBatchLoader<String, Brand> {
+    @Override
+    public CompletableFuture<Map<String, Brand>> load(Set<String> ids) {
+        return CompletableFuture.supplyAsync(
+                () -> dataSource.getBrandsByIds(ids), batchExecutor);
+    }
+}
+
+@DgsData(parentType = "Hotel", field = "brand")
+public CompletableFuture<Brand> hotelBrand(DataFetchingEnvironment dfe) {
+    Hotel hotel = dfe.getSource();
+    return dfe.getDataLoader(BrandByIdDataLoader.NAME).load(hotel.getBrandId());
+}
+```
+
+Returning a `CompletableFuture` (instead of a plain `Brand`) tells
+graphql-java to queue the call onto the DataLoader's dispatch
+window. All sibling `Hotel.brand` lookups in the same request
+collapse into one `DataSource.getBrandsByIds()` call. The framework
+auto-dispatches at the end of the current execution slice — no
+explicit `dispatch()` needed.
+
+### Why `MappedBatchLoader` instead of `BatchLoader`
+
+A mapped loader returns `Map<K, V>` rather than `List<V>`, so the
+data source can omit ids that don't exist without disturbing order.
+For sparse lookups (some brand ids don't resolve) this is much
+cleaner than null-filling positional results.
+
+### `PropertyDataSource` shape
+
+```java
+default Map<String, Brand> getBrandsByIds(Set<String> ids) {
+    // Fall-through implementation: callers without a batched
+    // backend (mocks, tests) still work — they just lose the perf
+    // win. Real REST/DB-backed sources override with SELECT IN(...).
+    Map<String, Brand> out = new HashMap<>();
+    for (String id : ids) getBrandById(id).ifPresent(b -> out.put(id, b));
+    return out;
+}
+```
+
+The mock data source overrides each batched method to do **one pass
+over the in-memory map** plus an `AtomicInteger` call counter so
+`DataLoaderBatchingTest` can assert *exactly one* batched call
+per request — not "approximately N".
+
+### Why these three and not others
+
+| Candidate | Batched? | Reason |
+|---|---|---|
+| `Hotel.brand` | ✅ | Highest cardinality — every hotel card hits it |
+| `Hotel.roomTypes` | ✅ | Booking flow + hotel detail = M×N fanout on real backend |
+| `_entities` Hotel | ✅ | Every foreign subgraph (content, reservations, meetings) hits this |
+| `Hotel.reviews` | ❌ | Pagination args differ per hotel (`first`, `after`, `sortBy`) — can't batch a heterogeneous keyspace |
+| `Hotel.media` | ❌ | Already in-memory on the Hotel record |
+| `Hotel.amenities` / `restaurants` / `spa` | 🟡 | Currently in-memory; would need batching when those split into separate tables |
+
+### Other subgraphs
+
+Guest, reservations, and the others still use the synchronous
+per-call path — fine in the mock-data world (HashMap is O(1)) but
+the same pattern should roll out as those backends become
+network-bound. The DataLoader pattern is a 30-line file each.
+
+---
+
 ## Custom scalars
 
 Registered centrally in `common/src/main/java/com/luxe/common/config/CommonGraphQLConfig.java`:
@@ -530,14 +619,14 @@ that produce monetary values can return it.
 
 ## Testing & coverage
 
-The project ships with **720 unit + DGS integration tests** across 43 test classes,
+The project ships with **724 unit + DGS integration tests** across 44 test classes,
 covering common scalars/auth/pagination, every subgraph's mock data source, real
 GraphQL execution through `DgsQueryExecutor` (including federation `_entities`
 resolution), and authenticated mutation paths via a per-test `AuthContextResolver`
 override (see `common/auth/AuthContextResolver.java`).
 
 Test highlights for the most-active subgraphs:
-- **Property** (103 tests) — search/sort/facet logic, India IT-corridor
+- **Property** (107 tests) — search/sort/facet logic, India IT-corridor
   seed invariants, destination-search filter (matches name / city /
   state / country / 2-letter country code), `HotelFilter.ids` by-id
   lookup with empty-vs-null semantics (powers the web Recently Viewed
@@ -550,7 +639,13 @@ Test highlights for the most-active subgraphs:
   `List<String>`. Search/facet/autocomplete logic itself lives in a
   focused `PropertySearchService` (extracted out of the data source) so
   it's exercised both end-to-end via `PropertyMockDataSourceTest` and
-  in isolation via `PropertySearchServiceTest`.
+  in isolation via `PropertySearchServiceTest`. A new
+  `DataLoaderBatchingTest` (4 cases) asserts that the three
+  `@DgsDataLoader` beans (`brandById`, `hotelById`,
+  `roomTypesByHotelId`) collapse N per-hotel lookups into exactly
+  one batched DataSource call per request — backed by request-scoped
+  AtomicInteger counters on the mock, so the test fails loudly if a
+  future refactor reverts a resolver to the synchronous N+1 path.
 - **Pricing** (67 tests) — FX coverage pin (every currency in
   `PropertyDataGenerator.COUNTRIES` must have an FX entry), explicit
   conversion math (EUR→GBP via USD pivot, OMR→USD above-parity, etc.),
