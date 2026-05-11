@@ -3,12 +3,17 @@ package com.luxe.property.resolver;
 import com.luxe.common.auth.AuthContext;
 import com.luxe.common.auth.AuthContextResolver;
 import com.luxe.common.error.NotFoundError;
+import com.luxe.property.dataloader.BrandByIdDataLoader;
+import com.luxe.property.dataloader.HotelByIdDataLoader;
+import com.luxe.property.dataloader.RoomTypesByHotelIdDataLoader;
 import com.luxe.property.datasource.PropertyDataSource;
 import com.luxe.property.schema.types.*;
 import com.netflix.graphql.dgs.*;
 import graphql.schema.DataFetchingEnvironment;
+import org.dataloader.DataLoader;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @DgsComponent
@@ -137,15 +142,24 @@ public class PropertyDataFetcher {
     // ── Parent-type field resolvers ────────────────────────────────────────────
 
     @DgsData(parentType = "Hotel", field = "brand")
-    public Brand hotelBrand(DataFetchingEnvironment dfe) {
+    public CompletableFuture<Brand> hotelBrand(DataFetchingEnvironment dfe) {
+        // Returning a CompletableFuture (instead of a plain Brand)
+        // tells graphql-java to queue the call onto the DataLoader's
+        // dispatch window — all sibling Hotel.brand lookups in the
+        // same request collapse into one DataSource.getBrandsByIds()
+        // call. The framework auto-dispatches at the end of the
+        // current execution slice; no explicit dispatch() needed.
         Hotel hotel = dfe.getSource();
-        return dataSource.getBrandById(hotel.getBrandId()).orElse(null);
+        DataLoader<String, Brand> loader = dfe.getDataLoader(BrandByIdDataLoader.NAME);
+        return loader.load(hotel.getBrandId());
     }
 
     @DgsData(parentType = "Hotel", field = "roomTypes")
-    public List<RoomType> hotelRoomTypes(DataFetchingEnvironment dfe) {
+    public CompletableFuture<List<RoomType>> hotelRoomTypes(DataFetchingEnvironment dfe) {
         Hotel hotel = dfe.getSource();
-        return dataSource.getRoomTypesByHotelId(hotel.getId());
+        DataLoader<String, List<RoomType>> loader =
+                dfe.getDataLoader(RoomTypesByHotelIdDataLoader.NAME);
+        return loader.load(hotel.getId());
     }
 
     @DgsData(parentType = "Hotel", field = "reviews")
@@ -204,8 +218,15 @@ public class PropertyDataFetcher {
     // ── Entity Fetchers ───────────────────────────────────────────────────────
 
     @DgsEntityFetcher(name = "Hotel")
-    public Hotel fetchHotelEntity(Map<String, Object> values) {
-        return dataSource.getHotelById((String) values.get("id")).orElse(null);
+    public CompletableFuture<Hotel> fetchHotelEntity(
+            Map<String, Object> values, DataFetchingEnvironment dfe) {
+        // _entities is called once per representation. When a foreign
+        // subgraph returns a list of Hotel refs (e.g. an article's
+        // relatedHotels), the router fans the representations into N
+        // entity-fetcher calls. Routing each through the DataLoader
+        // collapses them into one batched DataSource.getHotelsByIds().
+        DataLoader<String, Hotel> loader = dfe.getDataLoader(HotelByIdDataLoader.NAME);
+        return loader.load((String) values.get("id"));
     }
 
     @DgsEntityFetcher(name = "Brand")

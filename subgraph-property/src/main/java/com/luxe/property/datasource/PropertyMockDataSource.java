@@ -5,10 +5,21 @@ import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Component
 public class PropertyMockDataSource implements PropertyDataSource {
+
+    /**
+     * Test-only call counters. Every batched load increments the
+     * matching counter; the DataLoader regression test asserts that
+     * {@code N} hotel fields produce <em>1</em> batched call, not N
+     * single-key calls. Production code shouldn't read these.
+     */
+    public final AtomicInteger brandBatchCalls = new AtomicInteger();
+    public final AtomicInteger hotelBatchCalls = new AtomicInteger();
+    public final AtomicInteger roomTypeBatchCalls = new AtomicInteger();
 
     /**
      * India IT-corridor hotels that should appear on the home-page featured
@@ -557,6 +568,47 @@ public class PropertyMockDataSource implements PropertyDataSource {
     }
 
     @Override public Optional<Brand> getBrandById(String id) { return Optional.ofNullable(brands.get(id)); }
+
+    @Override
+    public Map<String, Brand> getBrandsByIds(Set<String> ids) {
+        // One read of the in-memory map per request — the equivalent
+        // SELECT * FROM brand WHERE id IN (...) on a real backend.
+        // Tracked so the DataLoader regression test can prove
+        // batching actually happens.
+        brandBatchCalls.incrementAndGet();
+        Map<String, Brand> out = new HashMap<>(ids.size());
+        for (String id : ids) {
+            Brand b = brands.get(id);
+            if (b != null) out.put(id, b);
+        }
+        return out;
+    }
+
+    @Override
+    public Map<String, Hotel> getHotelsByIds(Set<String> ids) {
+        hotelBatchCalls.incrementAndGet();
+        Map<String, Hotel> out = new HashMap<>(ids.size());
+        for (String id : ids) {
+            Hotel h = hotels.get(id);
+            if (h != null) out.put(id, h);
+        }
+        return out;
+    }
+
+    @Override
+    public Map<String, List<RoomType>> getRoomTypesByHotelIds(Set<String> hotelIds) {
+        roomTypeBatchCalls.incrementAndGet();
+        // Group room-types by hotel id in one pass over the
+        // collection rather than one filter scan per hotel.
+        Map<String, List<RoomType>> out = new HashMap<>();
+        for (String hid : hotelIds) out.put(hid, new ArrayList<>());
+        for (RoomType rt : roomTypes.values()) {
+            List<RoomType> bucket = out.get(rt.getHotelId());
+            if (bucket != null) bucket.add(rt);
+        }
+        return out;
+    }
+
     @Override public Optional<Brand> getBrandByCode(String code) {
         return brands.values().stream().filter(b -> code.equals(b.getCode())).findFirst();
     }
