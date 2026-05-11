@@ -12,6 +12,14 @@ scalar CountryCode
 scalar LanguageCode
 scalar CurrencyCode
 
+# Field-level authorization (see common/auth/AuthDirectiveWiring).
+# Wraps the resolver — anonymous request → UNAUTHORIZED, wrong role
+# → FORBIDDEN, sufficient role → pass through. Row-level ownership
+# (guest can only see their own data) is enforced separately in the
+# resolver itself; this directive is the role gate only.
+enum AuthRole { GUEST LOYALTY_MEMBER PROPERTY_STAFF REVENUE_MGR ADMIN }
+directive @auth(requires: AuthRole!) on FIELD_DEFINITION
+
 interface Node { id: ID! }
 
 enum FloorPreference { LOW MIDDLE HIGH NO_PREFERENCE }
@@ -22,12 +30,17 @@ enum BedType { KING QUEEN DOUBLE_DOUBLE TWIN SINGLE SOFA_BED BUNK }
 
 type GuestProfile implements Node @key(fields: "id") {
   id: ID!
-  externalIds: GuestExternalIds!
+  externalIds: GuestExternalIds! @auth(requires: GUEST)
   name: GuestName!
+  # Email + name are intentionally NOT @auth-gated — they're how a
+  # guest identifies themselves at sign-in (AuthPayload.guest carries
+  # them back unauthenticated by definition), and they're already
+  # visible to staff via inbound CRM lookups. Phone / DOB / nationality
+  # / external IDs are the genuinely sensitive PII; those are gated.
   email: EmailAddress!
-  phone: PhoneNumber
-  dateOfBirth: Date
-  nationality: CountryCode
+  phone: PhoneNumber @auth(requires: GUEST)
+  dateOfBirth: Date @auth(requires: GUEST)
+  nationality: CountryCode @auth(requires: GUEST)
   avatarUrl: URL
   languagePreference: LanguageCode!
   currencyPreference: CurrencyCode!
@@ -107,11 +120,21 @@ type PaymentMethod implements Node {
   type: PaymentMethodType!
   brand: String!
   lastFour: String!
-  expiryMonth: Int!
-  expiryYear: Int!
-  holderName: String!
-  pspToken: String!
-  billingAddress: GuestAddress
+  # Sensitive fields below — auth-gated. Note we *never* expose the
+  # primary account number (PAN), CVV, or any reversible card material
+  # through GraphQL. lastFour is industry-standard truncation and
+  # safe to surface; the rest of these reveal billing context that
+  # belongs only to the cardholder.
+  expiryMonth: Int! @auth(requires: GUEST)
+  expiryYear: Int! @auth(requires: GUEST)
+  holderName: String! @auth(requires: GUEST)
+  # pspToken is the vault reference, not the card itself. In a real
+  # deployment this would not be on the schema at all — it would
+  # live in a dedicated tokenization service behind PCI scope, with
+  # detok happening only at charge time. Kept here as ADMIN-only to
+  # demonstrate the gating pattern.
+  pspToken: String! @auth(requires: ADMIN)
+  billingAddress: GuestAddress @auth(requires: GUEST)
   isDefault: Boolean!
   isExpired: Boolean!
   addedAt: DateTime!

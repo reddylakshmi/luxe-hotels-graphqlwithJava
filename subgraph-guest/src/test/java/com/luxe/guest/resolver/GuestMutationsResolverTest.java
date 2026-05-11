@@ -183,11 +183,14 @@ class GuestMutationsResolverTest {
 
     @Test
     void federation_entities_resolves_guest_profile_with_full_fields() {
+        // `phone` is @auth-gated on GuestProfile so unauthenticated
+        // federation lookups can only see public fields (id, name,
+        // email). The gated fields are exercised by GuestAuthenticatedTest.
         String query = """
                 query($reps: [_Any!]!) {
                   _entities(representations: $reps) {
                     ... on GuestProfile {
-                      id email phone
+                      id email
                       name { firstName lastName preferredName }
                     }
                   }

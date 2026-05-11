@@ -361,6 +361,16 @@ type AuthPayload
   isNewAccount: Boolean
 }
 
+enum AuthRole
+  @join__type(graph: GUEST)
+{
+  GUEST @join__enumValue(graph: GUEST)
+  LOYALTY_MEMBER @join__enumValue(graph: GUEST)
+  PROPERTY_STAFF @join__enumValue(graph: GUEST)
+  REVENUE_MGR @join__enumValue(graph: GUEST)
+  ADMIN @join__enumValue(graph: GUEST)
+}
+
 type AvailabilityResult
   @join__type(graph: PRICING)
 {
