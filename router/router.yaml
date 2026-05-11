@@ -1,9 +1,40 @@
 supergraph:
   listen: 0.0.0.0:4000
-  introspection: true
+  # Introspection on by default for local dev (Sandbox needs it).
+  # Production must flip this off — the published, versioned SDL is
+  # the supported partner contract instead. Override via the
+  # LUXE_INTROSPECTION env var (see README ▸ Security).
+  introspection: ${env.LUXE_INTROSPECTION:-true}
 
 sandbox:
-  enabled: true
+  # Sandbox needs introspection; co-gate them.
+  enabled: ${env.LUXE_SANDBOX_ENABLED:-true}
+
+# ── Gateway-side JWT validation (scaffold) ────────────────────────────────
+# Uncomment + populate router/keys/jwks.json to have the router
+# validate every inbound Authorization: Bearer <token> against a
+# JWKS, rejecting invalid tokens before any subgraph is dialled.
+#
+# Subgraphs today validate JWT themselves (common/auth/JwtService) —
+# defense-in-depth, but extra parsing cost at high QPS. To switch to
+# gateway-only validation:
+#   1. Generate an RS256 keypair; private to JwtService, public as JWK
+#   2. Update JwtService.generateToken to use RS256
+#   3. Uncomment this block; restart router
+#   4. Switch SubgraphAuthInterceptor to trust x-luxe-claims headers
+#      instead of re-parsing the JWT
+#
+# authentication:
+#   router:
+#     jwt:
+#       jwks:
+#         - url: file:///./router/keys/jwks.json
+#       sources:
+#         - source: header
+#           name: Authorization
+#           value_prefix: Bearer
+#       header_name: x-luxe-claims
+#       on_error: Continue
 
 homepage:
   enabled: false
