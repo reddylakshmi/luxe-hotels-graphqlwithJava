@@ -47,5 +47,32 @@
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
         </dependency>
+        <!-- Distributed rate-limit store (Tier 2). Lettuce client +
+             Bucket4j-Lettuce adapter. Activated by setting
+             luxe.security.rate-limit.backend=redis; otherwise the
+             InMemoryRateLimitStore stays the default and these stay
+             dormant.
+
+             Production targets Redis Cluster (ElastiCache /
+             Memorystore); local dev uses the docker-compose service.
+             Embedded Redis is TEST-SCOPE only — see
+             RedisRateLimitStoreTest. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.bucket4j</groupId>
+            <artifactId>bucket4j_jdk17-redis-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.bucket4j</groupId>
+            <artifactId>bucket4j_jdk17-lettuce</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.github.codemonstur</groupId>
+            <artifactId>embedded-redis</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

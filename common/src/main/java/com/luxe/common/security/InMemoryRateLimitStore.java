@@ -5,6 +5,7 @@ import io.github.bucket4j.Bucket;
 import io.github.bucket4j.BucketConfiguration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 
 import java.time.Duration;
@@ -27,12 +28,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * tighter (see {@code RateLimitFilter}) so an unauthenticated burst
  * can't drain a server.
  *
- * <p>This class is the only place that knows about Bucket4j. Swap
- * to Redis by registering an alternative {@link RateLimitStore} bean
- * — the {@code @ConditionalOnMissingBean} on this configuration
- * yields automatically.
+ * <p>This class is the only place that knows about Bucket4j local
+ * buckets. The Redis-backed counterpart is {@link RedisRateLimitStore};
+ * pick between them by setting {@code luxe.security.rate-limit.backend}
+ * to either {@code memory} (default) or {@code redis}.
  */
 @Configuration
+@ConditionalOnProperty(prefix = "luxe.security.rate-limit", name = "backend",
+        havingValue = "memory", matchIfMissing = true)
 public class InMemoryRateLimitStore implements RateLimitStore {
 
     private final ConcurrentHashMap<String, Bucket> buckets = new ConcurrentHashMap<>();

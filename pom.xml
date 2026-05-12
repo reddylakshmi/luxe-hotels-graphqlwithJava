@@ -44,6 +44,7 @@
         <logback-logstash.version>7.4</logback-logstash.version>
         <jacoco.version>0.8.12</jacoco.version>
         <bucket4j.version>8.14.0</bucket4j.version>
+        <embedded-redis.version>1.4.3</embedded-redis.version>
     </properties>
 
     <dependencyManagement>
@@ -99,6 +100,29 @@
                 <groupId>com.bucket4j</groupId>
                 <artifactId>bucket4j_jdk17-core</artifactId>
                 <version>${bucket4j.version}</version>
+            </dependency>
+            <!-- Redis-backed rate-limit store (Tier 2). lettuce-based
+                 ProxyManager + the redis-common interfaces. Spring Boot
+                 BOM already manages lettuce-core / spring-data-redis. -->
+            <dependency>
+                <groupId>com.bucket4j</groupId>
+                <artifactId>bucket4j_jdk17-redis-common</artifactId>
+                <version>${bucket4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bucket4j</groupId>
+                <artifactId>bucket4j_jdk17-lettuce</artifactId>
+                <version>${bucket4j.version}</version>
+            </dependency>
+            <!-- Embedded Redis is a TEST-SCOPE helper only — production
+                 architecture is Redis Cluster (managed: ElastiCache /
+                 Cloud Memorystore / Azure Cache). Local dev points at
+                 the docker-compose Redis so wire-shape matches prod.
+                 Apple-silicon binaries ship in the codemonstur fork. -->
+            <dependency>
+                <groupId>com.github.codemonstur</groupId>
+                <artifactId>embedded-redis</artifactId>
+                <version>${embedded-redis.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

@@ -2,6 +2,21 @@ version: "3.9"
 
 services:
 
+  # ── Redis (Tier 2 rate-limit / future entity cache) ───────────────────────
+  # Single-node here for local dev; production targets Redis Cluster
+  # (ElastiCache / Memorystore / Azure Cache). Subgraphs only talk Redis
+  # when luxe.security.rate-limit.backend=redis is set.
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+
   # ── Subgraphs ──────────────────────────────────────────────────────────────
 
   subgraph-property:
