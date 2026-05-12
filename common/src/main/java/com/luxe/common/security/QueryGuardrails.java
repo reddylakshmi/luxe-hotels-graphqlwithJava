@@ -49,7 +49,14 @@ public class QueryGuardrails extends SimplePerformantInstrumentation {
     private final int maxDepth;
 
     public QueryGuardrails(
-            @Value("${luxe.security.max-complexity:1000}") int maxComplexity,
+            // Production budget — the original 1000 baseline was too
+            // tight for real product pages (brand portfolios + search
+            // results legitimately score 1100–1500 with reasonable
+            // field selections). 2000 still catches a query bomb (a
+            // 100-rep _entities or `first: 200` trips it) while letting
+            // the catalogue pages render unmolested. Tune per-env via
+            // luxe.security.max-complexity if you change the workload.
+            @Value("${luxe.security.max-complexity:2000}") int maxComplexity,
             @Value("${luxe.security.max-depth:10}") int maxDepth) {
         this.maxComplexity = maxComplexity;
         this.maxDepth = maxDepth;
