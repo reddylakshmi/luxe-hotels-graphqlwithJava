@@ -251,6 +251,25 @@ Sample `variables` (50,000 pts → −350 EUR off `totalDue`):
 }
 ```
 
+### Special-rate catalogue (powers the home-page picker)
+
+```graphql
+{
+  specialRates {
+    code            # Matching RatePlanType enum value
+    label           # Display label, e.g. "AAA/CAA Discount"
+    description     # One-line copy under the dropdown selection
+    requiresCode    # True for Corp/Promo — UI prompts for an input
+  }
+}
+```
+
+Returns the catalogue the web app surfaces on the home-page search
+bar — Lowest Regular Rate, AAA/CAA, Senior, Government/Military,
+Corp/Promo. Hard-coded in the resolver (product copy, not seed
+data) but exposed via a query so labels live next to the matching
+`RatePlanType` value rather than being duplicated client-side.
+
 ### Guest-context queries (require auth)
 
 Reservations, loyalty account details, message threads, and corporate accounts all
@@ -634,7 +653,7 @@ that produce monetary values can return it.
 
 ## Testing & coverage
 
-The project ships with **724 unit + DGS integration tests** across 44 test classes,
+The project ships with **726 unit + DGS integration tests** across 44 test classes,
 covering common scalars/auth/pagination, every subgraph's mock data source, real
 GraphQL execution through `DgsQueryExecutor` (including federation `_entities`
 resolution), and authenticated mutation paths via a per-test `AuthContextResolver`
@@ -661,7 +680,7 @@ Test highlights for the most-active subgraphs:
   one batched DataSource call per request — backed by request-scoped
   AtomicInteger counters on the mock, so the test fails loudly if a
   future refactor reverts a resolver to the synchronous N+1 path.
-- **Pricing** (67 tests) — FX coverage pin (every currency in
+- **Pricing** (69 tests) — FX coverage pin (every currency in
   `PropertyDataGenerator.COUNTRIES` must have an FX entry), explicit
   conversion math (EUR→GBP via USD pivot, OMR→USD above-parity, etc.),
   rate-plan generation for hand-curated and synthetic-rate hotels.
