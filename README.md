@@ -478,9 +478,24 @@ Cost model (pure / unit-testable):
 
 Tunable:
 ```yaml
-luxe.security.max-complexity: 1000   # default
+luxe.security.max-complexity: 2000   # default
 luxe.security.max-depth: 10          # default
 ```
+
+The `max-complexity: 2000` baseline was raised from the original
+1000 after real product pages (the per-brand portfolio and the
+hotel-search results grid) legitimately scored 1100–1500 even with
+trimmed selections. 2000 covers them with headroom while still
+rejecting genuine bombs (a 100-rep `_entities`, or `first: 200` on
+a deep list, both still trip). Per-env tunable.
+
+**Known cost-model limitation**: the planner multiplies every
+nested subtree by the parent's `first` argument, even when the
+nested field is `media(first: 1)` (a singleton hop that costs the
+same regardless of N). This makes scores conservatively high for
+queries that fan media/location/guest-rating across many hotel
+cards. A model refinement that recognizes `first: 1` as
+non-multiplying is a clean follow-up.
 
 ### 5. Rate limiting + introspection control
 
