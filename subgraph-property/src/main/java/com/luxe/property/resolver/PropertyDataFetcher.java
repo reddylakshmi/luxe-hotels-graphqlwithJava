@@ -2,6 +2,7 @@ package com.luxe.property.resolver;
 
 import com.luxe.common.auth.AuthContext;
 import com.luxe.common.auth.AuthContextResolver;
+import com.luxe.common.config.CachingConfig;
 import com.luxe.common.error.NotFoundError;
 import com.luxe.property.dataloader.BrandByIdDataLoader;
 import com.luxe.property.dataloader.HotelByIdDataLoader;
@@ -11,6 +12,7 @@ import com.luxe.property.schema.types.*;
 import com.netflix.graphql.dgs.*;
 import graphql.schema.DataFetchingEnvironment;
 import org.dataloader.DataLoader;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -59,16 +61,22 @@ public class PropertyDataFetcher {
     }
 
     @DgsQuery
+    @Cacheable(value = CachingConfig.CATALOG_BRAND, key = "'id:'+#id")
     public Brand brand(@InputArgument String id) {
         return dataSource.getBrandById(id).orElse(null);
     }
 
     @DgsQuery
+    @Cacheable(value = CachingConfig.CATALOG_BRAND, key = "'code:'+#code")
     public Brand brandByCode(@InputArgument String code) {
         return dataSource.getBrandByCode(code).orElse(null);
     }
 
+    // Connection-shaped read — keying on the trio so paginating clients
+    // (rare here) get distinct entries; tier alone is the hot key.
     @DgsQuery
+    @Cacheable(value = CachingConfig.CATALOG_BRANDS_LIST,
+               key = "T(java.util.Objects).hash(#first,#after,#tier)")
     public Map<String, Object> brands(@InputArgument Integer first,
                                        @InputArgument String after,
                                        @InputArgument String tier) {
@@ -81,7 +89,13 @@ public class PropertyDataFetcher {
         return dataSource.getRoomTypeById(id).orElse(null);
     }
 
+    // Curated list — driven by home + brand-detail pages. Catalog-shape
+    // (no availability), so the 5-minute TTL is safe; DataLoaders still
+    // dispatch downstream for Hotel.brand / Hotel.roomTypes so test
+    // counters in DataLoaderBatchingTest stay accurate.
     @DgsQuery
+    @Cacheable(value = CachingConfig.CATALOG_FEATURED,
+               key = "T(java.util.Objects).hash(#first,#brandTier,#countryCode)")
     public List<Hotel> featuredHotels(@InputArgument Integer first,
                                        @InputArgument String brandTier,
                                        @InputArgument String countryCode) {

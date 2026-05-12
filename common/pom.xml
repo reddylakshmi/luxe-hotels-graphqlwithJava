@@ -36,5 +36,16 @@
             <groupId>com.bucket4j</groupId>
             <artifactId>bucket4j_jdk17-core</artifactId>
         </dependency>
+        <!-- Catalog cache: in-process Caffeine (5 min TTL on hotels /
+             brands / featured lists, 1 h on the static specialRates
+             catalogue). See common/config/CachingConfig.java. -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
     </dependencies>
 </project>

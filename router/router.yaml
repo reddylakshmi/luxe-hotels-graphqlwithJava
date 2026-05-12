@@ -85,11 +85,26 @@ traffic_shaping:
   all:
     timeout: 30s
 
-# ── Persisted queries (scaffold) ──────────────────────────────────────────
-# In production, only pre-registered queries should execute — flip
-# `safelist.enabled: true` once the manifest is stable. `log_unknown`
-# first reports queries that aren't yet in the safelist so you can
-# wave them through one by one without breaking clients during rollout.
+# ── Automatic Persisted Queries (Tier 1 cache) ──────────────────────────
+# Client sends a SHA-256 hash of the query; first time the router
+# responds with PersistedQueryNotFound, the client retries with the
+# body, and the router caches the (hash → body) entry. Subsequent
+# requests skip the body. Cuts request size 70-90% on warm clients
+# and lets the router serve GETs (which are then CDN-cacheable). Pure
+# optimisation — no correctness risk because the hash is verified.
+apq:
+  enabled: true
+  router:
+    cache:
+      in_memory:
+        limit: 1000         # ~1k distinct operations in-flight; tune for prod
+
+# ── Safelisted persisted queries (scaffold) ─────────────────────────────
+# Separate feature from APQ: pins the router to a published operation
+# registry, rejecting anything not in the manifest. Production flip
+# once the manifest is stable. `log_unknown` first reports queries
+# that aren't yet in the safelist so you can wave them through one by
+# one without breaking clients during rollout.
 #
 # persisted_queries:
 #   enabled: true

@@ -4,11 +4,13 @@ import com.luxe.pricing.schema.types.RoomType;
 
 import com.luxe.pricing.schema.types.Hotel;
 
+import com.luxe.common.config.CachingConfig;
 import com.luxe.common.error.NotFoundError;
 import com.luxe.pricing.datasource.PricingDataSource;
 import com.luxe.pricing.schema.types.*;
 import com.netflix.graphql.dgs.*;
 import graphql.schema.DataFetchingEnvironment;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -120,7 +122,11 @@ public class PricingDataFetcher {
      * change at the row level; in a real deployment they'd live in
      * a CMS, but the schema contract stays the same.
      */
+    // 5-entry hard-coded catalogue — perfect cache target. Every
+    // home / search / brand / rates / book / confirmation page pulls
+    // this; 1 h TTL keeps the resolver cold past the warm-up.
     @DgsQuery
+    @Cacheable(CachingConfig.PRICING_SPECIAL_RATES)
     public List<Map<String, Object>> specialRates() {
         return List.of(
                 Map.of("code", "BEST_AVAILABLE",
