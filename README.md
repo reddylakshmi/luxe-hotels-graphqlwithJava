@@ -270,6 +270,13 @@ Corp/Promo. Hard-coded in the resolver (product copy, not seed
 data) but exposed via a query so labels live next to the matching
 `RatePlanType` value rather than being duplicated client-side.
 
+The same catalogue powers every picker downstream — `/search`,
+`/brands/[id]` (uniform with the home page), `/hotels/[id]/rates`,
+`/hotels/[id]/book` (sidebar chip), and `/hotels/[id]/book/confirmation`
+(chip on the reference card). The web threads `specialRateCode`,
+`corporateCode`, and `usePoints` through every URL hop so the guest's
+filter is visible from search all the way to confirmation.
+
 ### Guest-context queries (require auth)
 
 Reservations, loyalty account details, message threads, and corporate accounts all
