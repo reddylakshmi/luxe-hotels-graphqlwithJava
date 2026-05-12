@@ -5,6 +5,20 @@ supergraph:
   # the supported partner contract instead. Override via the
   # LUXE_INTROSPECTION env var (see README ▸ Security).
   introspection: ${env.LUXE_INTROSPECTION:-true}
+  # Query plan cache. In-memory by default (free); for a multi-
+  # instance / multi-region deployment swap to Redis so a router
+  # restart doesn't replan every operation from scratch. 4096
+  # comfortably holds the distinct operation × variables shapes a
+  # 30-brand consumer surface emits; default of 512 was tuned for
+  # tiny demo apps.
+  query_planning:
+    cache:
+      in_memory:
+        limit: 4096
+      # redis:
+      #   urls: ["redis://localhost:6379"]
+      #   ttl: 24h
+      #   namespace: "luxe:qp"
 
 sandbox:
   # Sandbox needs introspection; co-gate them.
@@ -84,6 +98,12 @@ traffic_shaping:
       interval: 60s            # rolling 60s window
   all:
     timeout: 30s
+    # In-flight subgraph request dedup. Two identical concurrent
+    # subgraph calls collapse into one upstream fetch — both
+    # callers wake on the shared response. Free-tier, no infra,
+    # high payoff under bursty traffic (the most-loved hotel in
+    # 9000 properties will see request piles during a sale).
+    deduplicate_query: true
 
 # ── Automatic Persisted Queries (Tier 1 cache) ──────────────────────────
 # Client sends a SHA-256 hash of the query; first time the router
@@ -98,6 +118,68 @@ apq:
     cache:
       in_memory:
         limit: 1000         # ~1k distinct operations in-flight; tune for prod
+
+# ── Federation entity cache (Apollo Router Enterprise) ──────────────────
+# When a query selects fields across subgraphs, the router fans out
+# _entities representations to each owner. The entity cache stores
+# the resolved sub-objects in Redis keyed by (subgraph, type, repr)
+# so the next request that lands on the SAME entity skips the
+# subgraph round-trip entirely. At 30 brands / 9000 hotels this is
+# the biggest single latency win on warm paths — popular hotels +
+# brands are read thousands of times per minute.
+#
+# Strategy:
+#   • subgraph.all default: enabled with a 30 s safety TTL — any
+#     subgraph that doesn't override below gets short-lived caching.
+#   • property      : 5 min — brand / hotel / room-type catalog.
+#   • content       : 5 min — CMS articles, brand stories.
+#   • pricing       : 30 s  — availability + rates churn; rely on
+#                     subgraph Cache-Control headers to refine.
+#   • reservations  : disabled — per-user write-side data.
+#   • loyalty       : disabled — points balance must be live.
+#   • guest         : disabled — profile/PII; can't share across users.
+#   • meetings      : disabled — RFP state per-user.
+#   • notifications : disabled — inbox state per-user.
+#   • corporate     : disabled — per-account / per-user.
+#   • experiences   : 1 min   — restaurant / spa metadata, slowly changing.
+#
+# Per-resolver overrides: subgraphs can emit a `Cache-Control` HTTP
+# header (Apollo standard) and that takes precedence over the TTL
+# below. e.g. PropertyDataFetcher could return
+# `Cache-Control: max-age=3600` on Brand reads after the in-process
+# Caffeine cache hits, layering the router cache on top.
+#
+# Gating: this block is Apollo Router Enterprise — the unlicensed
+# build will refuse to enable it. Local dev runs with enabled: false
+# and the in-process Caffeine cache (Tier 1) does the catalog work.
+# Production switches enabled: true and supplies APOLLO_KEY +
+# APOLLO_GRAPH_REF, OR an offline license via --license.
+# Uncomment when:
+#   1. Apollo Router Enterprise license is provisioned
+#      (APOLLO_KEY + APOLLO_GRAPH_REF env vars, or --license file).
+#   2. Redis is reachable on the URL below (docker-compose service
+#      shipped in this repo binds it on localhost:6379).
+# preview_entity_cache:
+#   enabled: true
+#   subgraph:
+#     all:
+#       enabled: true
+#       ttl: 30s
+#       redis:
+#         urls: ["redis://localhost:6379"]
+#         timeout: 500ms
+#         namespace: "luxe:ec"
+#     subgraphs:
+#       property:      { ttl: 5m }      # catalog
+#       content:       { ttl: 5m }      # CMS
+#       pricing:       { ttl: 30s }     # availability — Cache-Control overrides
+#       experiences:   { ttl: 1m }      # restaurants / spas
+#       reservations:  { enabled: false }   # per-user
+#       loyalty:       { enabled: false }   # live balance
+#       guest:         { enabled: false }   # PII
+#       meetings:      { enabled: false }   # per-user RFP state
+#       notifications: { enabled: false }   # per-user inbox
+#       corporate:     { enabled: false }   # per-account
 
 # ── Safelisted persisted queries (scaffold) ─────────────────────────────
 # Separate feature from APQ: pins the router to a published operation
