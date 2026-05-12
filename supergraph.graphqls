@@ -3109,6 +3109,15 @@ type Query
   rateCalendar(input: RateCalendarInput!): [DateRateSummary!]! @join__field(graph: PRICING)
   giftCardBalance(code: String!): GiftCardBalance @join__field(graph: PRICING)
   redemptionRates(input: RedemptionInput!): [RedemptionRate!]! @join__field(graph: PRICING)
+
+  """
+  Catalogue of special-rate options shown on the home-page search bar
+  (Lowest Regular Rate, AAA/CAA, Senior Discount, etc.). The web app
+  populates a single-select dropdown from this list so the labels +
+  descriptions live next to the matching `RatePlanType` value rather
+  than being duplicated client-side.
+  """
+  specialRates: [SpecialRate!]! @join__field(graph: PRICING)
   hotel(id: ID!): Hotel @join__field(graph: PROPERTY)
   hotelBySlug(slug: String!): Hotel @join__field(graph: PROPERTY)
   hotels(first: Int = 10, after: String, filter: HotelFilter, sortBy: HotelSortField): HotelConnection! @join__field(graph: PROPERTY)
@@ -3949,6 +3958,22 @@ type SpaTreatment implements Node
   modalities: [String!]!
   contraindications: [String!]!
   ageMinimum: Int
+}
+
+type SpecialRate
+  @join__type(graph: PRICING)
+{
+  """The corresponding RatePlanType enum value (e.g. AAA_CAA)."""
+  code: RatePlanType!
+
+  """User-facing label as shown in the dropdown (e.g. "AAA/CAA Discount")."""
+  label: String!
+
+  """One-line description rendered under the dropdown selection."""
+  description: String!
+
+  """When true the UI prompts the guest for a corporate / promo code."""
+  requiresCode: Boolean!
 }
 
 type SpecialRequest

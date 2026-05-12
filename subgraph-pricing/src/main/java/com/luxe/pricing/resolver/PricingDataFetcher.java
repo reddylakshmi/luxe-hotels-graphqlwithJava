@@ -113,6 +113,38 @@ public class PricingDataFetcher {
         return dataSource.findRedemptionRates(hotelId, checkIn, checkOut, roomTypeId);
     }
 
+    /**
+     * Catalogue of special-rate options exposed on the home-page
+     * search bar. Hard-coded rather than seeded — the labels +
+     * descriptions are partner-facing product copy that wouldn't
+     * change at the row level; in a real deployment they'd live in
+     * a CMS, but the schema contract stays the same.
+     */
+    @DgsQuery
+    public List<Map<String, Object>> specialRates() {
+        return List.of(
+                Map.of("code", "BEST_AVAILABLE",
+                       "label", "Lowest Regular Rate",
+                       "description", "Best publicly-available rate, no membership required.",
+                       "requiresCode", false),
+                Map.of("code", "AAA_CAA",
+                       "label", "AAA/CAA Discount",
+                       "description", "Member savings for AAA (US) and CAA (Canada) cardholders.",
+                       "requiresCode", false),
+                Map.of("code", "SENIOR",
+                       "label", "Senior Discount",
+                       "description", "Reduced rate for guests aged 62 and over. Valid ID required at check-in.",
+                       "requiresCode", false),
+                Map.of("code", "GOVERNMENT",
+                       "label", "Government / Military",
+                       "description", "Per-diem-aligned rate for active government and military personnel.",
+                       "requiresCode", false),
+                Map.of("code", "CORPORATE",
+                       "label", "Corp / Promo Code",
+                       "description", "Apply your employer's negotiated rate or a promotional code.",
+                       "requiresCode", true));
+    }
+
     // ── Hotel field resolvers ─────────────────────────────────────────────────
 
     @DgsData(parentType = "Hotel", field = "rates")

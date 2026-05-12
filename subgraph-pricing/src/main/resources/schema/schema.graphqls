@@ -22,6 +22,25 @@ type Query {
   rateCalendar(input: RateCalendarInput!): [DateRateSummary!]!
   giftCardBalance(code: String!): GiftCardBalance
   redemptionRates(input: RedemptionInput!): [RedemptionRate!]!
+  """
+  Catalogue of special-rate options shown on the home-page search bar
+  (Lowest Regular Rate, AAA/CAA, Senior Discount, etc.). The web app
+  populates a single-select dropdown from this list so the labels +
+  descriptions live next to the matching `RatePlanType` value rather
+  than being duplicated client-side.
+  """
+  specialRates: [SpecialRate!]!
+}
+
+type SpecialRate {
+  """The corresponding RatePlanType enum value (e.g. AAA_CAA)."""
+  code: RatePlanType!
+  """User-facing label as shown in the dropdown (e.g. "AAA/CAA Discount")."""
+  label: String!
+  """One-line description rendered under the dropdown selection."""
+  description: String!
+  """When true the UI prompts the guest for a corporate / promo code."""
+  requiresCode: Boolean!
 }
 
 # ── Core Types ────────────────────────────────────────────────────────────────
