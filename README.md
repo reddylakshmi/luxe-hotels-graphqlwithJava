@@ -10,6 +10,12 @@ shared types with `@shareable`, custom scalars, JWT authentication that doesn't 
 federation introspection, and the operational glue (composition, routing, health
 checks) that makes the whole thing serve queries.
 
+> **Going to production?** See [`docs/PRODUCTION.md`](docs/PRODUCTION.md) — the
+> deploy runbook for taking this codebase to 30+ brands / 9000+ hotels /
+> 100+ countries. Covers the cache strategy already wired into the code,
+> the managed services to procure (Redis Cluster, Apollo GraphOS,
+> DynamoDB, CDN, Kafka), per-phase rollout, and the invalidation contract.
+
 ---
 
 ## Architecture
