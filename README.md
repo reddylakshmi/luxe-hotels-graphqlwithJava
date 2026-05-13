@@ -538,12 +538,21 @@ non-multiplying is a clean follow-up.
   key is `user:<guestId>` for authed traffic and `ip:<X-Forwarded-For>` for
   anonymous. Exceeded buckets → 429 with `extensions.code = RATE_LIMITED`.
 
-The subgraph store lives behind a one-method `RateLimitStore` interface —
-production swaps to a Redis-backed implementation (Bucket4j-Redis via
-Lettuce/Redisson) by registering a single `@Bean`. No other code changes.
+The subgraph store lives behind a one-method `RateLimitStore` interface. Two
+implementations ship:
+- **`InMemoryRateLimitStore`** (default) — `ConcurrentHashMap<String, Bucket>`,
+  one-process, perfect for single-instance dev.
+- **`RedisRateLimitStore`** — Lettuce + Bucket4j-Lettuce CAS proxy manager,
+  bucket state lives in Redis so every subgraph replica agrees on the count.
+  Required as soon as you scale a subgraph horizontally, otherwise per-replica
+  buckets fragment and the effective limit multiplies by N. Activate with
+  `luxe.security.rate-limit.backend=redis` + `spring.data.redis.host/port`.
+  Cluster-mode upgrade is one line — swap `RedisClient` → `RedisClusterClient`
+  in `common/security/RedisRateLimitStore.java`.
 
 **Tunable** (per-subgraph):
 ```yaml
+luxe.security.rate-limit.backend: memory       # or "redis"
 luxe.security.rate-limit.enabled: true
 luxe.security.rate-limit.capacity: 120
 luxe.security.rate-limit.window-seconds: 60
@@ -554,10 +563,34 @@ luxe.security.rate-limit.window-seconds: 60
 dev). Production sets both to `false` — the supported partner contract is a
 versioned SDL doc, not live introspection.
 
-**Persisted queries** (scaffold in `router/router.yaml`): in production, only
-pre-registered queries execute. `persisted_queries.safelist.enabled: true`
-once the manifest is reviewed; `log_unknown: true` first reports
-not-yet-safelisted queries so you can wave them through during rollout.
+**Automatic Persisted Queries (APQ)** — on by default in `router/router.yaml`.
+Client sends a SHA-256 hash of the query; the router caches `hash → body` in
+its in-memory APQ cache (1k entries) and replays. Cuts request size 70–90% on
+warm clients and lets the router serve GETs. No license required.
+
+**Safelisted persisted queries** (scaffold in `router/router.yaml`) — separate
+feature from APQ; pins the router to a published operation registry, rejecting
+anything not in the manifest. `persisted_queries.safelist.enabled: true` once
+the manifest is reviewed; `log_unknown: true` first reports not-yet-safelisted
+queries so you can wave them through during rollout.
+
+### 6. Caching layers (Tier 1 + Tier 2)
+
+| Layer | Where | Default | How to scale |
+|---|---|---|---|
+| **Caffeine catalog cache** | `common/.../config/CachingConfig.java`, `@Cacheable` on `PropertyDataFetcher` + `PricingDataFetcher` | always on; per-cache TTL (`catalog.brand` / `catalog.brandsList` / `catalog.featuredHotels` 5 min, `pricing.specialRates` 1 h) | per-process; `@ConditionalOnMissingBean(CacheManager.class)` lets a Redis-backed `CacheManager` drop in for cross-replica sharing |
+| **Router APQ** | `router/router.yaml` `apq.router.cache.in_memory.limit: 1000` | on | swap `in_memory` → `redis` for shared cache across router replicas |
+| **Router query-plan cache** | `router/router.yaml` `supergraph.query_planning.cache.in_memory.limit: 4096` | on | same — Redis-backed across replicas |
+| **Subgraph request dedup** | `router/router.yaml` `traffic_shaping.all.deduplicate_query: true` | on | identical concurrent subgraph requests collapse into one upstream fetch |
+| **Router entity cache (Enterprise)** | `router/router.yaml` `preview_entity_cache` block (commented) | off — Apollo Router Enterprise license + Redis required | per-subgraph TTLs aligned to data churn (property/content 5 min, pricing 30 s, per-user subgraphs disabled). See `docs/PRODUCTION.md` § 4.3. |
+
+DataLoader batching (described below) sits below all of these and is the
+per-request micro-cache that solves the N+1 problem within a single operation.
+Caffeine sits above DataLoader: on a warm hit the resolver never even reaches
+the loader.
+
+For the full production-scale story (Redis Cluster sizing, invalidation
+contract, multi-region wiring, CDN policy) see [`docs/PRODUCTION.md`](docs/PRODUCTION.md).
 
 ---
 
