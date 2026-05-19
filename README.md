@@ -16,6 +16,13 @@ checks) that makes the whole thing serve queries.
 > the managed services to procure (Redis Cluster, Apollo GraphOS,
 > DynamoDB, CDN, Kafka), per-phase rollout, and the invalidation contract.
 
+> **Prefer TypeScript?** [`luxe-hotels-graphqlwithtypescript`](../luxe-hotels-graphqlwithtypescript)
+> is a full port of this platform on Apollo Server 4 / Node 20 — same ten
+> subgraphs, same byte-for-byte supergraph, same JWT auth and security
+> gates. Both serve the router on `http://localhost:4000/`, so the
+> [`luxe-hotels-web`](../luxe-hotels-web) front-end runs against either
+> backend with no code or config change.
+
 ---
 
 ## Architecture
